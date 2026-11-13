@@ -31,7 +31,7 @@ return function(ctx,features)
   result.viewport=cam and {w=cam.ViewportSize.X,h=cam.ViewportSize.Y} or nil
   local mouse=game:GetService("UserInputService"):GetMouseLocation()
   local inset=game:GetService("GuiService"):GetGuiInset()
-  result.pointer={x=mouse.X,y=mouse.Y,insetX=inset.X,insetY=inset.Y,hits={}}
+  result.pointer={behavior=tostring(game:GetService("UserInputService").MouseBehavior),x=mouse.X,y=mouse.Y,insetX=inset.X,insetY=inset.Y,hits={}}
   for i,hit in ipairs(ctx.parent:GetGuiObjectsAtPosition(mouse.X-inset.X,mouse.Y-inset.Y)) do
    if i>12 then break end
    local top=hit;while top.Parent and top.Parent~=ctx.parent do top=top.Parent end

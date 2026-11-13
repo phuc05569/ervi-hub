@@ -1,0 +1,54 @@
+{
+    "shown":  {
+                  "held":  true,
+                  "active":  true,
+                  "status":  "Preview active · server teleport unavailable",
+                  "teleportAvailable":  false,
+                  "detail":  {
+                                 "markerVisible":  true
+                             }
+              },
+    "guiSuppressed":  {
+                          "held":  true,
+                          "active":  true,
+                          "status":  "Selected preview (14.0, 0.0, 30.5) · no server teleport",
+                          "teleportAvailable":  false,
+                          "detail":  {
+                                         "markerVisible":  false,
+                                         "selected":  {
+                                                          "y":  0.000003039836883544922,
+                                                          "x":  13.966007232666016,
+                                                          "z":  30.462158203125
+                                                      }
+                                     }
+                      },
+    "selected":  {
+                     "held":  true,
+                     "active":  true,
+                     "status":  "Selected preview (14.0, 0.0, 30.5) · no server teleport",
+                     "teleportAvailable":  false,
+                     "detail":  {
+                                    "markerVisible":  true,
+                                    "selected":  {
+                                                     "y":  0.000003039836883544922,
+                                                     "x":  13.966007232666016,
+                                                     "z":  30.462158203125
+                                                 }
+                                }
+                 },
+    "released":  {
+                     "held":  false,
+                     "active":  true,
+                     "status":  "Selected preview (14.0, 0.0, 30.5) · no server teleport",
+                     "teleportAvailable":  false,
+                     "detail":  {
+                                    "markerVisible":  false,
+                                    "selected":  {
+                                                     "y":  0.000003039836883544922,
+                                                     "x":  13.966007232666016,
+                                                     "z":  30.462158203125
+                                                 }
+                                }
+                 },
+    "build":  "3.3.0+e0636146692e"
+}

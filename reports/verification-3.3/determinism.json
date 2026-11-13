@@ -1,0 +1,8 @@
+{
+  "deterministic": true,
+  "hashes": {
+    "build/Ervi_Hub.luau": "5f7925360aae2e11b046491f187a7a73e38f27661c7233f2e5fd8e8ba94dc65d",
+    "build/Ervi_Hub.luau.map.json": "3080ce478a9c406b8980fa3055e7ed9c017867e2acc9f477ba4614532ec9f2a5",
+    "build/loader.lua": "63ac895cc1572fbc4cd41e506f6e49d82e2a5e0969c8b7276b973ecc256f26c8"
+  }
+}
