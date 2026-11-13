@@ -1,3 +1,12 @@
+## 3.4.0 interface redesign — 2026-11-14 (development branch, not a release)
+- Liquid-glass-inspired look: specular gradient rims re-derived on every theme change, soft luminance gradients, 16/14/12/8 px radii, glass nav pill, title chips, search, cards, dropdowns, notifications, tooltips and profile card. No backdrop blur is claimed (Roblox UI has none).
+- Exact Ervi logo as an antialiased PNG rendered from `LogoGeometry`; Lucide (ISC) icon atlas with a distinct icon per section. Both PNGs are embedded in the bundle, written to the executor workspace at start and used via `getcustomasset` only after `ContentProvider:PreloadAsync` reports Success; otherwise the native logo/icons are used.
+- Motion: named easings on the existing Motion owner; 240 ms open / 160 ms close, gliding nav pill, page slide, spring toggles, notification slide-in/out; reduced-motion and speed preferences respected.
+- Config page and slot manager removed. The previously effective profile (per-game autoload, global autoload, Default) auto-saves: writes are debounced (350 ms) and flushed on unload/teleport; other named profiles and autoload lines stay in the file; the original file is copied once to `RNG_Hub_settings.pre-autosave-backup.txt`. Sidebar shows save status.
+- Sliders accept typed values (percent sliders take the shown percent); values are rounded to remove float noise.
+- Skeleton thickness 0.1–3.0 px in 0.1 steps. Studio showed Frames under 1 px are not drawn (the old 0.5 px minimum was invisible) and fractional widths snap to pixels, so sub-pixel values use a 1 px line with matching opacity and 1 px+ rounds to whole pixels (stated in the readout).
+- Tests: 173 unit / 545 smoke. Details and evidence: reports/UI_REDESIGN_3_4.md, reports/evidence/ui-3.4/.
+
 ## 3.3.0 development integration — 2026-11-14 (development branch, not a release)
 - Owner-requested Auto update rate is 60 Hz (manual 10/20/30/60 kept); `VisualPolicy.rate` centralizes it.
 - Main window: centered AnchorPoint, inset-aware viewport bounds, session-local center; reopening recenters; drag ignores the window's own UIScale. Fresh-config appearance defaults: 75% opacity, 85% scale, Midnight/Indigo/Gotham, White text at 140%. Explicit saved values win.

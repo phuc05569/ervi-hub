@@ -45,7 +45,7 @@ add("chamsOutline","visuals","Appearance","Chams Outline","number",0,{0,1,0.05})
 add("tracers","visuals","Tracers","Tracers Enabled","bool",false)
 add("tracerOrigin","visuals","Tracers","Origin","choice","Bottom",{"Bottom","Middle","Top"})
 add("tracerColor","visuals","Tracers","Tracer Color","color","#FFFFFF")
-add("skeletonThickness","visuals","Appearance","Skeleton Thickness","number",1,{0.5,3,0.5},"White core width; black outline adds one pixel on each side.")
+add("skeletonThickness","visuals","Appearance","Skeleton Thickness","number",1,{0.1,3,0.1},"Roblox cannot draw lines under 1 px, so 0.1–0.9 draw a 1 px line with matching opacity; 1 px and up round to whole pixels. The black outline adds one pixel each side.")
 add("offscreenArrows","visuals","Tracers","Off-screen Arrows","bool",false,nil,"Only for unobstructed targets within the distance and target budgets.")
 for _,d in ipairs({{"teamCheck","Team Check",true},{"showTeammates","Show Teammates",false},{"markFriends","Mark Friends",false}}) do add(d[1],"visuals","Filters",d[2],"bool",d[3]) end
 for _,d in ipairs({{"enemyColor","Enemy","#F0628E"},{"teamColor","Team","#40C492"},{"friendColor","Friend","#70AFFF"},{"wallColor","Behind Wall (preview only)","#9294A3"}}) do add(d[1],"visuals","Appearance",d[2],"color",d[3],nil,"Player palette; visibility follows the Through Walls setting.") end

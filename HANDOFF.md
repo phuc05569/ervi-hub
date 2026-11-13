@@ -1,4 +1,6 @@
-> **Current 3.1 handoff:** See [LOCAL_CODEX_HANDOFF](docs/LOCAL_CODEX_HANDOFF.md). Build **3.1.0+5e9595329868**, 144 unit tests / 476 smoke checks passing. The material below records 3.0 and is historical: 3.1 removes Freecam/Friends/Sounds/Triggerbot, reorganizes navigation, defaults speed to Multiply, adds the logo/status pill, fixes search/key capture, and returns Safe Zone to its activation origin on explicit OFF.
+> **Current state (3.4.0, 2026-11-14):** read [reports/UI_REDESIGN_3_4.md](reports/UI_REDESIGN_3_4.md) and [docs/PAUSED_HANDOFF_2026_11_14.md](docs/PAUSED_HANDOFF_2026_11_14.md) first; they supersede the sections below.
+
+> **Earlier 3.1 handoff:** See [LOCAL_CODEX_HANDOFF](docs/LOCAL_CODEX_HANDOFF.md). Build **3.1.0+5e9595329868**, 144 unit tests / 476 smoke checks passing. The material below records 3.0 and is historical: 3.1 removes Freecam/Friends/Sounds/Triggerbot, reorganizes navigation, defaults speed to Multiply, adds the logo/status pill, fixes search/key capture, and returns Safe Zone to its activation origin on explicit OFF.
 
 # Ervi Hub — handoff for Codex (2026-11-13)
 

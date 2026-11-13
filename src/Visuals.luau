@@ -9,15 +9,16 @@ local Players=game:GetService("Players")
 local Run=game:GetService("RunService")
 local Rig=require("RigSkeleton")
 local Geometry=require("SkeletonGeometry")
+local Stroke=require("SkeletonStroke")
 local function color(hex) return Color3.fromHex(hex:sub(2)) end
 local function line(parent)
  return Ui.new("Frame",{Name="OverlayLine",BorderSizePixel=0,BackgroundColor3=Theme.accent,AnchorPoint=Vector2.new(0.5,0.5),Visible=false,Parent=parent})
 end
-local function segment(frame,a,b,tint,thickness)
+local function segment(frame,a,b,tint,thickness,transparency)
  local dx,dy=b.X-a.X,b.Y-a.Y
  frame.Position=UDim2.fromOffset((a.X+b.X)/2,(a.Y+b.Y)/2)
  frame.Size=UDim2.fromOffset(math.sqrt(dx*dx+dy*dy),thickness or 1)
- frame.Rotation=math.deg(math.atan2(dy,dx));frame.BackgroundColor3=tint;frame.Visible=true
+ frame.Rotation=math.deg(math.atan2(dy,dx));frame.BackgroundColor3=tint;frame.BackgroundTransparency=transparency or 0;frame.Visible=true
 end
 return function(hub,parent,getPrefs,playerSource)
  local playerService=playerSource or Players
@@ -148,8 +149,9 @@ return function(hub,parent,getPrefs,playerSource)
         local clippedA,clippedB=Geometry.clip(a,b,cam.ViewportSize.X,cam.ViewportSize.Y)
         if clippedA then
          local from,to=Vector2.new(clippedA[1],clippedA[2]),Vector2.new(clippedB[1],clippedB[2])
-         segment(r.boneOutlines[index],from,to,Color3.new(0,0,0),p.skeletonThickness+2)
-         segment(r.bones[index],from,to,Color3.new(1,1,1),p.skeletonThickness)
+         local coreW,coreT,outlineW,outlineT=Stroke.resolve(p.skeletonThickness)
+         segment(r.boneOutlines[index],from,to,Color3.new(0,0,0),outlineW,outlineT)
+         segment(r.bones[index],from,to,Color3.new(1,1,1),coreW,coreT)
         end
        end
        for i,link in ipairs(links) do

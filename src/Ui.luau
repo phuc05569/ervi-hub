@@ -5,6 +5,7 @@ local SliderValue = require("SliderValue")
 
 local Locale = require("Locale")
 local Logo = require("Logo")
+local UiImages = require("UiImages")
 local Registry = require("Registry")
 local Ui = { registry=Registry.new(),language="EN" }
 Ui.localeText=function(text) return Locale.text(text,Ui.language) end
@@ -38,16 +39,25 @@ local roots = setmetatable({}, { __mode = "k" })
 local Motion=require("Motion")
 local tweenService
 pcall(function() tweenService=game:GetService("TweenService") end)
-local motion=Motion.new(function(inst,duration,properties)
- return tweenService:Create(inst,TweenInfo.new(duration,Enum.EasingStyle.Quart,Enum.EasingDirection.Out),properties)
+-- Named easings: out = default response, soft = long settle (window/page), spring = slight
+-- overshoot (toggle knob), accelerate = exits.
+local EASING={
+ out={Enum.EasingStyle.Quart,Enum.EasingDirection.Out},
+ soft={Enum.EasingStyle.Quint,Enum.EasingDirection.Out},
+ spring={Enum.EasingStyle.Back,Enum.EasingDirection.Out},
+ accelerate={Enum.EasingStyle.Quad,Enum.EasingDirection.In},
+}
+local motion=Motion.new(function(inst,duration,properties,style)
+ local easing=EASING[style or "out"] or EASING.out
+ return tweenService:Create(inst,TweenInfo.new(duration,easing[1],easing[2]),properties)
 end)
 local function ownAnimation(scope,inst)
  scope:add(function() motion.cancel(inst) end)
 end
 function Ui.bindMotion(scope) scope:add(motion) end
 function Ui.configureMotion(prefs) motion.configure(prefs.reduceAnimations,prefs.animationSpeed) end
-function Ui.animate(inst,properties,duration,done)
- motion.to(inst,properties,duration,done)
+function Ui.animate(inst,properties,duration,done,style)
+ motion.to(inst,properties,duration,done,style)
 end
 function Ui.cancelAnimation(inst) motion.cancel(inst) end
 local function outlineOn()
@@ -171,6 +181,11 @@ function Ui.applyLook(look)
 					end
 				elseif d:IsA("ScrollingFrame") then
 					remap(d, "ScrollBarImageColor3")
+				elseif d:IsA("UIGradient") and d:GetAttribute("Glass") then
+					d.Color = Ui.glassColors()
+				end
+				if (d:IsA("ImageLabel") or d:IsA("ImageButton")) and not d:GetAttribute("FixedBackground") then
+					remap(d, "ImageColor3")
 				end
 				if isText and not d:GetAttribute("FixedTextColor") then
 					remap(d, "TextColor3")
@@ -200,6 +215,43 @@ end
 
 function Ui.corner(parent, r)
 	return Ui.new("UICorner", { CornerRadius = UDim.new(0, r or Theme.radiusSm), Parent = parent })
+end
+
+-- Liquid-glass edge: a specular highlight that runs from the top-left rim into the theme stroke.
+-- Colors are re-derived on look changes (applyLook); there is no real backdrop blur in Roblox UI.
+function Ui.glassColors()
+	return ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Theme.text),
+		ColorSequenceKeypoint.new(0.45, Theme.stroke:Lerp(Theme.text, 0.25)),
+		ColorSequenceKeypoint.new(1, Theme.stroke),
+	})
+end
+function Ui.glass(parent, strength)
+	local edge = Ui.new("UIStroke", {
+		Color = Color3.new(1, 1, 1),
+		Thickness = 1,
+		ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+		Parent = parent,
+	})
+	edge:SetAttribute("FixedBackground", true)
+	local base = strength or 0.55
+	local gradient = Ui.new("UIGradient", {
+		Color = Ui.glassColors(),
+		Rotation = 60,
+		Transparency = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, base),
+			NumberSequenceKeypoint.new(0.5, math.min(1, base + 0.3)),
+			NumberSequenceKeypoint.new(1, math.min(1, base + 0.18)),
+		}),
+		Parent = edge,
+	})
+	gradient:SetAttribute("Glass", true)
+	return edge
+end
+-- Soft top-to-bottom luminance on a filled surface (multiplies its own color, so it themes).
+function Ui.sheen(parent, depth)
+	local d = 1 - (depth or 0.1)
+	return Ui.new("UIGradient", { Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.new(d, d, d)), Rotation = 90, Parent = parent })
 end
 
 function Ui.stroke(parent, color, transparency)
@@ -382,8 +434,9 @@ function Ui.card(parent, title, order, subtitle)
 	Ui.register(card,title or "Section",subtitle)
 	Ui.surface(card)
 	Ui.corner(card, Theme.radius)
-	Ui.stroke(card, Theme.stroke, 0.35)
-	Ui.pad(card, Theme.pad)
+	Ui.glass(card, 0.62)
+	Ui.sheen(card, 0.12)
+	Ui.pad(card, Theme.pad + 2)
 	Ui.list(card, Theme.gap)
 	if title then
 		Ui.text(card, title:upper(), { font = Theme.fontBold, textSize = Theme.size.tiny, color = Theme.muted, order = -2 })
@@ -482,15 +535,17 @@ function Ui.toggle(scope, parent, label, desc, initial, onChange, order)
 		Ui.text(textCol, desc, { textSize = Theme.size.small, color = Theme.faint, order = 1 })
 	end
 	local track = Ui.new("Frame", {
+		Name = "SwitchTrack",
 		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, 0, 0, 2),
-		Size = UDim2.fromOffset(42, 22),
+		Position = UDim2.new(1, 0, 0, 1),
+		Size = UDim2.fromOffset(44, 24),
 		BackgroundColor3 = Theme.raised,
 		Parent = row,
 	})
-	Ui.corner(track, 11)
-	local knob = Ui.new("Frame", { Size = UDim2.fromOffset(16, 16), Position = UDim2.fromOffset(3, 3), BackgroundColor3 = Theme.muted, Parent = track })
-	Ui.corner(knob, 8)
+	Ui.corner(track, 12)
+	Ui.glass(track, 0.7)
+	local knob = Ui.new("Frame", { Name = "SwitchKnob", Size = UDim2.fromOffset(18, 18), Position = UDim2.fromOffset(3, 3), BackgroundColor3 = Theme.muted, Parent = track })
+	Ui.corner(knob, 9)
 	ownAnimation(scope,knob)
 	ownAnimation(scope,track)
 	local value = false
@@ -499,8 +554,8 @@ function Ui.toggle(scope, parent, label, desc, initial, onChange, order)
 	function api.set(on, silent)
 		value = on == true
         row:SetAttribute("Value",value)
-		Ui.animate(track,{BackgroundColor3=value and Theme.accent or Theme.raised},0.18)
-		Ui.animate(knob,{Position=UDim2.fromOffset(value and 23 or 3,3),BackgroundColor3=value and Theme.onAccent or Theme.muted},0.18)
+		Ui.animate(track,{BackgroundColor3=value and Theme.accent or Theme.raised},0.16)
+		Ui.animate(knob,{Position=UDim2.fromOffset(value and 23 or 3,3),BackgroundColor3=value and Theme.onAccent or Theme.muted},0.22,nil,"spring")
 		if not silent and onChange then
 			onChange(value)
 		end
@@ -539,7 +594,7 @@ function Ui.input(scope, parent, placeholder, opts, onCommit)
 		LayoutOrder = opts.order or 0,
 		Parent = parent,
 	})
-	Ui.corner(box)
+	Ui.corner(box, Theme.radiusSm)
 	local stroke = Ui.stroke(box, Theme.stroke)
  ownAnimation(scope,stroke)
 	Ui.pad(box, opts.multiline and 8 or 0, 10)
@@ -598,8 +653,9 @@ function Ui.scroll(parent, props)
 		CanvasSize = UDim2.new(),
 		AutomaticCanvasSize = Enum.AutomaticSize.Y,
 		ScrollingDirection = Enum.ScrollingDirection.Y,
-		ScrollBarThickness = 4,
+		ScrollBarThickness = 3,
 		ScrollBarImageColor3 = Theme.stroke,
+		ScrollBarImageTransparency = 0.25,
 		Parent = parent,
 	})
 	for k, v in pairs(props or {}) do
@@ -707,8 +763,20 @@ function Ui.slider(scope, parent, label, opts, onChange)
 	local dragging = false
 	local row = Ui.new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 58), LayoutOrder = opts.order or 0, Parent = parent })
 	Ui.text(row, label, { size = UDim2.new(1, -70, 0, 18), font = Theme.fontMedium })
-	local valueText = Ui.text(row, "", { size = UDim2.new(0, 70, 0, 18), align = Enum.TextXAlignment.Right, font = Theme.mono, textSize = Theme.size.small })
-	valueText.Position = UDim2.new(1, -70, 0, 0)
+	-- The readout doubles as a numeric field: click it, type a value, press Enter.
+	local valueText = Ui.new("TextBox", {
+		Name = "SliderValue",
+		BackgroundTransparency = 1,
+		ClearTextOnFocus = false,
+		Size = UDim2.new(0, 150, 0, 18),
+		Position = UDim2.new(1, -150, 0, 0),
+		Text = "",
+		TextColor3 = Theme.muted,
+		TextSize = Theme.size.small,
+		Font = Theme.mono,
+		TextXAlignment = Enum.TextXAlignment.Right,
+		Parent = row,
+	})
 	local function stepButton(text, pos)
 		local b = Ui.new("TextButton", {
 			AutoButtonColor = true,
@@ -721,7 +789,7 @@ function Ui.slider(scope, parent, label, opts, onChange)
 			Font = Theme.fontBold,
 			Parent = row,
 		})
-		Ui.corner(b)
+		Ui.corner(b, Theme.radiusSm)
 		return b
 	end
 	local minus = stepButton("−", UDim2.fromOffset(0, 24))
@@ -731,11 +799,12 @@ function Ui.slider(scope, parent, label, opts, onChange)
 	Ui.corner(track, 3)
 	local fill = Ui.new("Frame", { BackgroundColor3 = Theme.accent, Size = UDim2.fromScale(0, 1), Parent = track })
 	Ui.corner(fill, 3)
-	local knob = Ui.new("Frame", { AnchorPoint = Vector2.new(0.5, 0.5), Size = UDim2.fromOffset(14, 14), BackgroundColor3 = Theme.text, Parent = track })
-	Ui.corner(knob, 7)
+	local knob = Ui.new("Frame", { Name = "SliderKnob", AnchorPoint = Vector2.new(0.5, 0.5), Size = UDim2.fromOffset(14, 14), BackgroundColor3 = Theme.onAccent, Parent = track })
+	Ui.corner(knob, 8)
+	Ui.stroke(knob, Theme.accent, 0.1).Thickness = 2
 
  ownAnimation(scope,fill);ownAnimation(scope,knob)
- local value
+ local value,editing
  local api = {enabled=true,node=row}
     function api.setEnabled(on) api.enabled=on;row:SetAttribute("Disabled",not on or nil);row.BackgroundTransparency=on and 1 or 0.6 end
 	function api.set(v, silent)
@@ -749,7 +818,7 @@ function Ui.slider(scope, parent, label, opts, onChange)
 		row:SetAttribute("Value",v)
         Ui.animate(fill,{Size=UDim2.fromScale(frac,1)},dragging and 0 or 0.12)
         Ui.animate(knob,{Position=UDim2.fromScale(frac,0.5)},dragging and 0 or 0.12)
-        valueText.Text = opts.format and opts.format(v) or SliderValue.format(v,step)
+        if not editing then valueText.Text = opts.format and opts.format(v) or SliderValue.format(v,step) end
 		if not silent and onChange then
 			onChange(v)
 		end
@@ -799,8 +868,21 @@ function Ui.slider(scope, parent, label, opts, onChange)
  local focus=Ui.stroke(hit,Theme.accent,1);ownAnimation(scope,focus)
  scope:connect(hit.SelectionGained,function() Ui.animate(focus,{Transparency=0}) end)
  scope:connect(hit.SelectionLost,function() Ui.animate(focus,{Transparency=1}) end)
- scope:connect(hit.MouseEnter,function() Ui.animate(knob,{Size=UDim2.fromOffset(17,17)}) end)
- scope:connect(hit.MouseLeave,function() Ui.animate(knob,{Size=UDim2.fromOffset(14,14)}) end)
+ scope:connect(hit.MouseEnter,function() Ui.animate(knob,{Size=UDim2.fromOffset(17,17)},0.1) end)
+ scope:connect(hit.MouseLeave,function() Ui.animate(knob,{Size=UDim2.fromOffset(14,14)},0.12) end)
+ scope:connect(valueText.Focused,function()
+  editing=true;valueText.TextColor3=Theme.text
+  local shown=opts.format and opts.format(value) or ""
+  valueText.Text=shown:find("%%$") and shown:sub(1,-2) or SliderValue.format(value,step)
+ end)
+ scope:connect(valueText.FocusLost,function()
+  editing=false;valueText.TextColor3=Theme.muted
+  local typed=tonumber((valueText.Text:gsub("[^%d%.%-]","")))
+  -- Percent readouts ("85%") accept the number as shown: 50 means 0.5.
+  if typed and opts.format and opts.format(value):find("%%$") then typed/=100 end
+  if typed then api.set(typed) end
+  valueText.Text=opts.format and opts.format(value) or SliderValue.format(value,step)
+ end)
  Ui.register(row,label,opts.description)
  api.set(opts.value, true)
 	return api
@@ -839,7 +921,7 @@ function Ui.dropdown(scope,parent,title,options,value,onChange,order)
  for i,angle in ipairs({45,-45}) do Ui.new("Frame",{BorderSizePixel=0,BackgroundColor3=Theme.muted,AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromOffset(i==1 and 3 or 7,5),Size=UDim2.fromOffset(6,2),Rotation=angle,Parent=chevron}) end
  ownAnimation(scope,chevron)
  choices=Ui.scroll(group,{Name="DropdownOptions",Visible=false,Size=UDim2.new(1,0,0,0),LayoutOrder=1,BackgroundTransparency=0,BackgroundColor3=Theme.surface,ClipsDescendants=true})
- Ui.pad(choices,4);Ui.list(choices,4);Ui.corner(choices);ownAnimation(scope,choices)
+ Ui.pad(choices,4);Ui.list(choices,4);Ui.corner(choices,Theme.radiusSm);Ui.glass(choices,0.65);ownAnimation(scope,choices)
  local buttons={}
  local function set(v,silent)
   if not table.find(options,v) then return end
@@ -866,7 +948,7 @@ function Ui.notifications(scope,parent,getPrefs)
  local stack=Ui.new("Frame",{Name="NotificationStack",BackgroundTransparency=1,AnchorPoint=Vector2.new(1,1),Position=UDim2.new(1,-20,1,-24),Size=UDim2.new(0.52,0,0,176),ZIndex=40,Parent=parent})
  local entries={}
  local function layout()
-  for i,entry in ipairs(entries) do Ui.animate(entry.frame,{Position=UDim2.new(0,0,1,-i*56),GroupTransparency=0},0.18) end
+  for i,entry in ipairs(entries) do Ui.animate(entry.frame,{Position=UDim2.new(0,0,1,-i*56),GroupTransparency=0},0.24,nil,"soft") end
  end
  local function remove(entry)
   local index=table.find(entries,entry)
@@ -878,40 +960,70 @@ function Ui.notifications(scope,parent,getPrefs)
   if scope.closed or not getPrefs().notificationsEnabled then return end
   if #entries>=3 then remove(entries[1]) end
   local owner=Scope.new("notification")
-  local frame=owner:add(Ui.new("CanvasGroup",{Name="Notification",BackgroundColor3=Theme.raised,BackgroundTransparency=0.42,GroupTransparency=1,Size=UDim2.new(1,0,0,48),Position=UDim2.new(0,12,1,0),ZIndex=40,Parent=stack}))
-  Ui.corner(frame,8);Ui.stroke(frame,Theme.accent,0.55);Ui.pad(frame,8,10)
+  local frame=owner:add(Ui.new("CanvasGroup",{Name="Notification",BackgroundColor3=Theme.raised,BackgroundTransparency=0.28,GroupTransparency=1,Size=UDim2.new(1,0,0,48),Position=UDim2.new(0,24,1,-(#entries+1)*56),ZIndex=40,Parent=stack}))
+  Ui.corner(frame,12);Ui.glass(frame,0.45);Ui.sheen(frame,0.14);Ui.pad(frame,8,12,8,16)
+  local accentBar=Ui.new("Frame",{BackgroundColor3=Theme.accent,BorderSizePixel=0,Size=UDim2.new(0,3,1,0),Position=UDim2.fromOffset(-9,0),ZIndex=41,Parent=frame});Ui.corner(accentBar,2)
   Ui.text(frame,message,{size=UDim2.fromScale(1,1),textSize=11}).ZIndex=41
   local entry={frame=frame,scope=owner};table.insert(entries,entry)
   owner:add(function() motion.cancel(frame) end)
   Ui.animate(frame,{GroupTransparency=0},0.2);layout()
   owner:add(task.delay(getPrefs().notificationDuration,function()
-   Ui.animate(frame,{GroupTransparency=1},0.18,function() remove(entry) end)
+   local at=frame.Position
+   Ui.animate(frame,{GroupTransparency=1,Position=UDim2.new(at.X.Scale,at.X.Offset+16,at.Y.Scale,at.Y.Offset)},0.16,function() remove(entry) end,"accelerate")
   end))
  end
 end
 
-function Ui.navIcon(parent,id)
- local holder=Ui.new("Frame",{Size=UDim2.fromOffset(18,18),BackgroundTransparency=1,Parent=parent})
- local function line(x,y,w,h,rotation)
-  local f=Ui.new("Frame",{Position=UDim2.fromOffset(x,y),Size=UDim2.fromOffset(w,h),Rotation=rotation or 0,BackgroundColor3=Theme.accent,BorderSizePixel=0,Parent=holder});Ui.corner(f,1);return f
+-- Atlas icons (Lucide, ISC) when the executor can load local images; distinct native shapes
+-- otherwise. Every page id has its own glyph; unknown ids get a neutral dot.
+function Ui.icon(parent,id,size)
+ size=size or 18
+ local atlas=UiImages.icons()
+ local rect=UiImages.iconRects[id] or UiImages.iconRects.generic
+ if atlas then
+  return Ui.new("ImageLabel",{Name="Icon_"..tostring(id),BackgroundTransparency=1,Size=UDim2.fromOffset(size,size),Image=atlas,ImageRectOffset=Vector2.new(rect[1],rect[2]),ImageRectSize=Vector2.new(UiImages.cell,UiImages.cell),ImageColor3=Theme.muted,ScaleType=Enum.ScaleType.Fit,Parent=parent})
  end
- if id=="roll" or id=="styles" or id=="config" then
-  for x=0,1 do for y=0,1 do line(3+x*7,3+y*7,5,5) end end
- elseif id=="visuals" or id=="world" or id=="settings" then
-  local ring=Ui.new("Frame",{Position=UDim2.fromOffset(3,3),Size=UDim2.fromOffset(12,12),BackgroundTransparency=1,Parent=holder});Ui.corner(ring,6);Ui.stroke(ring,Theme.accent)
-  line(7,7,4,4)
- elseif id=="player" then
-  local head=line(6,2,6,6);Ui.corner(head,3);line(3,10,12,6)
- elseif id=="safe" or id=="teleports" then
-  line(3,12,12,2,-45);line(9,3,6,2);line(13,3,2,6)
- elseif id=="combat" then line(2,8,14,2,45);line(2,8,14,2,-45)
- else line(3,4,12,2);line(3,8,9,2);line(3,12,12,2) end
+ return Ui.nativeIcon(parent,id,size)
+end
+function Ui.tintIcon(icon,color,duration)
+ if icon:IsA("ImageLabel") then Ui.animate(icon,{ImageColor3=color},duration or 0.16);return end
+ for _,d in ipairs(icon:GetDescendants()) do
+  if d:IsA("UIStroke") then d.Color=color elseif d:GetAttribute("IconInk") then d.BackgroundColor3=color end
+ end
+end
+-- Fallback shapes: a handful of frames each, scaled from an 18 px grid.
+function Ui.nativeIcon(parent,id,size)
+ local holder=Ui.new("Frame",{Name="Icon_"..tostring(id),Size=UDim2.fromOffset(18,18),BackgroundTransparency=1,Parent=parent})
+ Ui.new("UIScale",{Scale=(size or 18)/18,Parent=holder})
+ local function line(x,y,w,h,rotation)
+  local f=Ui.new("Frame",{Position=UDim2.fromOffset(x,y),Size=UDim2.fromOffset(w,h),Rotation=rotation or 0,BackgroundColor3=Theme.muted,BorderSizePixel=0,Parent=holder});f:SetAttribute("IconInk",true);Ui.corner(f,1);return f
+ end
+ local function ring(x,y,w,h,r)
+  local f=Ui.new("Frame",{Position=UDim2.fromOffset(x,y),Size=UDim2.fromOffset(w,h),BackgroundTransparency=1,Parent=holder});Ui.corner(f,r or math.min(w,h)/2);Ui.new("UIStroke",{Color=Theme.muted,Thickness=1.5,Parent=f});return f
+ end
+ if id=="roll" then ring(2,2,14,14,3);line(5,5,3,3);line(10,10,3,3)
+ elseif id=="styles" then line(3,4,12,2);line(5,8,10,2);line(7,12,8,2)
+ elseif id=="dash" then line(2,6,9,2,-40);line(7,6,9,2,40);ring(4,9,10,7,1)
+ elseif id=="combat" then line(1,8,16,2,45);line(1,8,16,2,-45)
+ elseif id=="visuals" then ring(1,4,16,10,5);line(7,7,4,4)
+ elseif id=="player" then ring(6,2,6,6);ring(3,10,12,7,3)
+ elseif id=="world" then ring(2,2,14,14);line(2,8,14,2);ring(6,2,6,14)
+ elseif id=="safe" then ring(3,2,12,14,5);line(8,6,2,6)
+ elseif id=="teleports" then ring(4,2,10,10);line(8,11,2,6)
+ elseif id=="utility" then line(2,8,14,2,-45);ring(10,2,6,6)
+ elseif id=="settings" then ring(3,3,12,12);line(7,7,4,4)
+ elseif id=="close" then line(2,8,14,2,45);line(2,8,14,2,-45)
+ elseif id=="minimize" then line(3,8,12,2)
+ elseif id=="search" then ring(2,2,11,11);line(10,12,7,2,45)
+ else ring(4,4,10,10);line(8,8,2,2) end
  return holder
 end
+function Ui.navIcon(parent,id) return Ui.icon(parent,id,18) end
 
 function Ui.tooltip(scope,control,text)
  local tip=Ui.text(control,text,{size=UDim2.new(1,0,0,40),textSize=Theme.size.tiny})
- tip.BackgroundTransparency=0.05;tip.BackgroundColor3=Theme.raised; tip.Position=UDim2.new(0,0,1,2); tip.Visible=false; tip.ZIndex=20
+ tip.BackgroundTransparency=0.05;tip.BackgroundColor3=Theme.raised; tip.Position=UDim2.new(0,0,1,4); tip.Visible=false; tip.ZIndex=20
+ Ui.corner(tip,Theme.radiusSm);Ui.glass(tip,0.5);Ui.pad(tip,4,8)
  ownAnimation(scope,tip)
  scope:connect(control.MouseEnter,function() tip.Visible=true;tip.TextTransparency=1;Ui.animate(tip,{TextTransparency=Ui.textAlpha},0.12) end)
  scope:connect(control.MouseLeave,function() Ui.animate(tip,{TextTransparency=1},0.1,function() tip.Visible=false end) end)

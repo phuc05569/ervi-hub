@@ -116,9 +116,9 @@ All rows below have a persisted setting, genuine shared control, registry/search
 | A15 | Copy Logs, Copy Boot Log, Clear diagnostic output | Expansion | Implemented; bounded live log ring plus actual initialization stages and prior boot retention | No automatic clipboard writes |
 | A9 | Anti AFK, auto-reconnect, auto-execute | Session | Preserved; original session smoke assertions remain | No autoexec-folder files |
 | A9 | Check Reinjection | RuntimeActions, Session | Implemented; calls existing support check | Requires queue API, file access and workspace bundle |
-| A10 | Named slot/create/select/save/load/delete/rename, active/autoload status | Settings, App | Implemented; legacy slot smoke plus new sharing tests | Deletion of active config remains protected; rename is validated |
-| A10–11 | Autoload per game, set selected, turn off, status | Settings, App | Implemented; per-place persistence/deletion unit and UI smoke | Legacy global autoload remains compatible |
-| A11 | Copy Config to Clipboard, import input, Apply Import | Settings, App | Implemented; v1 bounded data-only import/export; invalid/code input rejection tests | Never loadstring imported data; unknown settings fall back safely |
+| A10 | Named slot/create/select/save/load/delete/rename, active/autoload status | Settings, App | Removed in 3.4 at the owner's request; automatic saving replaces it | Legacy profiles stay in the file; effective profile kept |
+| A10–11 | Autoload per game, set selected, turn off, status | Settings, App | UI removed in 3.4; existing autoload lines still select the active profile | Unit-tested resolution order |
+| A11 | Copy Config to Clipboard, import input, Apply Import | Settings, App | UI removed in 3.4; Settings.export/import remain data-only module functions | Never loadstring imported data |
 | A12 | Toggle UI key, panic key, UI scale, opacity, blur, EN/RU, theme palette | App, Ui, Locale, World | Implemented; keybind, blur, language and theme regression smoke | Russian covers interface labels, not verbatim logs/player data |
 | A16 | Movement panel drag, corner resize, saved layout, panel size, character status | PlayerTools, FloatingWindow | Implemented; movement-panel creation/resize/persistence/removal smoke | Menu-controlled; no standalone Close |
 | A16 | WalkSpeed toggle/key, Set/Multiply, Walk Speed and multiplier | PlayerTools | Implemented; Set/Multiply/restoration/respawn/external-correction smoke | No CFrame fallback and no continuous server override |

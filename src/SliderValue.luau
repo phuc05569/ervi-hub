@@ -3,7 +3,8 @@ function SliderValue.normalize(value,lo,hi,step,fallback)
  local n=tonumber(value)
  if not n or n~=n or math.abs(n)==math.huge then return fallback end
  n=math.clamp(n,lo,hi)
- return math.clamp(lo+math.floor((n-lo)/step+0.5)*step,lo,hi)
+ -- Round away float noise (0.1+2*0.1 = 0.30000000000000004) so values compare and save exactly.
+ return math.clamp(math.round((lo+math.floor((n-lo)/step+0.5)*step)*1e6)/1e6,lo,hi)
 end
 function SliderValue.format(value,step)
  if step>=1 then return ("%d"):format(math.floor(value+0.5)) end

@@ -609,6 +609,8 @@ return function(API)
     end
     function METHODS.GetMouseLocation() return Vector2.new(400,300) end
     function METHODS.GetGuiInset() return Vector2.new(0,58),Vector2.new() end
+    -- Image preload result for UiImages: ctl.assetStatus "Success"/"Failure" (nil = Success).
+    function METHODS.PreloadAsync(_, list, callback) for _,item in ipairs(list) do if callback then callback(item,{Name=ctl.assetStatus or "Success"}) end end end
     function METHODS.GetGuiObjectsAtPosition(self,x,y) ctl.lastGuiHitPoint={x,y};return ctl.guiHits or {} end
     function METHODS.FindFirstAncestorOfClass(self,class)
         local p=self.Parent
@@ -686,6 +688,7 @@ return function(API)
     service("ContextActionService")
 	local RS = service("ReplicatedStorage")
 	service("HttpService")
+	service("ContentProvider")
 	service("VirtualUser")
 	service("GuiService")
 	service("TeleportService")
@@ -856,6 +859,7 @@ return function(API)
 		end,
 		writefile = function(name, text)
 			assert(type(text) == "string", "writefile expects text")
+			ctl.writes = (ctl.writes or 0) + 1
 			ctl.files[name] = text
 		end,
 		readfile = function(name)

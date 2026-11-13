@@ -124,10 +124,11 @@ for _,spec in ipairs(require("FeatureSchema")) do
 end
 validators.communityLink=function(value) return value=="" or (value:match("^https://")~=nil and #value<=300) end
 
--- Configs: the active config auto-saves every change; the autoload config (if set) is active at start.
+-- One automatically saved profile: whichever was effective (per-game/global autoload or Default).
+-- Other named profiles in the file are kept untouched; the original file is backed up once.
 local store = Settings.load(validators)
-local activeName = store.autoloadGames[tostring(game.PlaceId)] or store.autoload or Settings.DEFAULT_NAME
-if not store.configs[activeName] and activeName~=Settings.DEFAULT_NAME then activeName=Settings.DEFAULT_NAME end
+Settings.backupOnce()
+local activeName = Settings.activeName(store, game.PlaceId)
 if not store.configs[activeName] then
 	Settings.put(store, activeName, Settings.defaults())
 end
@@ -136,12 +137,38 @@ bootStep("Settings loaded: "..activeName)
 local syncs = {} -- each re-reads `prefs` into its control (after loading a config, a reset or a look change)
 Ui.applyLook(prefs)
 Ui.setOpacity(prefs.opacity, Settings.MIN_OPACITY)
-local function savePrefs()
+-- Every preference change calls savePrefs(); writes are coalesced (sliders and drags fire per
+-- frame) and flushed on unload/teleport so the last change is never lost.
+local SAVE_DELAY = 0.35
+local saveState = { pending = false, ok = Settings.canPersist(), message = Settings.canPersist() and "Saved automatically" or "Session only" }
+local onSaveState
+local function writePrefs()
+	saveState.pending = false
 	local ok, err = Settings.save(store)
-	if not ok and Settings.canPersist() then
-		log("Settings", "could not save: " .. tostring(err), true)
+	if Settings.canPersist() then
+		saveState.ok = ok
+		saveState.message = ok and "Saved automatically" or "Save failed · see Diagnostics"
+		if not ok then
+			log("Settings", "could not save: " .. tostring(err), true)
+		end
 	end
+	if onSaveState then onSaveState() end
 end
+local function savePrefs()
+	if saveState.pending or not Settings.canPersist() then
+		return
+	end
+	saveState.pending = true
+	if onSaveState then onSaveState() end
+	task.delay(SAVE_DELAY, function()
+		if saveState.pending then writePrefs() end
+	end)
+end
+local function flushPrefs()
+	if saveState.pending then writePrefs() end
+end
+hub:add(flushPrefs)
+hub:connect(player.OnTeleport, flushPrefs)
 
 local metrics = { fps = 0, ping = 0 }
 do
@@ -178,65 +205,75 @@ local window = Ui.new("CanvasGroup", {
 	Parent = gui,
 })
 Ui.surface(window)
-Ui.corner(window, 12)
-Ui.stroke(window, Theme.stroke, 0.1)
-Ui.new("UIGradient",{Color=ColorSequence.new(Color3.new(1,1,1),Color3.new(0.8,0.78,0.84)),Rotation=40,Parent=window})
+Ui.corner(window, 16)
+Ui.glass(window, 0.38)
+-- Diagonal luminance: lit top-left, deeper bottom-right (multiplies the theme background).
+Ui.new("UIGradient",{Color=ColorSequence.new({ColorSequenceKeypoint.new(0,Color3.new(1,1,1)),ColorSequenceKeypoint.new(0.55,Color3.new(0.86,0.86,0.9)),ColorSequenceKeypoint.new(1,Color3.new(0.74,0.73,0.8))}),Rotation=35,Parent=window})
 local uiScale = Ui.new("UIScale", { Parent = window })
 
 local titleBar = Ui.new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, TH), Active = true, Parent = window })
-local officialLogo=Logo.create(titleBar,UDim2.fromOffset(24,26));officialLogo.Position=UDim2.fromOffset(10,12)
+local officialLogo=Logo.create(titleBar,UDim2.fromOffset(24,26));officialLogo.Position=UDim2.fromOffset(16,12)
 -- Brand title: silver serif with a dark outline; keeps its font and colors whatever look is chosen.
 local title = Ui.text(titleBar, "Ervi Hub", { size = UDim2.new(0, 110, 1, 0), font = Theme.brandFont, textSize = 19, color = Color3.new(1, 1, 1) })
-title.Position = UDim2.fromOffset(40, 0)
+title.Position = UDim2.fromOffset(48, -4)
 title:SetAttribute("FixedTextColor", true)
 Ui.new("UIGradient", { Color = ColorSequence.new(Color3.fromRGB(252, 252, 254), Color3.fromRGB(166, 168, 176)), Rotation = 90, Parent = title })
 Ui.new("UIStroke", { Color = Color3.fromRGB(40, 40, 46), Thickness = 1.2, Parent = title }):SetAttribute("FixedBackground", true)
 local subtitle=Ui.text(titleBar,"v"..Build.version,{size=UDim2.new(0,55,0,16),textSize=10,color=Theme.faint,font=Theme.mono})
-subtitle.Position=UDim2.fromOffset(40,32)
+subtitle.Position=UDim2.fromOffset(49,31)
 local headerTitle=Ui.text(titleBar,"Home",{size=UDim2.new(0,170,0,22),font=Theme.fontBold})
-headerTitle.Position=UDim2.fromOffset(SW+14,8)
-local headerDesc=Ui.text(titleBar,"Your session at a glance",{size=UDim2.new(0,180,0,18),textSize=10,color=Theme.muted})
-headerDesc.Position=UDim2.fromOffset(SW+14,30)
+headerTitle.Position=UDim2.fromOffset(SW+16,8)
+local headerDesc=Ui.text(titleBar,"Your session at a glance",{size=UDim2.new(0,300,0,18),textSize=10,color=Theme.muted})
+headerDesc.TextWrapped=false;headerDesc.TextTruncate=Enum.TextTruncate.AtEnd
+headerDesc.Position=UDim2.fromOffset(SW+16,30)
 
-local function titleButton(text, x, danger)
+local function titleButton(icon, x, danger)
 	local b = Ui.new("TextButton", {
 		AutoButtonColor = false,
 		AnchorPoint = Vector2.new(1, 0.5),
 		Position = UDim2.new(1, x, 0.5, 0),
-		Size = UDim2.fromOffset(30, 26),
+		Size = UDim2.fromOffset(28, 28),
 		BackgroundColor3 = Theme.surface2,
-		Text = text,
-		TextColor3 = Theme.muted,
-		TextSize = 18,
-		Font = Theme.fontBold,
+		Text = "",
 		Parent = titleBar,
 	})
-	Ui.corner(b)
+	Ui.corner(b, 14)
+	Ui.glass(b, 0.6)
+	local glyph = Ui.icon(b, icon, 14)
+	glyph.AnchorPoint = Vector2.new(0.5, 0.5)
+	glyph.Position = UDim2.fromScale(0.5, 0.5)
 	hub:connect(b.MouseEnter, function()
-		b.BackgroundColor3 = danger and Theme.bad or Theme.hover
-		b.TextColor3 = Theme.text
+		Ui.animate(b, { BackgroundColor3 = danger and Theme.bad or Theme.hover }, 0.1)
+		Ui.tintIcon(glyph, danger and Theme.onAccent or Theme.text, 0.1)
 	end)
 	hub:connect(b.MouseLeave, function()
-		b.BackgroundColor3 = Theme.surface2
-		b.TextColor3 = Theme.muted
+		Ui.animate(b, { BackgroundColor3 = Theme.surface2 }, 0.14)
+		Ui.tintIcon(glyph, Theme.muted, 0.14)
 	end)
 	return b
 end
-local closeBtn = titleButton("×", -10, true)
-local minBtn = titleButton("–", -46)
+local closeBtn = titleButton("close", -12, true)
+local minBtn = titleButton("minimize", -46)
 closeBtn.Name="CloseButton";minBtn.Name="MinimizeButton"
 local onWindowDragged
 Ui.drag(hub, titleBar, window,function() if onWindowDragged then onWindowDragged(true) end end,function() if onWindowDragged then onWindowDragged(false) end end)
 
 local body = Ui.new("Frame", { Name="Body", BackgroundTransparency = 1, Position = UDim2.fromOffset(0, TH), Size = UDim2.new(1, 0, 1, -TH), Parent = window })
-local sidebar=Ui.scroll(body,{Name="Navigation",Size=UDim2.new(0,SW,1,-120),ScrollBarThickness=2})
-Ui.pad(sidebar,8,10,10,10);Ui.list(sidebar,4)
-local settingsDock=Ui.new("Frame",{Name="SettingsDock",BackgroundTransparency=1,Size=UDim2.new(0,SW-20,0,36),Position=UDim2.new(0,10,1,-112),Parent=body})
-local profile=Ui.new("Frame",{Size=UDim2.new(0,SW-20,0,64),Position=UDim2.new(0,10,1,-72),BackgroundColor3=Theme.surface2,Parent=body})
-Ui.surface(profile);Ui.corner(profile,10);Ui.pad(profile,8)
-Ui.text(profile,player.DisplayName or player.Name,{font=Theme.fontMedium,textSize=12,order=1})
-local profileStatus=Ui.text(profile,"v"..Build.version.." · local tools",{textSize=10,color=Theme.muted,order=2})
-Ui.list(profile,4)
+local sidebar=Ui.scroll(body,{Name="Navigation",Size=UDim2.new(0,SW,1,-120),ScrollBarThickness=2,ZIndex=2})
+Ui.pad(sidebar,6,10,10,10);Ui.list(sidebar,3)
+local settingsDock=Ui.new("Frame",{Name="SettingsDock",BackgroundTransparency=1,Size=UDim2.new(0,SW-20,0,34),Position=UDim2.new(0,10,1,-112),ZIndex=2,Parent=body})
+local profile=Ui.new("Frame",{Name="ProfileCard",Size=UDim2.new(0,SW-20,0,64),Position=UDim2.new(0,10,1,-72),BackgroundColor3=Theme.surface2,Parent=body})
+Ui.surface(profile);Ui.corner(profile,12);Ui.glass(profile,0.62);Ui.sheen(profile,0.12);Ui.pad(profile,9,10)
+Ui.text(profile,player.DisplayName or player.Name,{font=Theme.fontMedium,textSize=12,order=1}).TextTruncate=Enum.TextTruncate.AtEnd
+local saveRow=Ui.new("Frame",{Name="SaveStatus",BackgroundTransparency=1,Size=UDim2.new(1,0,0,14),LayoutOrder=2,Parent=profile})
+local saveDot=Ui.new("Frame",{Name="SaveDot",Size=UDim2.fromOffset(6,6),Position=UDim2.new(0,0,0.5,-3),BackgroundColor3=Theme.good,BorderSizePixel=0,Parent=saveRow});Ui.corner(saveDot,3)
+local profileStatus=Ui.text(saveRow,"",{size=UDim2.new(1,-11,1,0),textSize=10,color=Theme.muted});profileStatus.Position=UDim2.fromOffset(11,0);profileStatus.TextTruncate=Enum.TextTruncate.AtEnd
+Ui.list(profile,3)
+onSaveState=function()
+ Ui.set(profileStatus,"Text",saveState.pending and "Saving…" or saveState.message)
+ Ui.set(saveDot,"BackgroundColor3",saveState.pending and Theme.info or saveState.ok and Theme.good or Theme.warn)
+end
+onSaveState()
 local content = Ui.new("Frame", {
  Name="Content",
 	BackgroundColor3 = Theme.surface,
@@ -246,7 +283,8 @@ local content = Ui.new("Frame", {
 	Parent = body,
 })
 Ui.surface(content)
-Ui.corner(content, Theme.radius)
+Ui.corner(content, 14)
+Ui.glass(content, 0.6)
 
 local communityButton=Ui.button(hub,body,"Community ↗",{width=SW-20,height=30},function() if prefs.communityLink~="" then Game.copy(prefs.communityLink) end end)
 communityButton.Position=UDim2.new(0,10,1,-150);communityButton.Visible=prefs.communityLink~=""
@@ -301,6 +339,7 @@ local minimized = false
 local statusBar
 local grip
 local syncBlur
+-- Open: fade in while settling from 96% (soft, ~240 ms). Close: quicker accelerate-out (~160 ms).
 local function setMinimized(on)
  minimized=on
  Ui.cancelAnimation(window);Ui.cancelAnimation(uiScale)
@@ -308,18 +347,18 @@ local function setMinimized(on)
  if statusBar then statusBar.show(on) end
  if grip then grip.Visible=not on end
  if on then
-  Ui.animate(uiScale,{Scale=uiScale.Scale*0.97},0.22)
-  Ui.animate(window,{GroupTransparency=1},0.22,function()
+  Ui.animate(uiScale,{Scale=uiScale.Scale*0.96},0.16,nil,"accelerate")
+  Ui.animate(window,{GroupTransparency=1},0.16,function()
    if minimized then window.Visible=false;body.Visible=false end
-  end)
+  end,"accelerate")
  else
   window.Visible=true;body.Visible=true
   mainX,mainY=0.5,0.5
   applyScale()
   local target=uiScale.Scale
-  uiScale.Scale=target*0.97
-  Ui.animate(uiScale,{Scale=target},0.22)
-  Ui.animate(window,{GroupTransparency=0},0.22)
+  uiScale.Scale=target*0.96
+  Ui.animate(uiScale,{Scale=target},0.24,nil,"soft")
+  Ui.animate(window,{GroupTransparency=0},0.2,nil,"soft")
  end
  if syncBlur then syncBlur() end
 end
@@ -339,7 +378,7 @@ grip = Ui.new("TextButton", {
 grip:SetAttribute("ResizeGrip", true)
 for i = 0, 2 do
 	for j = 0, 2 - i do
-		Ui.new("Frame", { Size = UDim2.fromOffset(2, 2), Position = UDim2.fromOffset(15 - 5 * i, 15 - 5 * j), BackgroundColor3 = Theme.faint, BorderSizePixel = 0, ZIndex = 5, Parent = grip })
+		Ui.corner(Ui.new("Frame", { Size = UDim2.fromOffset(2, 2), Position = UDim2.fromOffset(13 - 4 * i, 13 - 4 * j), BackgroundColor3 = Theme.faint, BorderSizePixel = 0, ZIndex = 5, Parent = grip }), 1)
 	end
 end
 local function setWindowSize(w, h)
@@ -405,10 +444,12 @@ bootStep("Main window and input handlers initialized")
 
 -- ===================================================================== tabs
 local pages, order, refreshers = {}, 0, {}
-local NAV={roll=10,styles=20,dash=30,combat=40,visuals=50,player=60,world=70,safe=80,teleports=90,utility=100,config=110,settings=1000,diag=900,session=910}
-local ICON={roll="↻",styles="✦",teleports="↗",dash="⌂",combat="◇",trigger="⊕",sounds="♪",friends="♧",visuals="◉",player="♙",world="☼",safe="↗",utility="ϟ",config="▣",settings="☷"}
+local NAV={roll=10,styles=20,dash=30,combat=40,visuals=50,player=60,world=70,safe=80,teleports=90,utility=100,settings=1000,diag=900,session=910}
 local activePage
-local navMarker=Ui.new("Frame",{Name="NavigationIndicator",BackgroundColor3=Theme.accent,Size=UDim2.fromOffset(3,18),ZIndex=4,Visible=false,Parent=body});Ui.corner(navMarker,2)
+-- One glass pill glides behind the selected item (drawn under the transparent nav list).
+local navPill=Ui.new("Frame",{Name="NavigationPill",BackgroundColor3=Theme.accent,BackgroundTransparency=0.8,Size=UDim2.fromOffset(SW-20,34),ZIndex=1,Visible=false,Parent=body})
+Ui.corner(navPill,10);Ui.glass(navPill,0.5)
+local navMarker=Ui.new("Frame",{Name="NavigationIndicator",BackgroundColor3=Theme.accent,Size=UDim2.fromOffset(3,16),Position=UDim2.new(0,0,0.5,-8),ZIndex=1,Parent=navPill});Ui.corner(navMarker,2)
 local function moveMarker()
  local selected=pages[activePage]
  if not selected then return end
@@ -421,8 +462,11 @@ local function moveMarker()
  local buttonSize=button.AbsoluteSize or Vector2.new()
  local offset=Vector2.new((position.X-origin.X)/factor,(position.Y-origin.Y)/factor)
  local within=button.Parent==settingsDock or (position.Y>=scrollPosition.Y and position.Y+buttonSize.Y<=scrollPosition.Y+scrollSize.Y)
- navMarker.Visible=within
- Ui.animate(navMarker,{Position=UDim2.fromOffset(offset.X,offset.Y+7)},0.18)
+ local goal=UDim2.fromOffset(offset.X,offset.Y)
+ if not navPill.Visible and within then Ui.cancelAnimation(navPill);navPill.Position=goal end
+ navPill.Visible=within
+ navPill.Size=UDim2.fromOffset(buttonSize.X/factor,buttonSize.Y/factor)
+ Ui.animate(navPill,{Position=goal},0.22,nil,"soft")
 end
 hub:connect(sidebar:GetPropertyChangedSignal("CanvasPosition"),moveMarker)
 hub:connect(body:GetPropertyChangedSignal("AbsoluteSize"),moveMarker)
@@ -436,11 +480,12 @@ local function selectPage(id)
         if on then Ui.set(headerTitle,"Text",p.label);Ui.set(headerDesc,"Text",p.description) end
 		p.ind.Visible = false
 		p.btn:SetAttribute("Selected",on)
-        Ui.animate(p.btn,{BackgroundTransparency=on and 0 or 1},0.16)
+        Ui.animate(p.btn,{BackgroundTransparency=1},0.16)
         Ui.animate(p.lbl,{TextColor3=on and Theme.text or Theme.muted},0.16)
+        Ui.tintIcon(p.icon,on and Theme.accentHover or Theme.muted,0.16)
         if on and changed then
-         p.page.Position=UDim2.fromOffset(0,6)
-         Ui.animate(p.page,{Position=UDim2.new()},0.2)
+         p.page.Position=UDim2.fromOffset(0,10)
+         Ui.animate(p.page,{Position=UDim2.new()},0.22,nil,"soft")
         end
 		if on and p.onShow then
 			p.onShow()
@@ -455,29 +500,38 @@ local function addPage(id, label, description)
 		AutoButtonColor = false,
 		BackgroundColor3 = Theme.surface2,
 		BackgroundTransparency = 1,
-		Size = UDim2.new(1, 0, 0, 32),
+		Size = UDim2.new(1, 0, 0, 34),
 		Text = "",
 		LayoutOrder = NAV[id] or order,
 		Parent = id=="settings" and settingsDock or sidebar,
 	})
 	btn.Name="Nav_"..id
  btn:SetAttribute("NavPage",id)
-	Ui.corner(btn)
+	Ui.corner(btn, 10)
 	local ind = Ui.new("Frame", { BackgroundColor3 = Theme.accent, Size = UDim2.fromOffset(3, 16), Position = UDim2.new(0, 0, 0.5, -8), Visible = false, Parent = btn })
 	Ui.corner(ind, 2)
-	local lbl = Ui.text(btn, label, { size = UDim2.new(1, -34, 1, 0), font = Theme.fontMedium, color = Theme.muted })
-	lbl.Position = UDim2.fromOffset(30, 0)
+	local lbl = Ui.text(btn, label, { size = UDim2.new(1, -40, 1, 0), font = Theme.fontMedium, color = Theme.muted })
+	lbl.Position = UDim2.fromOffset(36, 0)
+	lbl.TextTruncate = Enum.TextTruncate.AtEnd
     local icon=Ui.navIcon(btn,id)
-    icon.Position=UDim2.fromOffset(6,7)
+    icon.AnchorPoint=Vector2.new(0,0.5);icon.Position=UDim2.new(0,11,0.5,0)
 	local page = Ui.scroll(content, { Visible = false })
     page:SetAttribute("SearchPage",id)
     page.Name="ErviPage_"..id
 	Ui.pad(page, 14, 16, 14, 14)
 	Ui.list(page, 10)
-	pages[id] = { page = page, btn = btn, ind = ind, lbl = lbl, label=label, description=description or "Ervi Hub · "..label }
+	pages[id] = { page = page, btn = btn, ind = ind, lbl = lbl, icon = icon, label=label, description=description or "Ervi Hub · "..label }
     if id=="diag" or id=="session" then btn.Visible=false end
-	hub:connect(btn.MouseEnter,function() if not btn:GetAttribute("Selected") then Ui.animate(btn,{BackgroundTransparency=0.45}) end end)
- hub:connect(btn.MouseLeave,function() Ui.animate(btn,{BackgroundTransparency=btn:GetAttribute("Selected") and 0 or 1}) end)
+	hub:connect(btn.MouseEnter,function()
+	 if btn:GetAttribute("Selected") then return end
+	 Ui.animate(btn,{BackgroundTransparency=0.55},0.1);Ui.animate(lbl,{TextColor3=Theme.text},0.1);Ui.tintIcon(icon,Theme.text,0.1)
+	end)
+	hub:connect(btn.MouseLeave,function()
+	 local on=btn:GetAttribute("Selected")
+	 Ui.animate(btn,{BackgroundTransparency=1},0.14);Ui.animate(lbl,{TextColor3=on and Theme.text or Theme.muted},0.14);Ui.tintIcon(icon,on and Theme.accentHover or Theme.muted,0.14)
+	end)
+	hub:connect(btn.MouseButton1Down,function() Ui.animate(btn,{BackgroundTransparency=0.35},0.08) end)
+	hub:connect(btn.MouseButton1Up,function() Ui.animate(btn,{BackgroundTransparency=1},0.14) end)
  hub:connect(btn.Activated, function() selectPage(id) end)
 	return page, pages[id]
 end
@@ -1112,7 +1166,6 @@ do
 end
 
 -- ===================================================================== Settings
-local configPage=addPage("config","Config","Slots, autoload and safe sharing")
 local applyPrefs
 local settings = addPage("settings", "Settings", "Interface and appearance")
 do
@@ -1183,7 +1236,7 @@ do
  end)
  table.insert(syncs,function() scaleSlider.set(prefs.scale,true) end)
 	local resetRow = Ui.row(c0, 7)
-	Ui.button(hub, resetRow, "Reset this config", { width = 150 }, function()
+	Ui.confirmButton(hub, resetRow, "Reset all settings", { width = 150 }, "Reset every Ervi Hub setting, including feature options, to its default?", function()
 		for k, v in pairs(Settings.DEFAULTS) do
 			prefs[k] = v
 		end
@@ -1196,7 +1249,9 @@ do
 	end)
 
 	-- ---------------------------------------------------------------- Appearance
-	local cA = Ui.card(settings, "Appearance", 1, "Changes apply instantly and save to the active config.")
+	Ui.text(c0, Settings.canPersist() and ("Every change saves automatically to %s (profile %s)."):format(Settings.FILE, activeName) or "This executor has no file access, so settings last until you close the hub.", { textSize = Theme.size.small, color = Settings.canPersist() and Theme.faint or Theme.warn, order = 8 })
+
+	local cA = Ui.card(settings, "Appearance", 1, "Changes apply instantly and save automatically.")
 	local function setLook(key, value)
 		prefs[key] = value
 		Ui.applyLook(prefs)
@@ -1293,7 +1348,7 @@ do
 		return out
 	end
 
-	picker("Design", 10, 66, items(Theme.PRESETS), "theme")
+	picker("Design", 10, 74, items(Theme.PRESETS), "theme")
 
 	-- Accent swatches: fixed background color, a check mark shows the current one.
 	local accentItems = items(Theme.ACCENTS, { { label = "Auto", value = "" } })
@@ -1355,147 +1410,6 @@ do
 		syncAll()
 	end)
 
-	-- ---------------------------------------------------------------- Configs
-	local cC = Ui.card(configPage, "Configs", 2, "The active config saves every change automatically. Save a copy under a new name, load another one, or mark one to auto-load when the hub starts.")
-	local kActive, kAuto = Ui.kv(cC, "Active config", 1), Ui.kv(cC, "Auto-loads on start", 2)
-	local nameRow = Ui.row(cC, 3, 32)
-	local saveBtn
-	local pendingOverwrite
-	local nameBox = Ui.input(hub, nameRow, "New config name", { width = 180 }, function()
-		pendingOverwrite = nil
-		saveBtn.Text = "Save as"
-	end)
-	local status = Ui.text(cC, "", { textSize = Theme.size.small, color = Theme.muted, order = 4 })
-	Ui.text(cC, Settings.canPersist() and ("Stored in your executor workspace as %s."):format(Settings.FILE) or "This executor has no file access, so configs last until you close the hub.", {
-		textSize = Theme.size.small,
-		color = Settings.canPersist() and Theme.good or Theme.warn,
-		order = 5,
-	})
-	local listFrame = Ui.new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, LayoutOrder = 6, Parent = cC })
-	Ui.list(listFrame, 6)
-
-	local listScope
-	local rebuildList
-	local function loadConfig(name)
-		activeName = name
-		prefs = store.configs[name]
-		applyPrefs()
-		rebuildList()
-		status.Text = ("Loaded '%s'."):format(name)
-		log("Settings", "loaded config " .. name)
-	end
-	rebuildList = function()
-		if listScope then
-			listScope:close()
-		end
-		listScope = hub:child("config-list")
-		for i, name in ipairs(store.order) do
-			local isActive = name == activeName
-			local row = listScope:add(Ui.grid(listFrame,90,30,i))
-			local label = Ui.text(row, name .. (isActive and "  (active)" or ""), { size = UDim2.new(0, 110, 1, 0), font = isActive and Theme.fontBold or Theme.font })
-			label.TextTruncate = Enum.TextTruncate.AtEnd
-			local _, setLoad = Ui.button(listScope, row, "Load", { width = 56, order = 1 }, function()
-				loadConfig(name)
-			end)
-			setLoad(not isActive)
-			-- Overwrite: replace this saved config with the current settings (asks once).
-            local ow, setOw
-            ow,setOw=Ui.confirmButton(listScope,row,"Overwrite",{width=84,order=2},"Replace '"..name.."' with the current settings?",function()
-				Settings.put(store, name, table.clone(prefs))
-				savePrefs()
-				status.Text = ("Overwrote '%s' with the current settings."):format(name)
-				rebuildList()
-			end)
-			setOw(not isActive) -- the active config already saves every change
-			local auto = Ui.button(listScope, row, store.autoload == name and "Auto ✓" or "Auto", { width = 64, order = 3 }, function()
-				store.autoload = store.autoload ~= name and name or nil
-				savePrefs()
-				rebuildList()
-			end)
-			Ui.select(auto, store.autoload == name)
-            local del,setDel
-            del,setDel=Ui.confirmButton(listScope,row,"Delete",{variant="danger",width=64,order=4},"Delete saved configuration '"..name.."'?",function()
-				Settings.delete(store, name)
-				savePrefs()
-				status.Text = ("Deleted '%s'."):format(name)
-				rebuildList()
-			end)
-			setDel(not isActive)
-		end
-		kActive(activeName)
-		kAuto(store.autoload or ("none (starts with %s)"):format(Settings.DEFAULT_NAME))
-	end
-	saveBtn = Ui.button(hub, nameRow, "Save as", { variant = "primary", width = 110, order = 1 }, function()
-		local name = Settings.cleanName(nameBox.Text)
-		if not name then
-			status.Text = "Name: 1–24 letters, digits, spaces, _ or -."
-			return
-		end
-		if store.configs[name] and pendingOverwrite ~= name then
-			pendingOverwrite = name
-			saveBtn.Text = "Overwrite?"
-			status.Text = ("'%s' already exists. Press Overwrite? to replace it with the current settings."):format(name)
-			return
-		end
-		pendingOverwrite = nil
-		saveBtn.Text = "Save as"
-		Settings.put(store, name, table.clone(prefs))
-		activeName = name
-		prefs = store.configs[name]
-		savePrefs()
-		rebuildList()
-		status.Text = ("Saved '%s' - it is now the active config."):format(name)
-	end)
-	rebuildList()
-
-    local share=Ui.card(configPage,"Config sharing · schema v1",8,"Bounded data-only text; imported settings are validated and never executed.")
-    local selected=activeName
-    local selectedLabel=Ui.text(share,"Selected: "..selected,{order=0,textSize=Theme.size.small})
-    local function selection(name) selected=name;selectedLabel.Text="Selected: "..selected end
-    Ui.button(hub,share,"Select next slot",{order=1,width=180},function()
-        local index=table.find(store.order,selected) or 0
-        if #store.order>0 then selection(store.order[index%#store.order+1]) end
-    end)
-    Ui.button(hub,share,"Save selected slot",{order=2,width=180},function()
-        if store.configs[selected] then Settings.put(store,selected,table.clone(prefs));savePrefs();rebuildList();status.Text="Saved "..selected end
-    end)
-    Ui.button(hub,share,"Load selected slot",{order=3,width=180},function() if store.configs[selected] then loadConfig(selected) end end)
-    local autoGame=Ui.toggle(hub,share,"Autoload per game","Uses this PlaceId; legacy global autoload stays compatible.",store.autoloadGames[tostring(game.PlaceId)]~=nil,function(on)
-        if on and store.configs[selected] then store.autoloadGames[tostring(game.PlaceId)]=selected else store.autoloadGames[tostring(game.PlaceId)]=nil end
-        savePrefs()
-    end,4)
-    Ui.button(hub,share,"Set Selected As Autoload",{order=4,width=240},function()
-        if store.configs[selected] then store.autoloadGames[tostring(game.PlaceId)]=selected;savePrefs();status.Text="Autoload for this game: "..selected end
-    end)
-    Ui.button(hub,share,"Turn Off Autoload",{order=5,width=200},function()
-        store.autoloadGames[tostring(game.PlaceId)]=nil;store.autoload=nil;savePrefs();rebuildList();status.Text="Autoload off for this game"
-    end)
-    local rename=Ui.input(hub,share,"Rename selected slot",{order=6},function(name)
-        name=Settings.cleanName(name)
-        if not name or store.configs[name] or not store.configs[selected] then status.Text="Rename requires a unique valid name";return end
-        local old=selected
-        local data=store.configs[old];local wasAuto=store.autoload==old
-        local places={};for place,value in pairs(store.autoloadGames) do if value==old then table.insert(places,place) end end
-        Settings.delete(store,old);Settings.put(store,name,data)
-        if activeName==old then activeName=name;prefs=data end
-        if wasAuto then store.autoload=name end
-        for _,place in ipairs(places) do store.autoloadGames[place]=name end
-        selection(name);savePrefs();rebuildList()
-    end)
-    Ui.button(hub,share,"Copy Config To Clipboard",{order=7,width=240},function()
-        local config=store.configs[selected] or prefs
-        local ok,err=Game.copy(Settings.export(config));status.Text=ok and "Config copied (schema v1)" or tostring(err)
-    end)
-    local importBox=Ui.input(hub,share,"Paste ERVI_CONFIG_V1 text",{order=8,width=300},function() end)
-    importBox.MultiLine=true;importBox.ClearTextOnFocus=false
-    Ui.button(hub,share,"Apply Import",{order=9,width=180},function()
-        local imported,err=Settings.import(importBox.Text,validators)
-        if not imported then status.Text=err;return end
-        store.configs[activeName]=imported;prefs=imported;applyPrefs();savePrefs();rebuildList();status.Text="Imported into "..activeName
-    end)
-    local autoStatus=Ui.text(share,"",{order=10,textSize=Theme.size.small})
-    onRefresh("config","autoload status",function() autoGame.set(store.autoloadGames[tostring(game.PlaceId)]~=nil,true);Ui.set(autoStatus,"Text","This game's autoload: "..(store.autoloadGames[tostring(game.PlaceId)] or store.autoload or "none")) end)
-
 	syncAll()
 
 	local c2 = Ui.card(settings, "Emergency off", 3, "Stops Auto Roll, the roll observer and the M1 HUD, and removes every hub GUI. Same as the × button. From the console: _G.RNG_HUB_STOP()")
@@ -1537,7 +1451,7 @@ hub:connect(body:GetPropertyChangedSignal("Visible"),syncBlur)
 -- Search uses entries registered by actual shared controls, including legacy sections.
 local resultsScope,focusScope
 local searchPanel=Ui.new("Frame",{Name="ErviSearch",Visible=false,Position=UDim2.new(0,SW+8,0,TH+4),Size=UDim2.new(1,-SW-20,0,310),BackgroundColor3=Theme.surface2,ZIndex=20,Parent=window})
-Ui.corner(searchPanel,10);Ui.pad(searchPanel,10)
+Ui.corner(searchPanel,14);Ui.glass(searchPanel,0.45);Ui.pad(searchPanel,10)
 local resultList=Ui.scroll(searchPanel,{Size=UDim2.new(1,0,1,-24),Position=UDim2.fromOffset(0,24)})
 Ui.list(resultList,5)
 local hint=Ui.text(searchPanel,"Search settings · ↑ ↓ select · Enter open · Esc close",{size=UDim2.new(1,0,0,20),textSize=10})
@@ -1598,7 +1512,10 @@ local function searchResults()
 end
 searchInput=Ui.input(hub,titleBar,"Search settings · Ctrl+K",{width=190},function(_,enter) if enter then openResult(selectedResult) end end)
 searchInput.Name="SettingsSearch"
-searchInput.Position=UDim2.new(1,-284,0,11);searchInput.ZIndex=21;searchInput.ClearTextOnFocus=false
+searchInput.Position=UDim2.new(1,-306,0,12);searchInput.Size=UDim2.fromOffset(222,28);searchInput.ZIndex=21;searchInput.ClearTextOnFocus=false
+searchInput.BackgroundColor3=Theme.surface2;searchInput:FindFirstChildOfClass("UICorner").CornerRadius=UDim.new(0,14)
+searchInput:FindFirstChildOfClass("UIPadding").PaddingLeft=UDim.new(0,30)
+local searchGlyph=Ui.icon(searchInput,"search",14);searchGlyph.AnchorPoint=Vector2.new(0,0.5);searchGlyph.Position=UDim2.new(0,-20,0.5,0);searchGlyph.ZIndex=22
 hub:connect(searchInput:GetPropertyChangedSignal("Text"),searchResults)
 onSearchInput=function(input,processed)
  local focused=UserInputService:GetFocusedTextBox()

@@ -62,6 +62,11 @@ return function(API, makeEngine, hubFn, loaderFn, schema)
 			end
 		end
 	end
+	-- Settings writes are debounced (App SAVE_DELAY); let the pending write land before reading.
+	local function savedSettings()
+		ctl.run(0.4)
+		return ctl.files["RNG_Hub_settings.txt"] or ""
+	end
 	local function noErrors(name)
 		check(#ctl.errors == 0, name .. ": no script errors", table.concat(ctl.errors, "\n"))
 		ctl.errors = {}
@@ -168,7 +173,7 @@ return function(API, makeEngine, hubFn, loaderFn, schema)
 	noErrors("diagnostics")
 
 	-- 6. window controls
-	click(find(hubGui(), "TextButton", "–"))
+	click(hubGui():FindFirstChild("MinimizeButton", true))
 	ctl.run(0.2)
 	check(ctl.pg:FindFirstChild("Ervi_MinimizedStatus").Enabled,"minimize shows independent status bar")
 	click(ctl.pg:FindFirstChild("Ervi_MinimizedStatus"):FindFirstChildOfClass("TextButton"))
@@ -213,7 +218,7 @@ return function(API, makeEngine, hubFn, loaderFn, schema)
  win().Position=env.UDim2.fromOffset(1,1)
  press("F4");press("F4")
  check(win().Position.X.Offset==centered.X.Offset and win().Position.Y.Offset==centered.Y.Offset,"main window recenters after displaced hide/reopen")
-	check((ctl.files["RNG_Hub_settings.txt"] or ""):find("toggleKey=F4", 1, true) ~= nil, "key saved to settings file")
+	check(savedSettings():find("toggleKey=F4", 1, true) ~= nil, "key saved to settings file")
 	noErrors("rebind")
 
 	-- 6c. opacity slider
@@ -226,7 +231,19 @@ return function(API, makeEngine, hubFn, loaderFn, schema)
 	end
 	ctl.run(0.1)
 	check(near(win().BackgroundTransparency, 0.2), "3 steps down -> 80% opacity", win().BackgroundTransparency)
-	check(find(hubGui(), "TextLabel", "80%") ~= nil, "slider shows 80%")
+	check(find(hubGui(), "TextBox", "80%") ~= nil, "slider shows 80%")
+	local readout = find(hubGui(), "TextBox", "80%")
+	readout.Focused:Fire()
+	check(readout.Text == "80", "numeric readout edits the shown percent", readout.Text)
+	readout.Text = "55"
+	readout.FocusLost:Fire(true)
+	ctl.run(0.1)
+	check(near(win().BackgroundTransparency, 0.45) and readout.Text == "55%", "typed 55 sets 55% opacity", win().BackgroundTransparency)
+	readout.Focused:Fire()
+	readout.Text = "80"
+	readout.FocusLost:Fire(true)
+	ctl.run(0.1)
+	check(near(win().BackgroundTransparency, 0.2), "typed 80 restores 80% opacity")
 	local card = find(hubGui(), "TextLabel", "CONTROLS").Parent
 	check(near(card.BackgroundTransparency, 0.2), "cards follow opacity", card.BackgroundTransparency)
 	for _ = 1, 20 do
@@ -246,7 +263,7 @@ return function(API, makeEngine, hubFn, loaderFn, schema)
 		click(sliderBtn("Menu opacity", "−"))
 	end
 	ctl.run(0.1)
-	check((ctl.files["RNG_Hub_settings.txt"] or ""):find("opacity=0.80", 1, true) ~= nil, "opacity saved", ctl.files["RNG_Hub_settings.txt"])
+	check(savedSettings():find("opacity=0.80", 1, true) ~= nil, "opacity saved", ctl.files["RNG_Hub_settings.txt"])
 	noErrors("opacity")
 
 	-- 6d. appearance: design, accent, font, text color/size/outline/transparency
@@ -264,7 +281,7 @@ return function(API, makeEngine, hubFn, loaderFn, schema)
 	check(hex(win().BackgroundColor3) == hex(rgb(9, 17, 28)), "design Ocean: window repainted", hex(win().BackgroundColor3))
 	check(hex(label("CONTROLS").Parent.BackgroundColor3) == hex(rgb(18, 33, 52)), "design Ocean: cards repainted")
 	check(hex(label(probe).TextColor3) == hex(rgb(230, 242, 255)), "design Ocean: text repainted")
-	check(hex(find(hubGui(), "TextButton", "Save as").BackgroundColor3) == hex(rgb(62, 168, 240)), "design Ocean: default accent Sky")
+	check(hex(find(hubGui(), "TextButton", "Apply").BackgroundColor3) == hex(rgb(62, 168, 240)), "design Ocean: default accent Sky")
 	local ocean = find(hubGui(), "TextButton", "Ocean")
 	ocean.MouseLeave:Fire()
 	ctl.run(0.05)
@@ -277,7 +294,7 @@ return function(API, makeEngine, hubFn, loaderFn, schema)
 	end
 	click(rose)
 	ctl.run(0.1)
-	check(hex(find(hubGui(), "TextButton", "Save as").BackgroundColor3) == hex(rgb(240, 98, 142)), "accent Rose applied")
+	check(hex(find(hubGui(), "TextButton", "Apply").BackgroundColor3) == hex(rgb(240, 98, 142)), "accent Rose applied")
 	check(rose.Text == "✓" and hex(rose.BackgroundColor3) == hex(rgb(240, 98, 142)), "swatch keeps its color and shows a check")
 	rose.MouseEnter:Fire()
 	ctl.run(0.05)
@@ -318,7 +335,7 @@ return function(API, makeEngine, hubFn, loaderFn, schema)
 	end
 	ctl.run(0.1)
 	check(near(label(probe).TextTransparency, 0.3), "text transparency 30%", label(probe).TextTransparency)
-	local saved = ctl.files["RNG_Hub_settings.txt"] or ""
+	local saved = savedSettings()
 	check(saved:find("theme=Ocean", 1, true) and saved:find("accent=Rose", 1, true) and saved:find("textColor=Gold", 1, true) and saved:find("outline=off", 1, true), "look saved to the active config", saved)
 	-- color circle: accent via the wheel, text via hex code, background via hex code
 	local function customButtons()
@@ -359,9 +376,9 @@ return function(API, makeEngine, hubFn, loaderFn, schema)
 	check(hexBox.Text == "#FF0000", "right edge at 100% brightness = pure red", hexBox.Text)
 	click(find(hubGui(), "TextButton", "Apply"))
 	ctl.run(0.1)
-	check(hex(find(hubGui(), "TextButton", "Save as").BackgroundColor3) == hex(rgb(255, 0, 0)), "custom accent applied from the circle")
+	check(hex(find(hubGui(), "TextButton", "Apply").BackgroundColor3) == hex(rgb(255, 0, 0)), "custom accent applied from the circle")
 	check(customs[1].BackgroundColor3 and hex(customs[1].BackgroundColor3) == hex(rgb(255, 0, 0)), "accent Custom button shows as selected")
-	check((ctl.files["RNG_Hub_settings.txt"] or ""):find("accent=#FF0000", 1, true) ~= nil, "custom accent saved")
+	check(savedSettings():find("accent=#FF0000", 1, true) ~= nil, "custom accent saved")
 	click(customs[2])
 	hexBox.Text = "88ccff"
 	hexBox.FocusLost:Fire(true)
@@ -383,7 +400,7 @@ return function(API, makeEngine, hubFn, loaderFn, schema)
 	noErrors("appearance")
 
 	-- 7. close via X: full cleanup
-	click(find(hubGui(), "TextButton", "×"))
+	click(hubGui():FindFirstChild("CloseButton", true))
 	ctl.run(1)
 	check(hubGui() == nil, "X removes hub GUI")
 	check(ctl.conns == baseConns, "no leaked connections", ("%d live (baseline %d)"):format(ctl.conns, baseConns))
@@ -436,88 +453,51 @@ return function(API, makeEngine, hubFn, loaderFn, schema)
 	check(ctl.pendingThreads() == 0, "double Run: no orphaned threads", ctl.pendingThreads())
 	noErrors("double run")
 
-	-- 10. configs: save as, overwrite confirm, load, autoload across a rerun, delete
+	-- 10. autosave: no Config page; the effective profile saves itself (debounced, flushed on
+	-- unload); other named profiles and autoload bindings are preserved; one-time backup.
 	ctl.requireDelay = nil
+	if env._G.RNG_HUB_STOP then env._G.RNG_HUB_STOP() end
+	ctl.run(0.5)
+	local before10 = ctl.files["RNG_Hub_settings.txt"]
+	local legacy = "autoload=PvP\n[Default]\nopacity=0.80\n[PvP]\nopacity=0.70\ntheme=Ocean\n[Other]\nopacity=0.40\n"
+	ctl.files["RNG_Hub_settings.txt"] = legacy
+	ctl.files["RNG_Hub_settings.pre-autosave-backup.txt"] = nil
 	runHub()
 	ctl.run(0.5)
+	check(near(win().BackgroundTransparency, 0.3), "autosave: effective autoload profile (PvP 70%) is active", win().BackgroundTransparency)
+	check(nav("Config") == nil and hubGui():FindFirstChild("ErviPage_config", true) == nil, "autosave: Config page and slot manager removed")
+	check(ctl.files["RNG_Hub_settings.pre-autosave-backup.txt"] == legacy, "autosave: original settings file backed up before the first write")
 	click(nav("Settings"))
 	ctl.run(0.2)
-	local function rowOf(name)
-		for _, d in ipairs(hubGui():GetDescendants()) do
-			if d.ClassName == "TextLabel" and (d.Text == name or d.Text == name .. "  (active)") and d.Parent.ClassName == "Frame" then
-				local btns = {}
-				for _, b in ipairs(d.Parent:GetChildren()) do
-					if b.ClassName == "TextButton" then
-						btns[b.Text] = b
-					end
-				end
-				if btns.Load then -- a config list row, not the "Active config" readout
-					return d, btns
-				end
-			end
-		end
-	end
-	local nameBox = find(hubGui(), "TextBox", "")
-	for _, d in ipairs(hubGui():GetDescendants()) do
-		if d.ClassName == "TextBox" and d.PlaceholderText == "New config name" then
-			nameBox = d
-		end
-	end
-	nameBox.Text = "PvP"
-	click(find(hubGui(), "TextButton", "Save as"))
-	ctl.run(0.1)
-	check(label("PvP  (active)") ~= nil, "Save as creates and activates PvP")
-	check((ctl.files["RNG_Hub_settings.txt"] or ""):find("[PvP]", 1, true) ~= nil, "PvP written to file")
+	local writesBefore = ctl.writes or 0
 	for _ = 1, 4 do
-		click(sliderBtn("Menu opacity", "−")) -- opacity 80% -> 60% in PvP only
+		click(sliderBtn("Menu opacity", "−")) -- 70% -> 50%, four changes inside the debounce window
 	end
-	ctl.run(0.1)
-	check(near(win().BackgroundTransparency, 0.4), "PvP opacity 60%")
-	local _, defaultBtns = rowOf("Default")
-	click(defaultBtns.Load)
-	ctl.run(0.1)
-	check(near(win().BackgroundTransparency, 0.2), "loading Default restores its 80% opacity")
-	local _, pvpRow = rowOf("PvP")
-	click(pvpRow.Overwrite)
-	check(pvpRow.Overwrite.Text == "Sure?", "Overwrite asks once")
-	click(pvpRow.Overwrite)
-	ctl.run(0.1)
-	check((ctl.files["RNG_Hub_settings.txt"] or ""):match("%[PvP%][^%[]*opacity=0%.80") ~= nil, "Overwrite copies current settings into PvP")
-	local _, defRow = rowOf("Default")
-	check(defRow.Overwrite and defRow.Load, "active row has its buttons")
-	check(label("Default  (active)") ~= nil, "Default is active after Load")
-	nameBox.Text = "PvP"
-	click(find(hubGui(), "TextButton", "Save as"))
-	check(find(hubGui(), "TextButton", "Overwrite?") ~= nil, "existing name asks before overwriting")
-	click(find(hubGui(), "TextButton", "Overwrite?"))
-	ctl.run(0.1)
-	check(near(win().BackgroundTransparency, 0.2) and label("PvP  (active)") ~= nil, "overwrite saves current settings into PvP")
-	for _ = 1, 2 do
-		click(sliderBtn("Menu opacity", "−")) -- PvP now 70%
-	end
-	local _, pvpBtns = rowOf("PvP")
-	click(pvpBtns.Auto)
-	ctl.run(0.1)
-	check((ctl.files["RNG_Hub_settings.txt"] or ""):find("autoload=PvP", 1, true) ~= nil, "autoload saved")
-	runHub() -- simulates the next game join / autoexec
+	check((ctl.files["RNG_Hub_settings.txt"] or ""):match("%[PvP%][^%[]*opacity=0%.70") ~= nil, "autosave: rapid changes are debounced, not written per step")
 	ctl.run(0.5)
-	check(near(win().BackgroundTransparency, 0.3), "autoload: PvP (70%) loaded at start", win().BackgroundTransparency)
-	click(nav("Settings"))
-	ctl.run(0.2)
-	check(label("PvP  (active)") ~= nil, "autoload: PvP active at start")
-	local _, dBtns = rowOf("Default")
-	click(dBtns.Load)
-	local _, pBtns = rowOf("PvP")
-	click(pBtns.Delete)
-	check(pBtns.Delete.Text == "Sure?", "delete asks once")
-	click(pBtns.Delete)
-	ctl.run(0.1)
-	check(rowOf("PvP") == nil, "PvP deleted")
-	check((ctl.files["RNG_Hub_settings.txt"] or ""):find("autoload=", 1, true) == nil, "deleting the autoload config clears autoload")
+	local saved10 = ctl.files["RNG_Hub_settings.txt"] or ""
+	check(saved10:match("%[PvP%][^%[]*opacity=0%.50") ~= nil, "autosave: change persisted to the active profile", saved10)
+	check((ctl.writes or 0) - writesBefore == 1, "autosave: one coalesced write for four slider steps", (ctl.writes or 0) - writesBefore)
+	check(saved10:match("%[Other%][^%[]*opacity=0%.40") ~= nil and saved10:match("%[Default%][^%[]*opacity=0%.80") ~= nil, "autosave: other named profiles left untouched")
+	check(saved10:find("autoload=PvP", 1, true) ~= nil, "autosave: legacy autoload binding kept for older builds")
+	check(label("Saved automatically") ~= nil, "autosave: save status shown in the sidebar")
+	click(sliderBtn("Menu opacity", "+")) -- 55%, then unload before the debounce fires
+	env._G.RNG_HUB_STOP()
+	check((ctl.files["RNG_Hub_settings.txt"] or ""):match("%[PvP%][^%[]*opacity=0%.55") ~= nil, "autosave: pending change flushed on unload")
+	ctl.run(0.5)
+	ctl.files["RNG_Hub_settings.txt"] = "[Default]\nopacity=0.90\n"
+	runHub()
+	ctl.run(0.5)
+	check(ctl.files["RNG_Hub_settings.pre-autosave-backup.txt"] == legacy, "autosave: an existing backup is never overwritten")
+	ctl.files["RNG_Hub_settings.txt"] = legacy:sub(#"autoload=PvP" + 2)
+	runHub()
+	ctl.run(0.5)
+	check(near(win().BackgroundTransparency, 0.2), "autosave: Default profile is active without an autoload binding", win().BackgroundTransparency)
 	env._G.RNG_HUB_STOP()
 	ctl.run(0.5)
-	check(ctl.conns == baseConns, "configs: no leaked connections", ctl.conns - baseConns)
-	noErrors("configs")
+	check(ctl.conns == baseConns, "autosave: no leaked connections", ctl.conns - baseConns)
+	noErrors("autosave")
+	ctl.files["RNG_Hub_settings.txt"] = before10 -- later sections continue from the earlier preferences
 
 	-- 11. resize grip and instant prompts
 	runHub()
@@ -537,13 +517,13 @@ return function(API, makeEngine, hubFn, loaderFn, schema)
 	ctl.UIS.InputEnded:Fire({ UserInputType = E.UserInputType.MouseButton1 })
 	ctl.run(0.1)
 	check(win().Size.X.Offset == resizedW and win().Size.Y.Offset == resizedH, "corner grip resizes the window", ("%dx%d"):format(win().Size.X.Offset, win().Size.Y.Offset))
-	check((ctl.files["RNG_Hub_settings.txt"] or ""):find(("winW=%d"):format(resizedW), 1, true) ~= nil, "new size saved")
+	check(savedSettings():find(("winW=%d"):format(resizedW), 1, true) ~= nil, "new size saved")
 	grip.InputBegan:Fire({ UserInputType = E.UserInputType.MouseButton1, Position = env.Vector2.new(500, 500) })
 	ctl.UIS.InputChanged:Fire({ UserInputType = E.UserInputType.MouseMovement, Position = env.Vector2.new(-900, -900) })
 	ctl.UIS.InputEnded:Fire({ UserInputType = E.UserInputType.MouseButton1 })
 	ctl.run(0.1)
 	check(win().Size.X.Offset == 520 and win().Size.Y.Offset == 360, "resize stops at the minimum size")
-	click(find(hubGui(), "TextButton", "–"))
+	click(hubGui():FindFirstChild("MinimizeButton", true))
 	check(grip.Visible == false, "grip hidden while minimized")
 	click(ctl.pg:FindFirstChild("Ervi_MinimizedStatus"):FindFirstChildOfClass("TextButton"))
 	runHub()
@@ -632,7 +612,7 @@ return function(API, makeEngine, hubFn, loaderFn, schema)
 	check(ctl.files["Ervi_Hub_autoexec.txt"] == "on", "flag file on")
 	click(toggleRow("Auto-execute after teleport / rejoin"))
 	check(ctl.files["Ervi_Hub_autoexec.txt"] == "off", "flag file off (queued run will skip)")
-	local saved2 = ctl.files["RNG_Hub_settings.txt"] or ""
+	local saved2 = savedSettings()
 	check(saved2:find("antiAfk=false", 1, true) and saved2:find("reconnect=false", 1, true) and saved2:find("autoExec=false", 1, true), "session toggles saved in the config")
 	env._G.RNG_HUB_STOP()
 	ctl.run(0.5)
@@ -747,7 +727,7 @@ return function(API, makeEngine, hubFn, loaderFn, schema)
     check(hudFrame.Size.X.Offset==initialW+80,"M1 layout: corner gesture resizes")
     gesture(hudTitle,-10000,-10000)
     check(hudFrame.Position.X.Offset==0 and hudFrame.Position.Y.Offset==0,"M1 layout: drag clamped on screen")
-    local layoutSaved=ctl.files["RNG_Hub_settings.txt"] or ""
+    local layoutSaved=savedSettings()
     check(layoutSaved:find("m1X=0.000000",1,true) and layoutSaved:find("m1W=410.00",1,true),"M1 layout: dimensions and position saved")
     local cam=env.workspace.CurrentCamera
     ctl.set(cam,"ViewportSize",env.Vector2.new(320,240))
@@ -826,7 +806,7 @@ return function(API, makeEngine, hubFn, loaderFn, schema)
     click(safeKeyButton("settings")); press("F4")
     check(safeKeyButton("settings").Text=="NONE","Safe Zone key: GUI key conflict rejected")
     click(safeKeyButton("settings")); press("F8",true)
-    check((ctl.files["RNG_Hub_settings.txt"] or ""):find("safeZoneKey=F8",1,true),"Safe Zone key: rebinding persisted")
+    check(savedSettings():find("safeZoneKey=F8",1,true),"Safe Zone key: rebinding persisted")
     click(find(hubGui(),"TextButton","F4")); press("F8",true)
     check(find(hubGui(),"TextButton","F4")~=nil,"GUI key: Safe Zone key conflict rejected")
     moves=ctl.pivotCalls
@@ -840,7 +820,7 @@ return function(API, makeEngine, hubFn, loaderFn, schema)
     check(activeRoot.Anchored==false,"Safe Zone hold: key releases holding")
     win().Visible=true
     click(safeKeyButton("settings")); press("Backspace")
-    check(safeKeyButton("settings").Text=="NONE" and (ctl.files["RNG_Hub_settings.txt"] or ""):find("safeZoneKey=NONE",1,true),"Safe Zone key: clearing saves NONE")
+    check(safeKeyButton("settings").Text=="NONE" and savedSettings():find("safeZoneKey=NONE",1,true),"Safe Zone key: clearing saves NONE")
     moves=ctl.pivotCalls; press("F8",true)
     check(ctl.pivotCalls==moves,"Safe Zone key: unbound key no longer activates")
 
@@ -930,7 +910,7 @@ return function(API, makeEngine, hubFn, loaderFn, schema)
     check(find(hubGui(),"TextLabel","FOUND")~=nil,"Auto Roll recovery: selected rarity target retained")
     ctl.run(12)
     check(ctl.invokes==beforeRequests+1,"Auto Roll recovery: zero further requests after qualifying result")
-    local persisted=ctl.files["RNG_Hub_settings.txt"] or ""
+    local persisted=savedSettings()
     check(persisted:find("resumeAfterDeath=true",1,true) and persisted:find("autoM1Requested=true",1,true),"Recovery and Auto M1 preference persist")
     env._G.RNG_HUB_STOP(); ctl.run(0.3)
     check(ctl.conns==baseConns and ctl.pendingThreads()==0,"Integrated features: unload leaves no listeners or workers",ctl.conns-baseConns)
@@ -938,7 +918,7 @@ return function(API, makeEngine, hubFn, loaderFn, schema)
 
     -- 3.0 screenshot expansion: navigation, registry search, world/camera, overlays.
     runHub();ctl.run(0.4)
-    for _,tab in ipairs({"Auto Roll","Styles","Home","Combat","Visuals","Player","World","Safe Zone","Teleports","Utility","Config","Settings"}) do
+    for _,tab in ipairs({"Auto Roll","Styles","Home","Combat","Visuals","Player","World","Safe Zone","Teleports","Utility","Settings"}) do
         click(nav(tab));ctl.run(0.15)
         check(nav(tab)~=nil,"3.0 navigation: "..tab)
     end
@@ -997,12 +977,12 @@ return function(API, makeEngine, hubFn, loaderFn, schema)
     ctl.UIS.InputEnded:Fire({UserInputType=E.UserInputType.MouseButton1})
     check(speedRow:GetAttribute("Value")==0,"Slider: track click clamps lower bound")
     click(sliderBtn("Walk Speed","+"))
-    check((ctl.files["RNG_Hub_settings.txt"] or ""):find("walkSpeed=1",1,true)~=nil,"Slider: value persisted")
+    check(savedSettings():find("walkSpeed=1",1,true)~=nil,"Slider: value persisted")
     for _=1,15 do click(sliderBtn("Walk Speed","+")) end
     click(nav("Settings"))
     check(nav("Settings").Parent.Name=="SettingsDock","Navigation: Settings anchored outside scrolling list")
     click(toggleRow("Reduce Animations"))
-    check((ctl.files["RNG_Hub_settings.txt"] or ""):find("reduceAnimations=true",1,true)~=nil,"Motion: reduced preference persisted")
+    check(savedSettings():find("reduceAnimations=true",1,true)~=nil,"Motion: reduced preference persisted")
     click(toggleRow("Reduce Animations"))
     local scaleBefore=win():FindFirstChildOfClass("UIScale").Scale
     click(sliderBtn("UI Scale","−"))
@@ -1088,22 +1068,8 @@ return function(API, makeEngine, hubFn, loaderFn, schema)
     local movementFrame=movement:FindFirstChildOfClass("Frame");local movementGrip
     for _,d in ipairs(movementFrame:GetChildren()) do if d:GetAttribute("ResizeGrip") then movementGrip=d end end
     gesture(movementGrip,50,30)
-    check((ctl.files["RNG_Hub_settings.txt"] or ""):find("movementW=380.00",1,true),"Player: movement-panel size persists")
+    check(savedSettings():find("movementW=380.00",1,true),"Player: movement-panel size persists")
     click(toggleRow("Movement Panel"));check(ctl.pg:FindFirstChild("Ervi_MovementPanel")==nil,"Player: menu removes floating panel")
-    -- Config data sharing and per-game autoload are distinct from code execution.
-    click(nav("Config"))
-    click(find(hubGui(),"TextButton","Copy Config To Clipboard"))
-    check(type(ctl.clipboard)=="string" and ctl.clipboard:sub(1,15)=="ERVI_CONFIG_V1\n","Config: versioned export to clipboard")
-    local importText
-    for _,d in ipairs(hubGui():GetDescendants()) do if d.ClassName=="TextBox" and d.PlaceholderText=="Paste ERVI_CONFIG_V1 text" then importText=d end end
-    importText.Text="return error('must not run')";click(find(hubGui(),"TextButton","Apply Import"))
-    check(find(hubGui(),"TextLabel","Unsupported config version")~=nil,"Config: rejects executable/non-schema import")
-    importText.Text=ctl.clipboard;click(find(hubGui(),"TextButton","Apply Import"));ctl.run(0.1)
-    check(find(hubGui(),"TextLabel","Imported into Default")~=nil,"Config: valid import applies to selected current config")
-    click(find(hubGui(),"TextButton","Set Selected As Autoload"))
-    check((ctl.files["RNG_Hub_settings.txt"] or ""):find("autoloadGame_119338513416973=Default",1,true),"Config: per-game autoload persists")
-    click(find(hubGui(),"TextButton","Turn Off Autoload"))
-    check(not (ctl.files["RNG_Hub_settings.txt"] or ""):find("autoloadGame_119338513416973=",1,true),"Config: turn off autoload removes binding")
     -- Render visible players, enforce occlusion, exercise budgets and cleanup.
     local visiblePlayer=ctl.new("Player",env.game:GetService("Players"));visiblePlayer.Name="VisibleSample";ctl.set(visiblePlayer,"UserId",55)
     local visibleChar=ctl.new("Model",env.workspace);ctl.new("Humanoid",visibleChar)
@@ -1200,7 +1166,7 @@ return function(API, makeEngine, hubFn, loaderFn, schema)
     click(nav("World"));click(toggleRow("No Shadows"))
     click(nav("World"));click(toggleRow("No Shadows"));ctl.run(0.25)
     local notice=hubGui():FindFirstChild("Notification",true)
-    check(notice and near(notice.BackgroundTransparency,0.42),"Notifications: surface remains translucent")
+    check(notice and near(notice.BackgroundTransparency,0.28),"Notifications: surface remains translucent")
     local noticeText
     if notice then for _,d in ipairs(notice:GetDescendants()) do if d.ClassName=="TextLabel" then noticeText=d;break end end end
     check(notice and notice.Size.Y.Offset==48 and noticeText and noticeText.TextSize==15,"Notifications: compact dimensions and readable text")
@@ -1361,8 +1327,8 @@ return function(API, makeEngine, hubFn, loaderFn, schema)
         if d.ClassName=="TextButton" and d:GetAttribute("NavPage") and d.Visible then table.insert(navItems,d) end
     end
     table.sort(navItems,function(a,b) return a.LayoutOrder<b.LayoutOrder end)
-    local expected={"roll","styles","dash","combat","visuals","player","world","safe","teleports","utility","config","settings"}
-    check(#navItems==#expected,"Navigation: only the twelve requested primary entries")
+    local expected={"roll","styles","dash","combat","visuals","player","world","safe","teleports","utility","settings"}
+    check(#navItems==#expected,"Navigation: only the eleven requested primary entries (Config removed)")
     local ordered=true;for i,id in ipairs(expected) do if not navItems[i] or navItems[i]:GetAttribute("NavPage")~=id then ordered=false end end
     check(ordered,"Navigation: primary game tools first, Settings last")
     check(nav("Friends")==nil and nav("Sounds")==nil and nav("Triggerbot")==nil,"Navigation: unwanted tabs removed")
@@ -1371,7 +1337,7 @@ return function(API, makeEngine, hubFn, loaderFn, schema)
     local statusLogo=bar:FindFirstChild("ErviOfficialLogo",true)
     check(mainLogo and math.abs(mainLogo.Size.X.Offset/mainLogo.Size.Y.Offset-130/138)<0.001,"Official logo: main mark keeps the exact aspect ratio")
     check(statusLogo and math.abs(statusLogo.Size.X.Offset/statusLogo.Size.Y.Offset-130/138)<0.001,"Official logo: status mark keeps the exact aspect ratio")
-    click(find(hubGui(),"TextButton","–"));ctl.run(0.3)
+    click(hubGui():FindFirstChild("MinimizeButton", true));ctl.run(0.3)
     check(not win().Visible and barGui.Enabled,"Status bar: minimize hides entire main window")
     check(bar:GetAttribute("AutoRollState")~=nil,"Status bar: reports Auto Roll state while hidden")
     local beforeX=bar.Position.X.Offset
@@ -1383,7 +1349,7 @@ return function(API, makeEngine, hubFn, loaderFn, schema)
     ctl.run(0.5);click(bar)
     check(not win().Visible,"Status bar: delayed drag-release activation stays suppressed")
     check(bar.Position.X.Offset==0 and bar.Position.Y.Offset==0,"Status bar: dragging remains on screen")
-    check((ctl.files["RNG_Hub_settings.txt"] or ""):find("statusX=0.000000",1,true),"Status bar: position persists")
+    check(savedSettings():find("statusX=0.000000",1,true),"Status bar: position persists")
     bar.InputBegan:Fire({UserInputType=E.UserInputType.MouseButton1,Position=env.Vector2.new(0,0)})
     ctl.UIS.InputEnded:Fire({UserInputType=E.UserInputType.MouseButton1})
     click(bar);ctl.run(0.1)
@@ -1393,8 +1359,8 @@ return function(API, makeEngine, hubFn, loaderFn, schema)
     click(nav("Settings"))
     click(sliderBtn("Status Bar Opacity","+"));ctl.run(0.2)
     check(near(bar.BackgroundTransparency,0.25),"Status bar opacity slider immediately changes visible pill",bar.BackgroundTransparency)
-    check((ctl.files["RNG_Hub_settings.txt"] or ""):find("statusOpacity=0.75",1,true)~=nil,"Status bar opacity persists")
-    check(find(hubGui(),"TextLabel","75%")~=nil,"Status bar opacity is displayed as percent")
+    check(savedSettings():find("statusOpacity=0.75",1,true)~=nil,"Status bar opacity persists")
+    check(find(hubGui(),"TextBox","75%")~=nil,"Status bar opacity is displayed as percent")
     click(nav("Combat"));click(toggleRow("Show M1 cooldown HUD"));click(nav("Settings"))
     local function stepStatusOpacity(plus)
         local label=find(hubGui(),"TextLabel","Status Bar Opacity")
@@ -1421,7 +1387,7 @@ return function(API, makeEngine, hubFn, loaderFn, schema)
     local nSlider=hubGui():FindFirstChild("Setting_customN",true)
     check(nSlider~=nil and nBox~=nil,"Custom N slider and exact input mounted")
     click(sliderBtn("Custom N","+"));ctl.run(0.1)
-    check(nBox.Text=="501" and (ctl.files["RNG_Hub_settings.txt"] or ""):find("customN=501.00",1,true)~=nil,"Custom N slider synchronizes exact input and persists")
+    check(nBox.Text=="501" and savedSettings():find("customN=501.00",1,true)~=nil,"Custom N slider synchronizes exact input and persists")
     nBox.Text="1200";nBox.FocusLost:Fire(true)
     check(nBox.Text=="1200" and nSlider:GetAttribute("Value")==1200,"Custom N exact entry updates slider")
     nBox.Text="999999";nBox.FocusLost:Fire(true)
@@ -1459,6 +1425,37 @@ return function(API, makeEngine, hubFn, loaderFn, schema)
     check(ctl.pg:FindFirstChild("Ervi_MinimizedStatus")==nil,"Unload: compact status bar removed")
     check(ctl.conns==baseConns and ctl.pendingThreads()==0,"3.1 UI and return workflow leave no resources",ctl.conns-baseConns)
     noErrors("3.1 status and return")
+
+    -- 3.4 images: the bundle carries its own PNGs, writes them to the workspace and uses them only
+    -- after the engine confirms the load; a failed load keeps the native logo/icons.
+    local assetCalls = {}
+    env.getcustomasset = function(path) table.insert(assetCalls, path); return "rbxasset://mock/" .. path end
+    ctl.assetStatus = "Success"
+    runHub();ctl.run(0.5)
+    local logoFile, iconFile
+    for name, data in pairs(ctl.files) do
+        if name:match("^Ervi_Hub_ui%-logo%-.+%.png$") then logoFile = data end
+        if name:match("^Ervi_Hub_ui%-icons%-.+%.png$") then iconFile = data end
+    end
+    check(logoFile and logoFile:sub(1, 8) == "\137PNG\r\n\26\n" and iconFile and iconFile:sub(1, 8) == "\137PNG\r\n\26\n", "Images: embedded PNGs written to the workspace by the bundle itself")
+    local logoImage = hubGui():FindFirstChild("LogoImage", true)
+    check(logoImage and logoImage.Image:find("Ervi_Hub_ui%-logo") ~= nil, "Images: verified logo uses the local asset", logoImage and logoImage.Image)
+    local rollIcon = hubGui():FindFirstChild("Icon_roll", true)
+    check(rollIcon and rollIcon.ClassName == "ImageLabel" and rollIcon.ImageRectSize.X == 48, "Images: verified atlas icon uses the local asset")
+    env._G.RNG_HUB_STOP();ctl.run(0.2)
+    ctl.assetStatus = "Failure"
+    runHub();ctl.run(0.5)
+    check(hubGui():FindFirstChild("LogoImage", true) == nil and #hubGui():FindFirstChild("ErviOfficialLogo", true):GetChildren() > 10, "Images: failed load falls back to the native logo")
+    rollIcon = hubGui():FindFirstChild("Icon_roll", true)
+    check(rollIcon and rollIcon.ClassName == "Frame", "Images: failed load falls back to native icons")
+    env._G.RNG_HUB_STOP();ctl.run(0.2)
+    env.getcustomasset = function() error("executor asset API failed") end
+    runHub();ctl.run(0.5)
+    check(hubGui():FindFirstChild("Icon_roll", true).ClassName == "Frame", "Images: erroring getcustomasset falls back to native icons")
+    env._G.RNG_HUB_STOP();ctl.run(0.2)
+    env.getcustomasset = nil;ctl.assetStatus = nil
+    check(ctl.conns==baseConns and ctl.pendingThreads()==0,"Images: no leaked resources",ctl.conns-baseConns)
+    noErrors("images")
 
     -- Exercise the actual emitted loader wrapper with isolated globals, no network.
     local requests, messages = 0, {}

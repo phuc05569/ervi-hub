@@ -206,6 +206,29 @@ function Settings.load(validate)
 	return Settings.parse(ok and text or nil, validate)
 end
 
+-- 3.4 has no slot manager: the profile that was effective when it first ran (per-game autoload,
+-- then global autoload, then Default) keeps auto-saving. Other named profiles stay in the file.
+function Settings.activeName(store, placeId)
+	local name = store.autoloadGames[tostring(placeId)] or store.autoload or Settings.DEFAULT_NAME
+	if not store.configs[name] then
+		name = Settings.DEFAULT_NAME
+	end
+	return name
+end
+
+-- Copies the existing settings file once, before the first 3.4 write. Never overwrites a backup.
+Settings.BACKUP_FILE = "RNG_Hub_settings.pre-autosave-backup.txt"
+function Settings.backupOnce()
+	if not Settings.canPersist() or type(isfile) ~= "function" then
+		return false, "no file access"
+	end
+	return pcall(function()
+		if isfile(Settings.FILE) and not isfile(Settings.BACKUP_FILE) then
+			writefile(Settings.BACKUP_FILE, readfile(Settings.FILE))
+		end
+	end)
+end
+
 function Settings.save(store)
 	if not Settings.canPersist() then
 		return false, "this executor has no file access"

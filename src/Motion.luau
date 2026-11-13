@@ -20,7 +20,7 @@ function Motion.new(create)
   local nodes={};for node in pairs(active) do table.insert(nodes,node) end
   for _,node in ipairs(nodes) do release(node,true) end
  end
- function api.to(node,goal,duration,done)
+ function api.to(node,goal,duration,done,style)
   if api.closed then return end
   local previous=active[node]
   -- Finish unrelated properties when replacing a combined transition.
@@ -33,7 +33,7 @@ function Motion.new(create)
    if done then done() end
   end
   if api.reduced or not create or duration==0 then immediate();return end
-  local ok,tween=pcall(create,node,(duration or 0.12)/api.speed,goal)
+  local ok,tween=pcall(create,node,(duration or 0.12)/api.speed,goal,style)
   if not ok or not tween then immediate();return end
   local entry={tween=tween,goal=goal,done=done}
   active[node]=entry

@@ -1,12 +1,18 @@
--- Native scanline rendering keeps the official mark usable without a hosted image asset.
+-- Prefers the antialiased PNG rendered from LogoGeometry (UiImages); native scanlines are the
+-- fallback when the executor cannot provide a local image asset.
 local Geometry = require("LogoGeometry")
+local UiImages = require("UiImages")
 local Logo = { POLYGONS = Geometry.polygons }
 local roots = setmetatable({}, { __mode = "k" })
+local images = setmetatable({}, { __mode = "k" })
 local tint = Color3.new(1, 1, 1)
 
 function Logo.refresh(background)
 	local _, _, value = background:ToHSV()
 	tint = value > 0.65 and Color3.fromRGB(21, 19, 24) or Color3.new(1, 1, 1)
+	for image in pairs(images) do
+		image.ImageColor3 = tint
+	end
 	for root, strips in pairs(roots) do
 		if root.Parent then
 			for _, strip in ipairs(strips) do
@@ -35,6 +41,21 @@ function Logo.create(parent, size)
 	aspect.AspectType = Enum.AspectType.ScaleWithParentSize
 	aspect.Parent = root
 	root.Parent = parent
+
+	local imageId = UiImages.logo()
+	if imageId then
+		local image = Instance.new("ImageLabel")
+		image.Name = "LogoImage"
+		image.BackgroundTransparency = 1
+		image.Size = UDim2.fromScale(1, 1)
+		image.Image = imageId
+		image.ImageColor3 = tint
+		image.ScaleType = Enum.ScaleType.Fit
+		image:SetAttribute("FixedBackground", true)
+		image.Parent = root
+		images[image] = true
+		return root
+	end
 
 	local strips = {}
 	local displayWidth = math.max(1, requested.X.Offset)

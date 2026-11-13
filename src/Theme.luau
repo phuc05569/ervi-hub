@@ -31,8 +31,8 @@ local Theme = {
 	info = rgb(96, 172, 255),
 
 	size = { title = 16, h2 = 14, body = 13, small = 12, tiny = 11, big = 30 },
-	radius = 10,
-	radiusSm = 6,
+	radius = 12,
+	radiusSm = 8,
 	pad = 12,
 	gap = 8,
 	rowH = 32,

@@ -2,6 +2,7 @@
 local Ui=require("Ui")
 local Theme=require("Theme")
 local TextStyle=require("VisualTextStyle")
+local Stroke=require("SkeletonStroke")
 return function(parent)
  local frame=Ui.card(parent,"Visualization preview",0,"Native sample · visibility follows Through Walls")
  local canvas=Ui.new("Frame",{Size=UDim2.new(1,0,0,270),BackgroundColor3=Color3.fromRGB(21,25,35),LayoutOrder=1,Parent=frame})
@@ -42,8 +43,12 @@ return function(parent)
   for _,c in ipairs(corners) do c.Visible=visible and p.boxStyle=="Corners";c.BackgroundColor3=tint end
   health.Visible=p.healthBar and visible;head.Visible=p.headDot and visible;head.BackgroundColor3=tint
   for i,b in ipairs(bones) do
-   local rect=boneRects[i];local w=rect[3]<=2 and p.skeletonThickness or rect[3];local h=rect[4]<=2 and p.skeletonThickness or rect[4]
-   b.Size=UDim2.fromOffset(w,h);outlines[i].Size=UDim2.fromOffset(w+2,h+2)
+   local coreW,coreT,outlineW,outlineT=Stroke.resolve(p.skeletonThickness)
+   local rect=boneRects[i];local w=rect[3]<=2 and coreW or rect[3];local h=rect[4]<=2 and coreW or rect[4]
+   local ow=rect[3]<=2 and outlineW or rect[3]+2;local oh=rect[4]<=2 and outlineW or rect[4]+2
+   b.Size=UDim2.fromOffset(w,h);b.BackgroundTransparency=coreT;outlines[i].Size=UDim2.fromOffset(ow,oh);outlines[i].BackgroundTransparency=outlineT
+   b.Position=UDim2.fromOffset(rect[1]+(rect[3]<=2 and (rect[3]-w)/2 or 0),rect[2]+(rect[4]<=2 and (rect[4]-h)/2 or 0))
+   outlines[i].Position=UDim2.fromOffset(rect[1]+(rect[3]<=2 and (rect[3]-ow)/2 or -1),rect[2]+(rect[4]<=2 and (rect[4]-oh)/2 or -1))
    b.Visible=p.skeleton and visible;b.BackgroundColor3=Color3.new(1,1,1);outlines[i].Visible=b.Visible
   end
   TextStyle.apply(name,Color3.new(1,1,1),Color3.new(0,0,0));TextStyle.apply(distance,Color3.new(1,1,1),Color3.new(0,0,0))

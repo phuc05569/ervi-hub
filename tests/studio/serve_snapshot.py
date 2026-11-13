@@ -25,7 +25,7 @@ class Snapshot(http.server.BaseHTTPRequestHandler):
             ["git", "show", "f577e07:src/Visuals.luau"], cwd=ROOT
         ).decode("utf-8")
         build = json.loads((ROOT / "build/Ervi_Hub.luau.map.json").read_text())["build"]
-        modules["Build"] = 'return {version="3.3.0",id=' + json.dumps(build) + '}\n'
+        modules["Build"] = 'return {version="3.4.0",id=' + json.dumps(build) + '}\n'
         for name, source in modules.items():
             modules[name] = re.sub(
                 r'require\("([\w.]+)"\)',
