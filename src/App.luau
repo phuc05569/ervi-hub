@@ -63,6 +63,7 @@ local function stopHub()
 	print("[Ervi Hub] Fully stopped and cleaned.")
 end
 _G.RNG_HUB_STOP = stopHub
+Ui.bindMotion(hub)
 
 local boot=BootLog.new(Build.id,os.clock,readfile,writefile)
 local function bootStep(message) if not stopped then boot.step(message) end end

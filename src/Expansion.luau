@@ -24,6 +24,7 @@ return function(ctx)
  local function apply()
   if hub.closed then return end
   Ui.setLanguage(ctx.prefs().language)
+  Ui.configureMotion(ctx.prefs())
   ctx.headerRefresh()
   world.apply();world.setBlur(ctx.prefs().backgroundBlur and ctx.isOpen());playerTools.apply();actions.applyFPS();visuals.apply()
   for _,fn in ipairs(refreshControls) do fn(true) end

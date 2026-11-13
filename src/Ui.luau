@@ -33,20 +33,21 @@ local FONT_ROLES = { "fontBold", "fontMedium", "font", "mono" }
 local surfaces = setmetatable({}, { __mode = "k" })
 local roots = setmetatable({}, { __mode = "k" })
 
-local activeTweens=setmetatable({},{__mode="k"})
+local Motion=require("Motion")
 local tweenService
 pcall(function() tweenService=game:GetService("TweenService") end)
+local motion=Motion.new(function(inst,duration,properties)
+ return tweenService:Create(inst,TweenInfo.new(duration,Enum.EasingStyle.Quart,Enum.EasingDirection.Out),properties)
+end)
 local function ownAnimation(scope,inst)
- scope:add(function() if activeTweens[inst] then pcall(function() activeTweens[inst]:Cancel() end);activeTweens[inst]=nil end end)
+ scope:add(function() motion.cancel(inst) end)
 end
-function Ui.animate(inst,properties)
- if activeTweens[inst] then pcall(function() activeTweens[inst]:Cancel() end);activeTweens[inst]=nil end
- if tweenService and TweenInfo then
-  local ok,tween=pcall(function() return tweenService:Create(inst,TweenInfo.new(0.12),properties) end)
-  if ok then activeTweens[inst]=tween;tween:Play();return end
- end
- for key,value in pairs(properties) do inst[key]=value end
+function Ui.bindMotion(scope) scope:add(motion) end
+function Ui.configureMotion(prefs) motion.configure(prefs.reduceAnimations,prefs.animationSpeed) end
+function Ui.animate(inst,properties,duration,done)
+ motion.to(inst,properties,duration,done)
 end
+function Ui.cancelAnimation(inst) motion.cancel(inst) end
 local function outlineOn()
 	return Ui.outline == "on" or (Ui.outline == "auto" and Ui.opacity < LOW_OPACITY)
 end
@@ -143,6 +144,7 @@ end
 -- Applies a full look (design, accent, font, text color/size/transparency/outline) and repaints
 -- everything already built. FixedBackground / FixedTextColor elements (color previews) keep theirs.
 function Ui.applyLook(look)
+	Ui.configureMotion(look)
 	local map = Theme.apply(look)
     Logo.refresh(Theme.bg)
 	Ui.textScale, Ui.textAlpha, Ui.outline = look.textScale, look.textAlpha, look.outline
@@ -451,14 +453,14 @@ function Ui.toggle(scope, parent, label, desc, initial, onChange, order)
 	local knob = Ui.new("Frame", { Size = UDim2.fromOffset(16, 16), Position = UDim2.fromOffset(3, 3), BackgroundColor3 = Theme.muted, Parent = track })
 	Ui.corner(knob, 8)
 	ownAnimation(scope,knob)
+	ownAnimation(scope,track)
 	local value = false
 	local api = {node=row}
 	function api.set(on, silent)
 		value = on == true
         row:SetAttribute("Value",value)
-		track.BackgroundColor3 = value and Theme.accent or Theme.raised
-		knob.BackgroundColor3 = value and Theme.onAccent or Theme.muted
-		Ui.animate(knob,{Position=UDim2.fromOffset(value and 23 or 3,3)})
+		Ui.animate(track,{BackgroundColor3=value and Theme.accent or Theme.raised},0.18)
+		Ui.animate(knob,{Position=UDim2.fromOffset(value and 23 or 3,3),BackgroundColor3=value and Theme.onAccent or Theme.muted},0.18)
 		if not silent and onChange then
 			onChange(value)
 		end

@@ -11,6 +11,8 @@ for _,d in ipairs({{"walkEnabled","WalkSpeed","bool",false},{"walkKey","WalkSpee
 for _,d in ipairs({{"fullbright","Fullbright"},{"noFog","No Fog"},{"noShadows","No Shadows"},{"customTime","Custom Time"}}) do add(d[1],"world","Lighting",d[2],"bool",false) end
 add("timeOfDay","world","Lighting","Time of Day","number",12,{0,24,0.25})
 add("backgroundBlur","settings","Interface","Background Blur","bool",false)
+add("reduceAnimations","settings","Motion","Reduce Animations","bool",false,nil,"Apply visual changes immediately without changing feature behavior.")
+add("animationSpeed","settings","Motion","Animation Speed","number",1,{0.5,2,0.1},"Controls transition speed; features always respond immediately.")
 add("searchKey","settings","Interface","Search shortcut key","key","K",nil,"Hold Ctrl + this key to focus global search.")
 add("panicKey","settings","Interface","Panic key","key","End",nil,"Unload and restore owned state; ignored while typing.")
 add("language","settings","Interface","Language","choice","EN",{"EN","RU"},"English/Russian interface labels. Player names, game values and diagnostic evidence remain verbatim.")
