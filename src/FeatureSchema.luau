@@ -6,6 +6,11 @@ local function add(key,page,section,title,kind,default,options,description)
  table.insert(S,d)
 end
 add("movementPanel","player","Movement","Movement Panel","bool",false)
+add("clickTPEnabled","teleports","Click TP","Click TP preview","bool",false,nil,"Targeting preview only. No permitted server teleport mechanism is established.")
+add("clickTPKey","teleports","Click TP","Click TP hold key","key","NONE")
+add("clickTPSize","teleports","Click TP","Target Circle Size","number",4,{1,20,0.5})
+add("clickTPOpacity","teleports","Click TP","Target Circle Opacity","number",0.65,{0,1,0.05})
+add("clickTPColor","teleports","Click TP","Target Circle Color","color","#F0628E")
 add("movementSize","player","Movement","Panel Size","number",1,{0.8,1.5,0.05},"Scales the saved panel dimensions; the corner grip still resizes it.")
 for _,d in ipairs({{"walkEnabled","WalkSpeed","bool",false},{"walkKey","WalkSpeed key","key","NONE"},{"speedMode","Speed Mode","choice","Multiply",{"Set","Multiply"}},{"walkSpeed","Walk Speed","number",16,{0,100,1}},{"speedMultiplier","Speed Multiplier","number",1.5,{0.25,4,0.05}}}) do add(d[1],"player","Speed",d[2],d[3],d[4],d[5],"Local Humanoid speed; no CFrame fallback or correction-fighting loop.") end
 for _,d in ipairs({{"fullbright","Fullbright"},{"noFog","No Fog"},{"noShadows","No Shadows"},{"customTime","Custom Time"}}) do add(d[1],"world","Lighting",d[2],"bool",false) end

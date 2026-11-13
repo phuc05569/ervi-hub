@@ -1502,7 +1502,7 @@ bootStep("Existing feature pages and configurations initialized")
 
 -- ===================================================================== expansion
 keyConflict=function(value,except)
- for _,key in ipairs({"toggleKey","safeZoneKey","walkKey","espKey","panicKey"}) do if key~=except and prefs[key]==value then return true end end
+ for _,key in ipairs({"toggleKey","safeZoneKey","walkKey","espKey","panicKey","clickTPKey"}) do if key~=except and prefs[key]==value then return true end end
  return false
 end
 local function headerRefresh() if searchInput then searchInput.PlaceholderText=prefs.searchKey=="NONE" and "Search settings" or ("Search settings · Ctrl+"..prefs.searchKey) end end
@@ -1517,7 +1517,7 @@ statusBar=makeStatusBar(hub,playerGui,function() return prefs end,savePrefs,func
  local function add(on,label,page) if on then table.insert(features,{label=label,page=page}) end end
  add(autoRoll:isRunning() or autoRoll.state=="Paused","Roll "..autoRoll.state,"roll")
  add(safeZone.enabled,"Safe Zone","safe");add(expansion.visuals.active,"Visuals","visuals")
- add(expansion.player.walkActive,"Speed","player");add(m1.enabled,"M1","combat");add(session.antiAfk,"Anti AFK","utility")
+ add(expansion.player.walkActive,"Speed","player");add(expansion.clickTP.active,"Click preview","teleports");add(m1.enabled,"M1","combat");add(session.antiAfk,"Anti AFK","utility")
  return {fps=metrics.fps,ping=metrics.ping,rollState=autoRoll.state,features=features}
 end)
 

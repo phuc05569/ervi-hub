@@ -1070,6 +1070,36 @@ return function(API, makeEngine, hubFn, loaderFn, schema)
     visiblePlayer.Parent=nil;ctl.run(0.3)
     check(#overlay:GetChildren()==0,"Visuals: leaving player removes drawing resources")
     click(toggleRow("Enabled"));check(ctl.pg:FindFirstChild("Ervi_VisibleOverlays")==nil,"Visuals: disable removes every overlay")
+    -- Click TP is a held targeting preview, never a simulated server move.
+    click(nav("Teleports"))
+    local clickKey=hubGui():FindFirstChild("Setting_clickTPKey",true)
+    click(clickKey);ctl.UIS.InputBegan:Fire({UserInputType=env.Enum.UserInputType.Keyboard,KeyCode=env.Enum.KeyCode.T},false)
+    click(toggleRow("Click TP preview"))
+    local previewRoot=ctl.player.Character:FindFirstChild("HumanoidRootPart")
+    if not previewRoot then previewRoot=ctl.new("Part",ctl.player.Character);previewRoot.Name="HumanoidRootPart" end
+    local previewOrigin=previewRoot.CFrame
+    ctl.raycastResult={Instance=ctl.wall,Position=env.Vector3.new(10,0,-5),Normal=env.Vector3.new(0,1,0)}
+    ctl.UIS.InputBegan:Fire({UserInputType=env.Enum.UserInputType.Keyboard,KeyCode=env.Enum.KeyCode.T},false);ctl.run(0.1)
+    local marker=env.workspace:FindFirstChild("ErviClickTarget")
+    check(marker and not marker.CanCollide and not marker.CanQuery,"Click preview: one non-interactive world circle appears while held")
+    check(ctl.lastViewportRay and ctl.lastViewportRay[1]==400 and ctl.lastViewportRay[2]==300,"Click preview: raw mouse coordinates use viewport rays without a second GUI inset")
+    check(ctl.lastGuiHitPoint and ctl.lastGuiHitPoint[1]==400 and ctl.lastGuiHitPoint[2]==242,"Click preview: GUI hit tests remove the top-bar inset from raw mouse coordinates")
+    ctl.UIS.InputBegan:Fire({UserInputType=env.Enum.UserInputType.MouseButton1},false);ctl.run(0.1)
+    check(ctl.player.Character:FindFirstChild("HumanoidRootPart").CFrame==previewOrigin,"Click preview: selecting does not modify the character or pretend to teleport")
+    ctl.guiHits={clickKey};ctl.run(0.1)
+    check(env.workspace:FindFirstChild("ErviClickTarget")==nil,"Click preview: GUI controls suppress the world indicator")
+    ctl.guiHits={};ctl.run(0.1)
+    check(env.workspace:FindFirstChild("ErviClickTarget")==marker,"Click preview: indicator is reused after GUI suppression")
+    ctl.UIS.InputEnded:Fire({UserInputType=env.Enum.UserInputType.Keyboard,KeyCode=env.Enum.KeyCode.T})
+    check(env.workspace:FindFirstChild("ErviClickTarget")==nil,"Click preview: key release hides its circle")
+    click(toggleRow("Click TP preview"));click(toggleRow("Click TP preview"))
+    ctl.UIS.InputBegan:Fire({UserInputType=env.Enum.UserInputType.Keyboard,KeyCode=env.Enum.KeyCode.T},false);ctl.run(0.1)
+    check(ctl.lastRaycastParams and ctl.lastRaycastParams.FilterDescendantsInstances and ctl.lastRaycastParams.FilterDescendantsInstances[1]==ctl.player.Character,"Click preview: re-enabling rebuilds the local-character ray exclusion")
+    click(clickKey);ctl.UIS.InputBegan:Fire({UserInputType=env.Enum.UserInputType.Keyboard,KeyCode=env.Enum.KeyCode.Backspace},false);ctl.run(0.1)
+    check(env.workspace:FindFirstChild("ErviClickTarget")==nil,"Click preview: clearing a held binding immediately hides its indicator")
+    click(toggleRow("Click TP preview"));ctl.raycastResult=nil;ctl.guiHits=nil
+    check(marker and marker.Parent==nil,"Click preview: disabling releases its marker")
+    noErrors("click targeting preview")
     -- Existing session controls + new actions; raw HTTP failure reports a status.
     click(nav("Utility"));local beforeTeleport=ctl.teleports
     local utilityPage=hubGui():FindFirstChild("ErviPage_utility",true)

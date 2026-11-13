@@ -6,6 +6,7 @@ local makeWorld=require("World")
 local makePlayer=require("PlayerTools")
 local makeActions=require("RuntimeActions")
 local makeVisuals=require("Visuals")
+local makeClickTP=require("ClickTP")
 local makePreview=require("VisualPreview")
 local Logo=require("Logo")
 return function(ctx)
@@ -14,6 +15,7 @@ return function(ctx)
  local playerTools=makePlayer(hub,ctx.parent,ctx.prefs,ctx.save)
  local actions=makeActions(hub,ctx.prefs)
  local visuals=makeVisuals(hub,ctx.parent,ctx.prefs)
+ local clickTP=makeClickTP(hub,ctx.parent,ctx.prefs)
  local pages=ctx.pages
  local new={}
  for _,tab in ipairs({{"visuals","Visuals","Visible player overlays and preview"},{"player","Player","Local speed and movement panel"},{"world","World","Lighting and camera"}}) do
@@ -27,7 +29,7 @@ return function(ctx)
   Ui.configureMotion(ctx.prefs())
   ctx.headerRefresh()
   if ctx.statusBarRefresh then ctx.statusBarRefresh() end
-  world.apply();world.setBlur(ctx.prefs().backgroundBlur and ctx.isOpen());playerTools.apply();actions.applyFPS();visuals.apply()
+  world.apply();world.setBlur(ctx.prefs().backgroundBlur and ctx.isOpen());playerTools.apply();actions.applyFPS();visuals.apply();clickTP.apply()
   for _,fn in ipairs(refreshControls) do fn(true) end
  end
  local function changed(key,value)
@@ -46,7 +48,7 @@ return function(ctx)
   if d.kind=="bool" then
    control=Ui.toggle(hub,card,d.title,d.description,ctx.prefs()[key],function(v) changed(key,v) end,1)
   elseif d.kind=="number" then
-   control=Ui.slider(hub,card,d.title,{min=d.min,max=d.max,step=d.step,value=ctx.prefs()[key],order=2,description=d.description,format=function(v) if key=="chamsFill" or key=="chamsOutline" or key=="statusOpacity" then return ("%d%%"):format(math.floor(v*100+0.5)) end;return require("SliderValue").format(v,d.step) end},function(v) changed(key,v) end)
+   control=Ui.slider(hub,card,d.title,{min=d.min,max=d.max,step=d.step,value=ctx.prefs()[key],order=2,description=d.description,format=function(v) if key=="chamsFill" or key=="chamsOutline" or key=="statusOpacity" or key=="clickTPOpacity" then return ("%d%%"):format(math.floor(v*100+0.5)) end;return require("SliderValue").format(v,d.step) end},function(v) changed(key,v) end)
   elseif d.kind=="choice" then
    local component=#d.options<=3 and Ui.segment or Ui.dropdown
    control=component(hub,card,d.title,d.options,ctx.prefs()[key],function(v) changed(key,v) end,2)
@@ -132,6 +134,8 @@ return function(ctx)
  local teleQuick=quick(pages.teleports.page,20)
  ctx.onRefresh("dash","home actions",homeQuick);ctx.onRefresh("utility","utility actions",function() utilityQuick();end)
  ctx.onRefresh("teleports","teleport actions",teleQuick)
+ local clickStatus=Ui.text(groups["teleports/Click TP"],"",{order=20,textSize=Theme.size.small})
+ ctx.onRefresh("teleports","click targeting",function() Ui.set(clickStatus,"Text",clickTP.status) end)
  local fpsStatus=Ui.text(groups["utility/Rendering"],"",{order=5,textSize=Theme.size.small})
  ctx.onRefresh("utility","FPS cap status",function() Ui.set(fpsStatus,"Text",actions.fpsStatus) end)
  -- Welcome and performance use native shapes rather than borrowed art.
@@ -193,9 +197,10 @@ return function(ctx)
   if p.panicKey~="NONE" and name==p.panicKey then ctx.stop();return true end
   if p.walkKey~="NONE" and name==p.walkKey then changed("walkEnabled",not p.walkEnabled);return true end
   if p.espKey~="NONE" and name==p.espKey then changed("espEnabled",not p.espEnabled);return true end
+  if clickTP.keyDown(input) then return true end
   return false
  end
  table.insert(ctx.syncs,apply)
  apply();previewLayout()
- return {apply=apply,keyHandler=keyHandler,actions=actions,world=world,visuals=visuals,player=playerTools}
+ return {apply=apply,keyHandler=keyHandler,actions=actions,world=world,visuals=visuals,player=playerTools,clickTP=clickTP}
 end

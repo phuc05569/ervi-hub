@@ -1,5 +1,6 @@
 -- Interface labels only. Player names, API errors and diagnostic evidence stay verbatim.
 local RU={["Status Bar"]="Строка состояния",["Status Bar Opacity"]="Непрозрачность строки состояния",["Exact N"]="Точное N",
+ ["Click TP"]="Выбор точки",["Click TP preview"]="Предпросмотр точки",["Click TP hold key"]="Клавиша выбора точки",["Target Circle Size"]="Размер круга",["Target Circle Opacity"]="Непрозрачность круга",["Target Circle Color"]="Цвет круга",
  ["Confirm action"]="Подтверждение",["Confirm"]="Подтвердить",["Cancel"]="Отмена",
  ["Notifications"]="Уведомления",["Notification Duration"]="Длительность уведомлений",
  ["Motion"]="Анимация",["Reduce Animations"]="Уменьшить анимацию",["Animation Speed"]="Скорость анимации",["UI Scale"]="Масштаб интерфейса",
