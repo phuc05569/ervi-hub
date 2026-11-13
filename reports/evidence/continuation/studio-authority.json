@@ -1,0 +1,9 @@
+{
+  "placeId": 0,
+  "gameId": 0,
+  "method": "Authorized ErviUITest sandbox, distinct Client and Server DataModels. PositionHold invoked on the local test character; target-game SafeZone place guard retained.",
+  "clientHeld": {"position": [12, 3.522728204727173, 0], "anchored": true},
+  "serverDuringClientHold": {"position": [0, 3.5229716300964355, 0], "anchored": false, "networkOwnerIsPlayer": true},
+  "clientReturn": {"position": [0, 3.522728204727173, 0], "heldDuringReturn": true, "anchoredAfterRelease": false},
+  "conclusion": "Local anchored movement did not establish server movement in this sandbox. This does not prove every possible movement method or target-game server behavior. No server movement/protection mechanism was established."
+}

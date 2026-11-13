@@ -1,0 +1,7 @@
++0.000s 3.2.0+dd350e6369f5 | Stop handle registered; prior instance cleanup finished
++0.001s 3.2.0+dd350e6369f5 | Settings loaded: DEFAULT
++0.006s 3.2.0+dd350e6369f5 | Main window and input handlers initialized
++0.008s 3.2.0+dd350e6369f5 | Core features initialized
++0.080s 3.2.0+dd350e6369f5 | Existing feature pages and configurations initialized
++0.148s 3.2.0+dd350e6369f5 | Shared UI catalog and expansion features initialized
++0.150s 3.2.0+dd350e6369f5 | Search initialized; Ready

@@ -1,0 +1,161 @@
+  FAIL  ClickTarget.spec :: click targeting rejects missing nonfinite steep and over-range destinations
+        ./build/tests.luau:1605: check failed
+  PASS  ClickTarget.spec :: click preview default binding is none and settings round trip
+  PASS  LogoGeometry.spec :: logo sampling follows its display width within bounded limits
+  PASS  LogoGeometry.spec :: logo edge coverage preserves the polygon and orders alpha stops
+  PASS  LogoGeometry.spec :: logo keeps the official three-segment viewbox
+  PASS  LogoGeometry.spec :: logo source vertices remain inside the normalized viewbox
+  PASS  LogoGeometry.spec :: logo scan conversion returns ordered positive spans at each segment
+  PASS  LogoGeometry.spec :: logo requested height derives from exact official aspect ratio
+  PASS  RequestedControls.spec :: status opacity is schema-backed, defaults valid, clamps and round trips
+  PASS  RequestedControls.spec :: custom N slider and exact entry stay integer bounded and persistent
+  PASS  RequestedControls.spec :: supported ESP policy retains occlusion and live labels use high contrast
+  PASS  SliderValue.spec :: numeric clamping and decimal increments
+  PASS  SliderValue.spec :: new motion preferences preserve legacy settings
+  PASS  Motion.spec :: rapid replacement ignores cancelled completions
+  PASS  Motion.spec :: reduced motion settles current work and future changes immediately
+  PASS  Motion.spec :: scope close cancels all work without completion
+  PASS  Motion.spec :: speed bounded and failed service falls back
+  PASS  AutoRoll.spec :: default run can exceed old 250-roll cap
+  PASS  AutoRoll.spec :: default run has no optional rare pause or roll cap
+  PASS  AutoRoll.spec :: death during a nonqualifying in-flight roll resumes only after normal cooldown
+  PASS  AutoRoll.spec :: qualifying in-flight result while dead stays terminal
+  PASS  AutoRoll.spec :: respawn preference cannot retry an uncertain in-flight request
+  PASS  AutoRoll.spec :: resume preference waits through long death without a second worker
+  PASS  AutoRoll.spec :: disabled recovery pauses before requesting while dead
+  PASS  AutoRoll.spec :: Stop during respawn wait never resumes
+  PASS  AutoRoll.spec :: qualifying style acquired during respawn is never rolled away
+  PASS  AutoRoll.spec :: rare replacement after waiting requires Continue
+  PASS  AutoRoll.spec :: stops on first qualifying result with zero further requests
+  PASS  AutoRoll.spec :: never rolls away a current style that already qualifies
+  PASS  AutoRoll.spec :: repeated same-style results are each counted
+  PASS  AutoRoll.spec :: respects cooldown: no request before readyAt
+  PASS  AutoRoll.spec :: Stop during a request: non-qualifying result, no further rolls
+  PASS  AutoRoll.spec :: Stop during a request that turns out qualifying still reports Found
+  PASS  AutoRoll.spec :: timeout pauses; restart refused while pending; late qualifying result -> Found
+  PASS  AutoRoll.spec :: empty server result pauses without retry
+  PASS  AutoRoll.spec :: request error pauses without retry
+  PASS  AutoRoll.spec :: cooldown that never restarts is treated as uncertain
+  PASS  AutoRoll.spec :: rare current style needs explicit Continue
+  PASS  AutoRoll.spec :: rare-but-below-target result is kept (pause)
+  PASS  AutoRoll.spec :: roll cap pauses
+  PASS  AutoRoll.spec :: not ready for too long pauses without a request
+  PASS  AutoRoll.spec :: style target changes mid-session use the new mapping
+  PASS  AutoRoll.spec :: double start is rejected while running
+[Ervi Hub] AutoRoll listener error: ./build/tests.luau:1577: ui exploded
+[Ervi Hub] AutoRoll listener error: ./build/tests.luau:1577: ui exploded
+[Ervi Hub] AutoRoll listener error: ./build/tests.luau:1577: ui exploded
+[Ervi Hub] AutoRoll listener error: ./build/tests.luau:1577: ui exploded
+  PASS  AutoRoll.spec :: listener errors do not break the machine
+  PASS  AutoRoll.spec :: dispose silences a late result arriving after hub close
+  PASS  Rarity.spec :: tier boundaries follow the game's Tier table
+  PASS  Rarity.spec :: per-style RarityName override only applies with RarityColor (like the game)
+  PASS  Rarity.spec :: chance threshold is inclusive and larger is rarer
+  PASS  Rarity.spec :: style mode matches exact names only
+  PASS  Rarity.spec :: invalid targets are rejected
+  PASS  Scope.spec :: closes in reverse order, exactly once
+  PASS  Scope.spec :: child scope closes with parent; parent survives child close
+  PASS  Scope.spec :: items added after close are disposed immediately
+[Ervi Hub] cleanup error in t: ./build/tests.luau:2093: boom
+  PASS  Scope.spec :: one failing cleanup does not block the rest
+  PASS  Scope.spec :: connection-like tables are disconnected
+  PASS  Settings.spec :: new teleport action is unbound and ignores old reference settings
+  PASS  Settings.spec :: HUD geometry safe reference and workflow preferences persist
+  PASS  Settings.spec :: zero opacity is valid and new dimensions clamp
+  PASS  Settings.spec :: persisted key conflicts are repaired
+  PASS  Settings.spec :: infinite settings cannot break HUD geometry
+  PASS  Settings.spec :: missing file gives an empty store
+  PASS  Settings.spec :: round trip keeps every config, order and autoload
+  PASS  Settings.spec :: bad values fall back or clamp
+  PASS  Settings.spec :: 2.1.x single-config file migrates into Default
+  PASS  Settings.spec :: autoload pointing at a missing config is dropped
+  PASS  Settings.spec :: invalid section names are skipped with their lines
+  PASS  Settings.spec :: names: trimmed, length and character limits
+  PASS  Settings.spec :: delete removes config and clears its autoload
+  PASS  Settings.spec :: put overwrites in place without duplicating
+  PASS  Settings.spec :: booleans and custom colors round trip; junk ignored
+  PASS  Settings.spec :: window size and instant prompts round trip and clamp
+  PASS  Settings.spec :: defaults are never mutated
+  PASS  M1State.spec :: missing signal never implies READY
+  PASS  M1State.spec :: Punch deadline counts down in server time
+  PASS  M1State.spec :: Slap supports a different duration and transitions to READY
+  PASS  M1State.spec :: a changed deadline immediately replaces the prior cooldown
+  PASS  M1State.spec :: style changes invalidate the old deadline
+  PASS  M1State.spec :: unequipping never reports readiness
+  PASS  M1State.spec :: dead characters never report readiness
+  PASS  M1State.spec :: respawn reset waits for fresh evidence
+  PASS  M1State.spec :: NaN infinity zero strings and implausible clocks are rejected
+  PASS  M1State.spec :: removed attributes clear the countdown
+  PASS  M1State.spec :: evidence explicitly labels unverified clock semantics
+  PASS  M1State.spec :: fresh samples recover after delayed replication
+  PASS  Loader.spec :: traversal cannot escape a pinned commit
+  PASS  Loader.spec :: a new release is not mistaken for a duplicate
+  PASS  Loader.spec :: bad stop handles clean up a partially registered hub
+  PASS  Loader.spec :: failure before registration preserves a previous hub
+  PASS  Loader.spec :: wrong place performs no HTTP
+  PASS  Loader.spec :: unset release and branch URLs are rejected
+  PASS  Loader.spec :: loads a pinned matching release once
+  PASS  Loader.spec :: duplicate execution returns current stop without requests
+  PASS  Loader.spec :: download errors retry exactly three times
+  PASS  Loader.spec :: transient download error recovers before execution
+  PASS  Loader.spec :: HTML and wrong versions never execute
+  PASS  Loader.spec :: compile errors are not retried and keep old hub
+  PASS  Loader.spec :: runtime errors clean partial hub and never retry execution
+  PASS  Loader.spec :: nested calls are blocked while HTTP yields
+  PASS  Loader.spec :: manual unload permits a fresh run
+  PASS  Loader.spec :: missing stop handle is reported
+  PASS  WindowGeometry.spec :: fits a persisted HUD inside a smaller viewport
+  PASS  WindowGeometry.spec :: drag cannot leave the screen
+  PASS  WindowGeometry.spec :: normalized layout round trips without drift
+  PASS  WindowGeometry.spec :: minimum dimensions prevent overlapping content
+  PASS  WindowGeometry.spec :: tiny viewport has no negative dimensions or positions
+  PASS  SafeZoneState.spec :: preset exactly matches owner coordinates and is place scoped
+  PASS  SafeZoneState.spec :: position orientation and place survive serialization
+  PASS  SafeZoneState.spec :: references cannot cross places
+  PASS  SafeZoneState.spec :: malformed references are rejected
+  PASS  SafeZoneState.spec :: nonfinite coordinates are rejected
+  PASS  SafeZoneState.spec :: saved coordinates can be replaced and distance is read only
+  PASS  SafeZoneState.spec :: missing reference has a useful status
+  PASS  TargetState.spec :: 25 percent qualifies and 50 does not at threshold 30
+  PASS  TargetState.spec :: threshold is strict and zero health is dead
+  PASS  TargetState.spec :: invalid max health and nonfinite values are ignored
+  PASS  TargetState.spec :: existing eligible target remains stable
+  PASS  TargetState.spec :: target death leaves and respawn clear stale target
+  PASS  TargetState.spec :: becoming ineligible selects another eligible target
+  PASS  TargetState.spec :: local death missing safe zone and disable stop selection
+  PASS  TargetState.spec :: local respawn recovers with valid state
+  PASS  PositionHold.spec :: hold cancels falling and anchors before movement
+  PASS  PositionHold.spec :: pre-existing anchored state is preserved
+  PASS  PositionHold.spec :: movement error rolls back physics
+  PASS  PositionHold.spec :: release is idempotent
+  PASS  PositionHold.spec :: external unanchor is respected
+  PASS  Expansion.spec :: new speed defaults to Multiply and explicit saved mode is retained
+  PASS  Expansion.spec :: status bar position precision persists
+  PASS  Expansion.spec :: normalized native property writes retain restoration and guard self events
+  PASS  Expansion.spec :: boot report retains actual current and previous stages
+  PASS  Expansion.spec :: boot history is bounded and file API failures are nonfatal
+  PASS  Expansion.spec :: failed override update retains original restoration
+  PASS  Expansion.spec :: Russian labels and case folding remain searchable
+  PASS  Expansion.spec :: every catalog field survives nondefault config sharing
+  PASS  Expansion.spec :: search indexes real controls and all query words
+  PASS  Expansion.spec :: search skips removed controls and handles literal pattern characters
+  PASS  Expansion.spec :: search limit and exact ranking are stable
+  PASS  Expansion.spec :: owned properties restore only their original values
+  PASS  Expansion.spec :: external game changes survive restoration
+  PASS  Expansion.spec :: new object restores old property ownership
+  PASS  Expansion.spec :: invisible players never pass visualization eligibility
+  PASS  Expansion.spec :: distance team and dead filters are explicit
+  PASS  Expansion.spec :: near and far redraws obey budgets
+  PASS  Expansion.spec :: friend colors take priority only when enabled
+  PASS  Expansion.spec :: data-only config sharing round trips new controls
+  PASS  Expansion.spec :: config import rejects unsupported versions huge inputs and multiple slots
+  PASS  Expansion.spec :: shared setting validation rejects invalid enums colors and infinity
+  PASS  Expansion.spec :: autoload per game persists and deletion removes only matching slots
+  PASS  Expansion.spec :: catalog has unique keys valid defaults and supported pages
+147 passed, 1 failed
+./build/tests.luau:2035: tests failed
+stacktrace:
+[C] function error
+./build/tests.luau:2035
+./build/tests.luau:10 function __require
+./build/tests.luau:2325

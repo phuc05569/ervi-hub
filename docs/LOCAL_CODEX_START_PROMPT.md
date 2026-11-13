@@ -1,4 +1,12 @@
-# Paste into local Codex CLI
+# Current continuation prompt
+
+Continue the existing Ervi Hub checkout at C:\Users\ASUS\ervi-hub on dev/ervi-hub-3.1-handoff. Preserve local modifications, fetch/record HEAD, and read AGENTS.md, README.md, CHANGELOG.md, docs/LOCAL_CODEX_HANDOFF.md, docs/RELEASE_VERIFICATION_3_2_0.md and reports/CONTINUATION_3_2_0.md. Do not restart or use unrelated old RNG/Jan candidates.
+
+Current baseline: 148 unit / 494 smoke, both artifacts compiling and deterministic outputs. Discover/test Desktop Commander and Studio capabilities and read place identity before mutations. Prioritize physical target-game GUI input/capture, a complete live hover transition using a visible control and actual overlay label rendering. The first virtual hover probe incorrectly targeted a clipped sidebar item. Click TP is a held targeting preview/default NONE; Safe Zone is a local A→B→A transaction, not proven server protection. Preserve visibility restrictions, budgets, scoped cleanup, settings, Auto Roll single worker/request/terminal/no-blind-retry and Custom N 1–5000. Do not invent remotes or bypass corrections.
+
+Develop through source, rebuild/test, back up/deploy/hash-verify both Potassium paths, preserve settings and keep autoexec empty. Routine authorized dev-branch commits/pushes may proceed without repeated approval; main, visibility, security protections, unrelated files and Roblox publication are out of scope. Distinguish headless, native Studio, virtual client and physical live evidence.
+
+## Historical 3.1 start prompt below
 
 ```text
 Continue Ervi Hub 3.1 on this Windows PC. Use Desktop Commander for filesystem/PowerShell/process work and Roblox Studio MCP for supported Studio inspection/testing. Discover and verify both connections first: list my Windows user directory, run Get-Location, report available tool capabilities, and read Studio place identity. Do not infer graphical control from terminal access.

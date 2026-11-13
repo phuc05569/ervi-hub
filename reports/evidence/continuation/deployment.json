@@ -1,0 +1,23 @@
+{
+  "build": "3.2.0+4e59db554fde",
+  "sha256": "6eb609a7dc0ef0bb8998ff6bbfd7a459bae49c760fdece5908699a79511a2443",
+  "files": [
+    {
+      "path": "C:\\Users\\ASUS\\AppData\\Local\\Potassium\\scripts\\Ervi_Hub.luau",
+      "backup": "C:\\Users\\ASUS\\ervi-hub\\backups\\pre-3.2.0-20261113-152041\\scripts_Ervi_Hub.luau",
+      "previousSha256": "df0bc00793ed149b8f62ee5a5c81ae5a5fbcd187b925920c7355c174a3b71ad1",
+      "deployedSha256": "6eb609a7dc0ef0bb8998ff6bbfd7a459bae49c760fdece5908699a79511a2443"
+    },
+    {
+      "path": "C:\\Users\\ASUS\\AppData\\Local\\Potassium\\workspace\\Ervi_Hub.luau",
+      "backup": "C:\\Users\\ASUS\\ervi-hub\\backups\\pre-3.2.0-20261113-152041\\workspace_Ervi_Hub.luau",
+      "previousSha256": "4b6a481356396956d61e326007251d3d321698c2106aa3d8ede225d084af3eab",
+      "deployedSha256": "6eb609a7dc0ef0bb8998ff6bbfd7a459bae49c760fdece5908699a79511a2443"
+    }
+  ],
+  "settingsUnchangedByDeployment": true,
+  "settingsSha256": "5667948db4b731a4638cb7c30e37b120556efdfb45da3eec4742320e3255eb91",
+  "existingSettingValuesPreservedAcrossTests": true,
+  "newSchemaDefaultsAdded": 10,
+  "autoexecEmpty": true
+}

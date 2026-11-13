@@ -1,0 +1,16 @@
+{
+  "placeId": 0,
+  "gameId": 0,
+  "method": "Native Studio mouse and keyboard input, actual Part, Camera projection and GUI hit tests",
+  "keyCapture": "F8",
+  "defaultKey": "NONE",
+  "beforeRayFix": {"mouse": [500, 628], "markerViewport": [500.1230773925781, 684.120849609375], "insetY": 58},
+  "afterRayFix": {"mouse": [650, 458], "markerViewport": [650.165771484375, 456.864013671875], "alignmentPixels": 1.1480178833007813},
+  "selectedStatus": "Selected preview (7.8, 0.5, -1.7) - no server teleport",
+  "characterBeforeAndAfter": [0, 3.522728204727173, 0],
+  "markerHiddenOverControl": true,
+  "markerHiddenOnKeyRelease": true,
+  "mainVisibleAfterRestore": true,
+  "statusBarDisabledAfterRestore": true,
+  "note": "The marker is raised 0.04 studs above the surface to avoid z-fighting; its projected center can differ slightly from the exact ray hit."
+}

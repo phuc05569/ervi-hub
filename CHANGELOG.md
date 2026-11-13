@@ -1,5 +1,15 @@
 # Changelog
 
+## 3.2.0 development checkpoint (2026-11-13)
+- Build `3.2.0+4e59db554fde`; bundle SHA-256 `6eb609a7dc0ef0bb8998ff6bbfd7a459bae49c760fdece5908699a79511a2443`.
+- Added persisted/searchable Click TP targeting preview: held binding/default NONE, reusable circle, size/color/percentage opacity, target validation and input/lifecycle cleanup. No server teleport is implemented or claimed.
+- Fixed native coordinate defects: raw mouse rays use ViewportPointToRay; GUI hit tests subtract GuiService inset. Clearing a held binding and re-enabling correctly reset the preview and character exclusions.
+- Fixed actual small-logo aspect drift with a width-led constraint. Adaptive sampling/alpha coverage reduces combined logo descendants from 700 to 230. Replaced a missing dropdown disclosure glyph with animated native strokes.
+- Cache player discovery/friend queries, candidates/ray parameters/bones and bounded drawing records through temporary occlusion. Visibility restrictions and budgets remain intact.
+- Safe Zone status explicitly identifies local hold and unverified server position/protection; a client/server sandbox comparison demonstrated differing positions.
+- Verification: 148 unit / 494 smoke pass, both artifacts compile, deterministic outputs. Native Studio screenshots and bounded actual Potassium/RNG reports are retained. Physical live input/rendering and a contradictory virtual hover probe remain explicit limitations; benchmark noise does not establish an FPS gain.
+- Both Potassium bundle paths deployed after backups; existing setting values preserved; autoexec empty. Exact published commit/loader are in docs/RELEASE_VERIFICATION_3_2_0.md.
+
 ## 3.1.0 development handoff (2026-11-13), NOT LIVE TESTED
 - Verified checkpoint build 3.1.0+5e9595329868; bundle SHA-256 `40b200576e75bb56f176c6df6fc25cecf611351bd9faabeff446f6cd209c1bc5`.
 - Added persisted Status Bar Opacity control with immediate updates to the minimized pill background.

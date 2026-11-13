@@ -1,0 +1,84 @@
+{
+  "build": "3.2.0+4e59db554fde",
+  "unitTests": 148,
+  "smokeChecks": 494,
+  "commands": [
+    {
+      "command": [
+        "python",
+        "build.py"
+      ],
+      "exitCode": 0,
+      "log": "validation-00.txt"
+    },
+    {
+      "command": [
+        "python",
+        "build.py",
+        "--test"
+      ],
+      "exitCode": 0,
+      "log": "validation-01.txt"
+    },
+    {
+      "command": [
+        "tools/luau/luau.exe",
+        "build/tests.luau"
+      ],
+      "exitCode": 0,
+      "log": "validation-02.txt"
+    },
+    {
+      "command": [
+        "python",
+        "-I",
+        "tests/smoke/gen_rbx_api.py",
+        "tools/rbxapi/API-Dump.json",
+        "build/rbx_api.luau"
+      ],
+      "exitCode": 0,
+      "log": "validation-03.txt"
+    },
+    {
+      "command": [
+        "python",
+        "build.py",
+        "--smoke"
+      ],
+      "exitCode": 0,
+      "log": "validation-04.txt"
+    },
+    {
+      "command": [
+        "tools/luau/luau.exe",
+        "build/smoke.luau"
+      ],
+      "exitCode": 0,
+      "log": "validation-05.txt"
+    },
+    {
+      "command": [
+        "tools/luau/luau-compile.exe",
+        "--null",
+        "build/Ervi_Hub.luau"
+      ],
+      "exitCode": 0,
+      "log": "validation-06.txt"
+    },
+    {
+      "command": [
+        "tools/luau/luau-compile.exe",
+        "--null",
+        "build/loader.lua"
+      ],
+      "exitCode": 0,
+      "log": "validation-07.txt"
+    }
+  ],
+  "hashes": {
+    "build\\Ervi_Hub.luau": "6eb609a7dc0ef0bb8998ff6bbfd7a459bae49c760fdece5908699a79511a2443",
+    "build\\Ervi_Hub.luau.map.json": "938453476d56fd0125d889592fa4a83664572e6b89652dab1b8e7636e5963515",
+    "build\\loader.lua": "b8c01bb0d4d62bd49ec88cd5f0f664a63ec9f7bb2dde12e444a1f98a09f53e41"
+  },
+  "deterministic": true
+}

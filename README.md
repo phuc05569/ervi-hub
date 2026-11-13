@@ -1,4 +1,20 @@
-> **Current 3.1 handoff:** See [LOCAL_CODEX_HANDOFF](docs/LOCAL_CODEX_HANDOFF.md). Build **3.1.0+5e9595329868**, 144 unit tests / 476 smoke checks passing. The material below records 3.0 and is historical: 3.1 removes Freecam/Friends/Sounds/Triggerbot, reorganizes navigation, defaults speed to Multiply, adds the logo/status pill, fixes search/key capture, and returns Safe Zone to its activation origin on explicit OFF.
+> **Current development checkpoint: 3.2.0+4e59db554fde.** 148 unit tests / 494 smoke checks pass; both artifacts compile and rebuild deterministically. See [current handoff](docs/LOCAL_CODEX_HANDOFF.md), [phase report](reports/CONTINUATION_3_2_0.md), and [release verification](docs/RELEASE_VERIFICATION_3_2_0.md) for exact commit/loader and evidence. Bundle SHA-256: `6eb609a7dc0ef0bb8998ff6bbfd7a459bae49c760fdece5908699a79511a2443`.
+
+Current navigation is Auto Roll, Styles, Home, Combat, Visuals, Player, World, Safe Zone, Teleports, Utility, Config, Settings. Settings stays docked at the bottom. Friends/Sounds/Triggerbot/Freecam remain removed. Saved keys and settings remain compatible; RightShift is the default menu key. Auto Roll retains one worker/request, terminal results, ordinary readiness/respawn handling and no blind retry. Custom N stays integer 1–5000.
+
+**Teleports → Click TP preview:** enable, bind a hold key (default NONE), then hold to aim, click to select and release to hide. Size, percentage opacity and color are configurable. One reusable indicator rejects invalid/steep/over-range/humanoid destinations and suppresses GUI input. Rebinding, disable, focus/character changes and unload clean up the preview. No permitted arbitrary server teleport adapter exists; selecting never moves the character or reports teleport success.
+
+The official logo now has adaptive alpha-covered scanlines and a width-led aspect constraint, fixing native size quantization. Dropdowns use native strokes to avoid missing font glyphs. Visible overlays cache player discovery, ray parameters/candidates and bounded drawing records through occlusion; hidden/invisible-headed targets remain suppressed and highlights stay Occluded. Labels retain white text/black outlines. No general rendered-FPS improvement is claimed from the short Heartbeat/CPU benchmarks.
+
+Safe Zone remains the place-scoped local A→B→A transaction. Explicit OFF/unload returns before releasing anchoring; corrections/death release without return/retry. A distinct Studio server still saw A during the client's local hold at B. Target-game server position/protection remains unverified; a replicated SafeZoneShield ForceField is not evidence of permission to create protection or teleport arbitrarily.
+
+Both verified Potassium scripts/workspace Ervi_Hub.luau paths contain this build after backups. Existing setting values were preserved and autoexec is empty. Local execution remains `loadstring(readfile("Ervi_Hub.luau"))()`. The separate Ervi_3_2_0.luau entry was executed through Potassium UI Automation without replacing the user's unsaved tab. Its bounded runtime export is Ervi_3_2_0_Runtime.json.
+
+Native Studio screenshots/input verified logo scales, status appearance, a dropdown, resize, preview selection/release and GUI suppression. Potassium executed the hub in the actual target game and exported runtime data. A virtual hover probe initially targeted a clipped sidebar item; a corrected visible-control query hit the expected button with the marker absent. A complete live show-to-hide transition, physical desktop input and rendered live capture remain unverified.
+
+## Historical 3.0 reference below
+
+The remaining text records an older release, including removed tabs and tools. Use the current handoff and phase report for current behavior, tests and deployment.
 
 # Ervi Hub — RNG RollAttacks
 

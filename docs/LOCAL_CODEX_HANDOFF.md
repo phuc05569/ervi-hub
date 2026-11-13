@@ -1,4 +1,28 @@
-# Local Codex handoff — Ervi Hub 3.1
+# Current local handoff — Ervi Hub 3.2 development
+
+**This section supersedes the historical 3.1 notes below.** Continue `C:\Users\ASUS\ervi-hub` on `dev/ervi-hub-3.1-handoff`. Stable main remains `608dc220da4cd144d54c0415a31556264fd1ea0a`. Baseline `31dafe61b1a8b48839e937bd576de9c1c8060071` was reproduced at 144 unit / 476 smoke before edits.
+
+Current build **3.2.0+4e59db554fde**, SHA-256 `6eb609a7dc0ef0bb8998ff6bbfd7a459bae49c760fdece5908699a79511a2443`. Current verification is **148 unit / 494 smoke, zero failures**, both compilations and deterministic release/map/loader. Exact artifact commit/loader and remote hash verification are in [release verification](RELEASE_VERIFICATION_3_2_0.md); record the fetched branch HEAD rather than trusting a stale prose tip. See [phase report](../reports/CONTINUATION_3_2_0.md) and evidence directory.
+
+Changes: adaptive alpha-covered logo scanlines with width-dominant aspect constraint; animated native dropdown strokes; event-cached players/friends; reusable bounded visible-overlay records, candidates/ray parameters/bone caches; five schema-backed Click TP preview controls and menu/status integration. Production Visuals still uses Players; its optional source argument is for authorized fixtures. Hidden/invisible-headed targets remain suppressed and highlights stay Occluded.
+
+Click TP is **preview only**, default key NONE. Hold to aim, click to select, release to hide. Size 1–20, percentage opacity and validated color are persisted/searchable. Raw mouse coordinates use ViewportPointToRay, while GUI hit tests subtract GuiService inset. Invalid normals/nonfinite/over-range/humanoid destinations are rejected. Rebinding clears a held preview; re-enable rebuilds character exclusions. There is no movement or game-remote invocation. Preserve Scope cleanup, processed/typing/capture guards and one reusable marker.
+
+Safe Zone transaction semantics are unchanged, with explicit local-only ON status. A distinct sandbox server saw X=0 while the client held X=12, even with player network ownership. Return happened while anchored, followed by release. No target-game server movement/protection adapter was established. Read-only metadata found SafeZoneShield ForceFields; do not infer arbitrary movement or damage-immunity permission from names. Keep all existing no-retry/correction/death/respawn constraints below. CFrame Speed/Fly remain unsupported.
+
+Native Studio MCP was restored against local unsaved ErviUITest, PlaceId/GameId 0. Screenshots/native input checked logo sizes/scales, status 0/100 appearance, restore, dropdown layout, resize, selection without character movement, release and GUI control suppression. Native authority and click evidence are retained. No place was saved/published.
+
+Potassium UI Automation executed actual target-game builds and copied bounded runtime reports. Correct place/universe, boot, visible-target status, virtual F8 capture, held/released marker, rebind cleanup and ~0.14-pixel alignment were observed on the pre-chevron build. The final exact build also booted successfully. Callback invocation/VirtualInputManager are separate from physical desktop input. The initial virtual hover target was clipped: Teleports Y371–403 lay below the sidebar's visible Y75–346. A corrected visible Auto Roll control resolved to Nav_roll with the marker absent; however, no marker was present immediately before that corrected query, so a complete live show-to-hide transition remains unproven. Foreground access returned handle 0 and PrintWindow returned a blank game render area. Physical live input, live appearance/labels and target-game server behavior are unverified.
+
+Studio benchmark sequences include disabled/baseline/updated native fixtures; actual-client disabled/enabled Heartbeat samples are retained. Short/noisy engine-cadence samples do not establish rendered FPS gains. See studio-benchmark.json and phase report before quoting numbers.
+
+Both verified Potassium scripts/workspace Ervi_Hub.luau paths are deployed. Original builds/settings/boot log are backed up under `backups/pre-3.2.0-20261113-152041` (ignored). Existing setting values were preserved; ten new default fields across two configs are expected schema migration. Autoexec is empty. The user's unsaved tab was preserved; `Ervi_3_2_0.luau` is a separate verified local entry.
+
+Desktop Commander device LAPTOP-QB9OO6GB / c2230a28-a12e-4867-b9f5-baf374d40dd5 was online. Terminal/filesystem tools and native Windows UI Automation reached Potassium; this does not imply general desktop input/capture. Studio id ff0987be-d55c-4f4d-ae4f-078a446cbc3d was connected; discover/verify it anew. Test harness changes were unsaved. The local HTTP source bridge and Studio playtest are stopped before handoff.
+
+Next work: physical target-game GUI input/capture, a complete live hover transition using a visible control, actual overlay-label rendering and longer representative performance profiling. Preserve Auto Roll one-worker/one-request/terminal/no-blind-retry and Custom N 1–5000; current navigation/removals, settings and scoped cleanup. Do not restart or reuse unrelated old RNG/Jan hub candidates. Routine authorized dev edits/tests/backups/deploy/commit/push may proceed; stable main, visibility, security protections, unrelated files and Roblox publication remain out of scope.
+
+## Historical 3.1 handoff below
 
 ## Identity and exact transfer checkpoint
 Repository: https://github.com/phuc05569/ervi-hub

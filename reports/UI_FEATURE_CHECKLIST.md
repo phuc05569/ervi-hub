@@ -1,4 +1,18 @@
-> **Current 3.1 handoff:** See [LOCAL_CODEX_HANDOFF](../docs/LOCAL_CODEX_HANDOFF.md). Build **3.1.0+5e9595329868**, 144 unit tests / 476 smoke checks passing. The material below records 3.0 and is historical: 3.1 removes Freecam/Friends/Sounds/Triggerbot, reorganizes navigation, defaults speed to Multiply, adds the logo/status pill, fixes search/key capture, and returns Safe Zone to its activation origin on explicit OFF.
+> **Current 3.2 development:** build 3.2.0+4e59db554fde; 148 unit / 494 smoke pass. See [handoff](../docs/LOCAL_CODEX_HANDOFF.md) and [phase report](CONTINUATION_3_2_0.md). Inventory below the current additions is historical 3.0 material, including removed tools.
+
+| Current component | Status | Verification / limitation |
+|---|---|---|
+| clickTPEnabled | Teleports / Click TP preview / false | Held targeting preview; no movement |
+| clickTPKey | Hold binding / NONE | Native Studio + virtual live F8 capture; physical live input unverified |
+| clickTPSize | Slider 1–20 / 4 | Persisted, searchable, real marker size |
+| clickTPOpacity | Slider 0–100% / 65% | Persisted/searchable percentage and marker transparency |
+| clickTPColor | Palette/hex / #F0628E | Existing validated color component |
+| Official logo | Adaptive alpha strips and aspect constraint | Native Studio 18/24/48/96 at 75/100/125%; combined 230 descendants |
+| Dropdown disclosure | Animated native strokes | Native Studio; removes missing font glyph |
+| Status pill | Opacity, feature chips, minimize/restore | Headless and native visual 0/100 checks; live properties read |
+| Visible overlays | Cached discovery and bounded record reuse | Native fixtures and actual client status; no general FPS claim |
+| GUI preview suppression | GUI hit test + processed-input guard | Native Studio/smoke pass; first live target was clipped; corrected visible hit works, full live transition unproven |
+| Safe Zone | Existing local transaction, clarified status | Client/server sandbox mismatch; no server protection claim |
 
 # Screenshot feature inventory — Ervi Hub 3.0.0
 

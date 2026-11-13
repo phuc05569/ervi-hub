@@ -1,0 +1,495 @@
+  PASS  hub GUI created
+  PASS  global stop registered
+  PASS  boot: no script errors
+  PASS  boot: no warnings
+  PASS  tab Home: no script errors
+  PASS  tab Home: no warnings
+  PASS  tab Auto Roll: no script errors
+  PASS  tab Auto Roll: no warnings
+  PASS  tab Combat: no script errors
+  PASS  tab Combat: no warnings
+  PASS  tab Styles: no script errors
+  PASS  tab Styles: no warnings
+  PASS  tab Diagnostics: no script errors
+  PASS  tab Diagnostics: no warnings
+  PASS  tab Session: no script errors
+  PASS  tab Session: no warnings
+  PASS  tab Utility: no script errors
+  PASS  tab Utility: no warnings
+  PASS  tab Settings: no script errors
+  PASS  tab Settings: no warnings
+  PASS  styles list shows game data
+  PASS  unreleased hidden by default
+  PASS  RarityName override shown
+  PASS  auto roll sent exactly 3 requests
+  PASS  state pill shows FOUND
+  PASS  qualifying style kept
+  PASS  zero further requests after Found
+  PASS  auto roll: no script errors
+  PASS  auto roll: no warnings
+  PASS  rare current style no longer requires Continue
+  PASS  optional Safety options removed
+  PASS  Stop prevents further rolls
+  PASS  auto roll optional-pause removal: no script errors
+  PASS  auto roll optional-pause removal: no warnings
+  PASS  no roll while dead
+  PASS  dead gate: no script errors
+  PASS  dead gate: no warnings
+  PASS  no obsolete Cyborg controls
+  PASS  no duplicate Cyborg HUD
+  PASS  report captured attribute change
+  PASS  report has place version
+  PASS  report excludes username
+  PASS  capture auto-stops at time limit
+  PASS  diagnostics: no script errors
+  PASS  diagnostics: no warnings
+  PASS  minimize shows independent status bar
+  PASS  RightShift hides
+  PASS  RightShift shows
+  PASS  key ignored while typing (gameProcessed)
+  PASS  key ignored while a TextBox is focused
+  PASS  window: no script errors
+  PASS  window: no warnings
+  PASS  key capture prompt shown
+  PASS  Esc cancels capture
+  PASS  new key shown on button
+  PASS  capturing the key does not toggle the menu
+  PASS  old key no longer toggles
+  PASS  new key hides
+  PASS  new key shows
+  PASS  key saved to settings file
+  PASS  rebind: no script errors
+  PASS  rebind: no warnings
+  PASS  default opacity 95%
+  PASS  3 steps down -> 80% opacity
+  PASS  slider shows 80%
+  PASS  cards follow opacity
+  PASS  opacity floor 0%
+  PASS  text outlined at low opacity
+  PASS  opacity ceiling 100%
+  PASS  outline removed at high opacity
+  PASS  opacity saved
+  PASS  opacity: no script errors
+  PASS  opacity: no warnings
+  PASS  design Ocean: window repainted
+  PASS  design Ocean: cards repainted
+  PASS  design Ocean: text repainted
+  PASS  design Ocean: default accent Sky
+  PASS  selected design stays highlighted after hover
+  PASS  accent Rose applied
+  PASS  swatch keeps its color and shows a check
+  PASS  swatch keeps its color on hover
+  PASS  font Arcade applied
+  PASS  font buttons keep their preview font
+  PASS  text color Gold applied
+  PASS  color preview buttons keep their color
+  PASS  text size 120%: 13 -> 16
+  PASS  text built later is scaled too (12 -> 14)
+  PASS  newly built HUD text is scaled (13 -> 16)
+  PASS  outline On at 80% opacity
+  PASS  outline Off
+  PASS  text transparency 30%
+  PASS  look saved to the active config
+  PASS  three Custom color buttons (accent, text, background)
+  PASS  Custom opens the color circle
+  PASS  circle keeps the current brightness (94%)
+  PASS  right edge at 100% brightness = pure red
+  PASS  custom accent applied from the circle
+  PASS  accent Custom button shows as selected
+  PASS  custom accent saved
+  PASS  custom text color from a typed hex code
+  PASS  custom background color
+  PASS  cards get a lighter shade of a custom background
+  PASS  reset appearance: Bloom again
+  PASS  reset appearance: text back to normal
+  PASS  appearance: no script errors
+  PASS  appearance: no warnings
+  PASS  X removes hub GUI
+  PASS  no leaked connections
+  PASS  no leaked threads
+  PASS  global stop cleared
+  PASS  close: no script errors
+  PASS  close: no warnings
+  PASS  rerun keeps a single hub
+  PASS  saved key restored after rerun
+  PASS  saved opacity restored after rerun
+  PASS  no leaks after reruns
+  PASS  rerun: no script errors
+  PASS  rerun: no warnings
+  PASS  double Run: single hub GUI
+  PASS  double Run: stop handle registered
+  PASS  double Run: no orphaned connections
+  PASS  double Run: no orphaned threads
+  PASS  double run: no script errors
+  PASS  double run: no warnings
+  PASS  Save as creates and activates PvP
+  PASS  PvP written to file
+  PASS  PvP opacity 60%
+  PASS  loading Default restores its 80% opacity
+  PASS  Overwrite asks once
+  PASS  Overwrite copies current settings into PvP
+  PASS  active row has its buttons
+  PASS  Default is active after Load
+  PASS  existing name asks before overwriting
+  PASS  overwrite saves current settings into PvP
+  PASS  autoload saved
+  PASS  autoload: PvP (70%) loaded at start
+  PASS  autoload: PvP active at start
+  PASS  delete asks once
+  PASS  PvP deleted
+  PASS  deleting the autoload config clears autoload
+  PASS  configs: no leaked connections
+  PASS  configs: no script errors
+  PASS  configs: no warnings
+  PASS  corner grip resizes the window
+  PASS  new size saved
+  PASS  resize stops at the minimum size
+  PASS  grip hidden while minimized
+  PASS  window size restored after rerun
+  PASS  prompts untouched while the toggle is off
+  PASS  shown prompt becomes instant
+  PASS  game resetting the hold time is undone
+  PASS  utility status counts prompts
+  PASS  turning off restores the game's hold time
+  PASS  no longer interfering after off
+  PASS  closing the hub restores hold times too
+  PASS  prompts/grip: no leaked connections
+  PASS  grip and prompts: no script errors
+  PASS  grip and prompts: no warnings
+  PASS  anti-AFK off: no input sent
+  PASS  anti-AFK on: one right-click per Idled
+  PASS  anti-AFK status shows the pulse
+  PASS  anti-AFK off again: nothing sent
+  PASS  no rejoin after a kick (267)
+  PASS  kick reason shown
+  PASS  rejoin after connection lost (277)
+  PASS  retries 10 s later
+  PASS  turning reconnect off stops the retries
+  PASS  auto-execute waits for Ervi_Hub.luau in the workspace
+  PASS  missing file explained
+  PASS  queued: loads Ervi_Hub.luau after teleport
+  PASS  flag file on
+  PASS  flag file off (queued run will skip)
+  PASS  session toggles saved in the config
+  PASS  session: no leaked connections
+  PASS  session: no leaked threads
+  PASS  session: no script errors
+  PASS  session: no warnings
+  PASS  M1: overlay created
+  PASS  M1: equipped style shown
+  PASS  M1: absent attribute is UNKNOWN
+  PASS  M1: Punch observed countdown
+  PASS  M1: uncertainty is visible
+  PASS  M1: deadline transitions to READY
+  PASS  M1: style switch invalidates stale READY
+  PASS  M1: Slap has its own cooldown duration
+  PASS  M1: changed cooldown replaces prior deadline
+  PASS  M1: removing Tool hides countdown
+  PASS  M1: re-equip waits for fresh attribute
+  PASS  M1: death blocks READY
+  PASS  M1: respawn discards old character sample
+  PASS  M1: delayed post-respawn sample recovers
+  PASS  M1: removed attribute clears deadline
+  PASS  M1: incompatible clock rejected
+  PASS  M1: no standalone Close button
+  PASS  M1: menu disables HUD
+  PASS  M1: rerun restores one persisted overlay
+  PASS  M1: no leaked connections
+  PASS  M1: no leaked threads
+  PASS  M1 lifecycle: no script errors
+  PASS  M1 lifecycle: no warnings
+  PASS  M1 layout: corner resize handle
+  PASS  M1 layout: corner gesture resizes
+  PASS  M1 layout: drag clamped on screen
+  PASS  M1 layout: dimensions and position saved
+  PASS  M1 layout: viewport shrink keeps HUD visible
+  PASS  M1 layout: viewport enlargement restores preference
+  PASS  M1 layout: scrolling content reserves title and grip space
+  PASS  Safe Zone: setup controls removed
+  PASS  Safe Zone: loading does not move character
+  PASS  Safe Zone: activation moves root to fixed coordinates
+  PASS  Safe Zone: facing preserved
+  PASS  Safe Zone hold: root anchored against gravity
+  PASS  Safe Zone hold: falling and spin velocities cleared
+  PASS  Safe Zone hold: no repeated teleports or polling loop
+  PASS  Safe Zone: does not fight server correction
+  PASS  Safe Zone hold: external position update releases physics
+  PASS  Safe Zone: OFF makes one return move
+  PASS  Safe Zone: OFF returns exact activation orientation and position
+  PASS  Safe Zone hold: OFF restores movement without old falling velocity
+  PASS  Safe Zone: dead character rejected without deferred move
+  PASS  Safe Zone: wrong place rejected
+  PASS  Safe Zone: failed local move is not retried
+  PASS  Safe Zone hold: failed move rolls back anchoring
+  PASS  Safe Zone hold: preserves a pre-existing game anchor
+  PASS  Safe Zone hold: death releases physics immediately
+  PASS  Safe Zone hold: external unanchor is not counteracted
+  PASS  Safe Zone hold: external unanchor resets toggle OFF
+  PASS  Safe Zone binding: full-width control avoids clipping
+  PASS  Safe Zone binding: present in its own tab
+  PASS  Safe Zone key: default NONE
+  PASS  Safe Zone key: GUI key conflict rejected
+  PASS  Safe Zone key: rebinding persisted
+  PASS  GUI key: Safe Zone key conflict rejected
+  PASS  Safe Zone key: ignored while typing
+  PASS  Safe Zone key: moves once without opening menu
+  PASS  Safe Zone hold: key enables holding
+  PASS  Safe Zone key: second press returns to activation origin
+  PASS  Safe Zone hold: key releases holding
+  PASS  Safe Zone key: clearing saves NONE
+  PASS  Safe Zone key: unbound key no longer activates
+  PASS  Safe Zone: character replacement does not repeat a move
+  PASS  Safe Zone hold: character removal releases old root
+  PASS  Safe Zone: character replacement resets toggle OFF
+  PASS  Safe Zone hold: unloading restores root physics
+  PASS  Safe Zone hold: unloading disconnects hold listeners
+  PASS  Safe Zone hold: rerunning releases old hold
+  PASS  Targets: fixed safe reference requires no setup
+  PASS  Targets: health threshold selects eligible player
+  PASS  Targets: correct HP percentage
+  PASS  Targets: numeric threshold applies immediately
+  PASS  Targets: invalid maximum health ignored
+  PASS  Targets: health recovery invalidates target
+  PASS  Targets: death clears target
+  PASS  Targets: healthy respawn does not retain target
+  PASS  Targets: new eligible character can be selected
+  PASS  Targets: leaving server clears target
+  PASS  Targets: local death suspends selection
+  PASS  Targets: local recovery resumes observation
+  PASS  Auto M1: unsupported request is explicit
+  PASS  Targets: menu disable stops selection
+  PASS  Auto Roll recovery: no request while dead
+  PASS  Auto Roll recovery: waiting status
+  PASS  Auto Roll recovery: exactly one request after respawn
+  PASS  Auto Roll recovery: selected rarity target retained
+  PASS  Auto Roll recovery: zero further requests after qualifying result
+  PASS  Recovery and Auto M1 preference persist
+  PASS  Integrated features: unload leaves no listeners or workers
+  PASS  integrated features: no script errors
+  PASS  integrated features: no warnings
+  PASS  3.0 navigation: Auto Roll
+  PASS  3.0 navigation: Styles
+  PASS  3.0 navigation: Home
+  PASS  3.0 navigation: Combat
+  PASS  3.0 navigation: Visuals
+  PASS  3.0 navigation: Player
+  PASS  3.0 navigation: World
+  PASS  3.0 navigation: Safe Zone
+  PASS  3.0 navigation: Teleports
+  PASS  3.0 navigation: Utility
+  PASS  3.0 navigation: Config
+  PASS  3.0 navigation: Settings
+  PASS  Catalog setting mounted: movementPanel
+  PASS  Catalog setting mounted: clickTPEnabled
+  PASS  Catalog setting mounted: clickTPKey
+  PASS  Catalog setting mounted: clickTPSize
+  PASS  Catalog setting mounted: clickTPOpacity
+  PASS  Catalog setting mounted: clickTPColor
+  PASS  Catalog setting mounted: movementSize
+  PASS  Catalog setting mounted: walkEnabled
+  PASS  Catalog setting mounted: walkKey
+  PASS  Catalog setting mounted: speedMode
+  PASS  Catalog setting mounted: walkSpeed
+  PASS  Catalog setting mounted: speedMultiplier
+  PASS  Catalog setting mounted: fullbright
+  PASS  Catalog setting mounted: noFog
+  PASS  Catalog setting mounted: noShadows
+  PASS  Catalog setting mounted: customTime
+  PASS  Catalog setting mounted: timeOfDay
+  PASS  Catalog setting mounted: notificationsEnabled
+  PASS  Catalog setting mounted: notificationDuration
+  PASS  Catalog setting mounted: customN
+  PASS  Catalog setting mounted: statusOpacity
+  PASS  Catalog setting mounted: backgroundBlur
+  PASS  Catalog setting mounted: reduceAnimations
+  PASS  Catalog setting mounted: animationSpeed
+  PASS  Catalog setting mounted: searchKey
+  PASS  Catalog setting mounted: panicKey
+  PASS  Catalog setting mounted: language
+  PASS  Catalog setting mounted: fpsCap
+  PASS  Catalog setting mounted: espEnabled
+  PASS  Catalog setting mounted: espKey
+  PASS  Catalog setting mounted: boxStyle
+  PASS  Catalog setting mounted: healthBar
+  PASS  Catalog setting mounted: espNames
+  PASS  Catalog setting mounted: espDistance
+  PASS  Catalog setting mounted: skeleton
+  PASS  Catalog setting mounted: headDot
+  PASS  Catalog setting mounted: chams
+  PASS  Catalog setting mounted: chamsEnemies
+  PASS  Catalog setting mounted: chamsFill
+  PASS  Catalog setting mounted: chamsOutline
+  PASS  Catalog setting mounted: tracers
+  PASS  Catalog setting mounted: tracerOrigin
+  PASS  Catalog setting mounted: offscreenArrows
+  PASS  Catalog setting mounted: teamCheck
+  PASS  Catalog setting mounted: showTeammates
+  PASS  Catalog setting mounted: markFriends
+  PASS  Catalog setting mounted: enemyColor
+  PASS  Catalog setting mounted: teamColor
+  PASS  Catalog setting mounted: friendColor
+  PASS  Catalog setting mounted: wallColor
+  PASS  Catalog setting mounted: updateRate
+  PASS  Catalog setting mounted: cheapBoxes
+  PASS  Catalog setting mounted: maxTargets
+  PASS  Catalog setting mounted: skeletonBudget
+  PASS  Catalog setting mounted: fullRateTargets
+  PASS  Catalog setting mounted: farTargetRate
+  PASS  Catalog setting mounted: maxDistance
+  PASS  Catalog setting mounted: espTextSize
+  PASS  Catalog setting mounted: verticalOffset
+  PASS  Catalog setting mounted: previewOccluded
+  PASS  Slider: track click clamps upper bound
+  PASS  Slider: arrow key uses one increment
+  PASS  Slider: track click clamps lower bound
+  PASS  Slider: value persisted
+  PASS  Navigation: Settings anchored outside scrolling list
+  PASS  Motion: reduced preference persisted
+  PASS  Scale slider: applies layout immediately
+  PASS  Toggle: rapid changes preserve final state
+  PASS  Boot log: copies actual initialized stages
+  PASS  Boot log: retains last boot for next run
+  PASS  Unsupported operations are not enabled fake toggles
+  PASS  3.0 main window: resize uses responsive dimensions
+  PASS  Search: Ctrl+K focuses the field
+  PASS  Search: finds an actual registered toggle across tabs
+  PASS  Search: result navigates to World
+  PASS  Search: matching control highlighted
+  PASS  Search: reveals a hidden containing section
+  PASS  Search: scrolls to actual matching control after layout settles
+  PASS  Search: completes deferred navigation
+  PASS  Search: no-results feedback
+  PASS  World: Fullbright changes only owned light properties
+  PASS  World: No Shadows applies
+  PASS  World: custom time starts at selected hour
+  PASS  World: time slider applies immediately
+  PASS  World: No Fog handles late Atmosphere
+  PASS  World: fog and atmosphere restore
+  PASS  World: Fullbright restores original values
+  PASS  World: time and shadows restore independently
+  PASS  World: external game lighting change is preserved
+  PASS  Freecam controls removed
+  PASS  Reset Camera preserves normal camera support
+  PASS  Interface: own blur effect when open
+  PASS  Interface: hiding window removes owned blur
+  PASS  Player: local Set speed applies
+  PASS  Player: Multiply uses original base, not its own override
+  PASS  Player: disabling restores original speed
+  PASS  Player: floating movement panel exists
+  PASS  Player: movement-panel size persists
+  PASS  Player: menu removes floating panel
+  PASS  Config: versioned export to clipboard
+  PASS  Config: rejects executable/non-schema import
+  PASS  Config: valid import applies to selected current config
+  PASS  Config: per-game autoload persists
+  PASS  Config: turn off autoload removes binding
+  PASS  Visuals: native overlay root created
+  PASS  Visuals: visible target name and distance drawn
+  PASS  Visuals: labels use white text
+  PASS  Visuals: labels use visible black outline
+  PASS  Visuals: invisible head does not reveal a hidden character
+  PASS  Visuals: chams always use Occluded depth
+  PASS  Visuals: fully occluded target resources removed
+  PASS  Visuals: temporary occlusion reuses the bounded drawing record
+  PASS  Visuals: line-of-sight queries actually executed
+  PASS  Visuals: leaving player removes drawing resources
+  PASS  Visuals: disable removes every overlay
+  PASS  Click preview: one non-interactive world circle appears while held
+  PASS  Click preview: raw mouse coordinates use viewport rays without a second GUI inset
+  PASS  Click preview: GUI hit tests remove the top-bar inset from raw mouse coordinates
+  PASS  Click preview: selecting does not modify the character or pretend to teleport
+  PASS  Click preview: GUI controls suppress the world indicator
+  PASS  Click preview: indicator is reused after GUI suppression
+  PASS  Click preview: key release hides its circle
+  PASS  Click preview: re-enabling rebuilds the local-character ray exclusion
+  PASS  Click preview: clearing a held binding immediately hides its indicator
+  PASS  Click preview: disabling releases its marker
+  PASS  click targeting preview: no script errors
+  PASS  click targeting preview: no warnings
+  PASS  Utility: Rejoin requests this exact server
+  PASS  Utility: Copy Job ID
+  PASS  Utility: failed server listing never invents a teleport
+  PASS  Utility: FPS cap compatibility is explicit
+  PASS  Notifications: surface remains translucent
+  PASS  Notifications: compact dimensions and readable text
+  PASS  Language: Russian interface labels apply
+  PASS  Language: English interface labels restore
+  PASS  Panic key unloads the hub
+  PASS  Unload restores lighting and camera
+  PASS  3.0 features leave no listeners or workers
+  PASS  3.0 expansion: no script errors
+  PASS  3.0 expansion: no warnings
+  PASS  FPS cap: supported setter applies slider value
+  PASS  FPS cap: zero restores prior/default cap
+  PASS  Server Hop: skips current/full servers and selects available server
+  PASS  Server Hop: request is bounded to 100 results
+  PASS  Visual budgets: three visible players render
+  PASS  Visual budgets: Max Targets hard cap removes excess resources
+  PASS  Visual budgets: full bounding boxes respect same cap
+  PASS  Visuals: cached Roblox friend status applies friend color
+  PASS  Visuals: Team Check suppresses teammates
+  PASS  Visuals: Show Teammates permits them within cap
+  PASS  Visuals: Chams Enemies Only suppresses teammate highlight
+  PASS  Visual budgets: zero Skeleton Budget disables bone projections
+  PASS  Visual budgets: skeleton renders within a positive budget
+  PASS  Visuals: off-screen targets hidden when arrows are off
+  PASS  Visuals: clear-line off-screen arrow clamps near screen edge
+  PASS  Visual budgets: distance limit removes far targets
+  PASS  Visual budgets: raising distance restores at most the target cap
+  PASS  Preview: hidden-target setting responds without revealing real occluded players
+  PASS  Visuals: all occluded targets remain suppressed with every option enabled
+  PASS  Multiple active features: lighting and visuals preserve normal camera
+  PASS  FPS cap: unload restores original value
+  PASS  Multiple active features: rendering/camera cleanup
+  PASS  Multiple active features: no leaked workers or connections
+  PASS  supported APIs and budgets: no script errors
+  PASS  supported APIs and budgets: no warnings
+  PASS  Camera replacement remains under normal game control
+  PASS  Player: respawn Multiply uses new character's base speed
+  PASS  Player: server speed correction is not fought in a loop
+  PASS  FPS cap: preserve later external cap changes
+  PASS  Final supported-API run leaves no resources
+  PASS  external cap restoration: no script errors
+  PASS  external cap restoration: no warnings
+  PASS  Navigation: only the twelve requested primary entries
+  PASS  Navigation: primary game tools first, Settings last
+  PASS  Navigation: unwanted tabs removed
+  PASS  Official logo: native transparent geometry mounted
+  PASS  Official logo: main mark keeps the exact aspect ratio
+  PASS  Official logo: status mark keeps the exact aspect ratio
+  PASS  Status bar: minimize hides entire main window
+  PASS  Status bar: reports Auto Roll state while hidden
+  PASS  Status bar: dragging remains on screen
+  PASS  Status bar: position persists
+  PASS  Status bar: click restores full GUI
+  PASS  Status bar: GUI key minimizes
+  PASS  Status bar: GUI key restores
+  PASS  Status bar opacity slider immediately changes visible pill
+  PASS  Status bar opacity persists
+  PASS  Status bar opacity is displayed as percent
+  PASS  Status bar 0% removes pill fill and border
+  PASS  Status bar 0% removes chip fill while preserving its label
+  PASS  Status bar 100% shows pill surface and subtle border
+  PASS  Status bar 100% keeps chips translucent
+  PASS  Custom N slider and exact input mounted
+  PASS  Custom N slider synchronizes exact input and persists
+  PASS  Custom N exact entry updates slider
+  PASS  Custom N exact entry clamps maximum
+  PASS  Custom N exact entry clamps minimum
+  PASS  Custom N rejects decimal entry without changing selected value
+  PASS  Custom N ignores invalid entry
+  PASS  Custom N selection reaches Auto Roll target logic
+  PASS  Safe Zone return: exact activation origin and orientation restored
+  PASS  Safe Zone return: return move precedes hold release
+  PASS  Safe Zone return: rapid toggles capture fresh origin without drift
+  PASS  Safe Zone return: rejection releases physics and does not retry
+  PASS  Safe Zone return: unload returns before release
+  PASS  Unload: compact status bar removed
+  PASS  3.1 UI and return workflow leave no resources
+  PASS  3.1 status and return: no script errors
+  PASS  3.1 status and return: no warnings
+  PASS  loader wrapper: unconfigured template fails closed
+  PASS  loader wrapper: unconfigured template performs no HTTP
+  PASS  loader wrapper: unsupported place rejected
+  PASS  loader wrapper: non-table registry recovers
+494 passed, 0 failed

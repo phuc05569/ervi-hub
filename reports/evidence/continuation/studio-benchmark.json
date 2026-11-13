@@ -1,0 +1,148 @@
+{
+  "date": "2026-11-13",
+  "placeId": 0,
+  "gameId": 0,
+  "viewport": [
+    810,
+    675
+  ],
+  "fixtures": 12,
+  "renderer": "Roblox Studio local client, native models and GUI, visible-only rays; synthetic playerSource",
+  "initial": {
+    "ErviBenchBaseline": {
+      "queries": {
+        "rays": 16,
+        "projections": 28
+      },
+      "drawn": 12,
+      "playerScans": 265,
+      "cpu": {
+        "p95Ms": 1.861500000813976,
+        "samples": 113,
+        "maxMs": 10.013100021751598,
+        "meanMs": 0.7722831863819299
+      },
+      "frame": {
+        "p95Ms": 10.856132954359055,
+        "samples": 777,
+        "maxMs": 17.125289887189865,
+        "meanMs": 5.160740699092864
+      }
+    },
+    "ErviBenchUpdated": {
+      "queries": {
+        "rays": 16,
+        "projections": 28
+      },
+      "drawn": 12,
+      "cached": 12,
+      "cpu": {
+        "p95Ms": 2.6054000190924853,
+        "samples": 113,
+        "maxMs": 4.452799999853596,
+        "meanMs": 0.6079955752300247
+      },
+      "frame": {
+        "p95Ms": 10.973094031214714,
+        "samples": 768,
+        "maxMs": 22.11618237197399,
+        "meanMs": 5.21283820815673
+      },
+      "playerScans": 1
+    }
+  },
+  "balanced": [
+    {
+      "rays": 0,
+      "drawn": 0,
+      "playerScans": 0,
+      "projections": 0,
+      "frame": {
+        "p95Ms": 10.028280317783356,
+        "samples": 598,
+        "maxMs": 15.957135707139969,
+        "meanMs": 5.0209232771077685
+      },
+      "cpu": {
+        "samples": 0,
+        "meanMs": 0
+      },
+      "mode": "Disabled"
+    },
+    {
+      "rays": 12,
+      "drawn": 0,
+      "playerScans": 1,
+      "projections": 12,
+      "frame": {
+        "p95Ms": 9.974219836294651,
+        "samples": 602,
+        "maxMs": 16.83221012353897,
+        "meanMs": 4.985132387126069
+      },
+      "cpu": {
+        "p95Ms": 1.4319000183604658,
+        "samples": 82,
+        "maxMs": 4.5489000040106475,
+        "meanMs": 0.643939026503642
+      },
+      "mode": "ErviBenchUpdated"
+    },
+    {
+      "rays": 12,
+      "drawn": 0,
+      "playerScans": 189,
+      "projections": 12,
+      "frame": {
+        "p95Ms": 10.022159665822983,
+        "samples": 579,
+        "maxMs": 27.71560475230217,
+        "meanMs": 5.176887205288792
+      },
+      "cpu": {
+        "p95Ms": 1.727399998344481,
+        "samples": 81,
+        "maxMs": 8.667799993418157,
+        "meanMs": 0.8314296274078021
+      },
+      "mode": "ErviBenchBaseline"
+    },
+    {
+      "rays": 12,
+      "drawn": 0,
+      "playerScans": 1,
+      "projections": 12,
+      "frame": {
+        "p95Ms": 10.951995849609375,
+        "samples": 571,
+        "maxMs": 18.007632344961166,
+        "meanMs": 5.260553992444718
+      },
+      "cpu": {
+        "p95Ms": 1.4177999983076006,
+        "samples": 81,
+        "maxMs": 4.8399000079371035,
+        "meanMs": 0.6684061739145329
+      },
+      "mode": "ErviBenchUpdated"
+    },
+    {
+      "rays": 0,
+      "drawn": 0,
+      "playerScans": 0,
+      "projections": 0,
+      "frame": {
+        "p95Ms": 9.98586043715477,
+        "samples": 591,
+        "maxMs": 19.520314410328865,
+        "meanMs": 5.082359559150088
+      },
+      "cpu": {
+        "samples": 0,
+        "meanMs": 0
+      },
+      "mode": "Disabled"
+    }
+  ],
+  "method": "Balanced sequence Disabled/Updated/Baseline/Updated/Disabled; .5s warmup, 3s measurement each; same twelve fixtures, wall toggles every .4s; 30Hz, default skeletonBudget 8; CPU samples instrument os.clock around update only, converted seconds to milliseconds. Initial run separately used .7s warmup and 4s windows. Heartbeat dt is engine cadence, not a GPU/presented-frame measurement. No statistical FPS improvement established."
+}
