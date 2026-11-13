@@ -1,3 +1,8 @@
+## 3.3 continuation checkpoint — 2026-11-14 (release pending)
+- 12px factory labels; names above heads and distance below feet; preserved explicit saved sizes and Auto 30Hz cadence.
+- White factory chams, retained custom colors; main-window recenter on reopening.
+- 161 unit / 527 smoke; Studio native label/reopen captures and bounded timings recorded in reports/CONTINUATION_3_3_CHECKPOINT.md. Full live regression/interpolation pending.
+
 # Changelog
 
 ## 3.2.0 development checkpoint (2026-11-13)

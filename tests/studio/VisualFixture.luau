@@ -14,7 +14,7 @@ for i,model in ipairs(folder:GetChildren()) do
  table.insert(source.list,{Name=model.Name,DisplayName=model.Name,UserId=-i,Neutral=true,Character=model,CharacterAdded=ca.Event,CharacterRemoving=cr.Event,added=ca,removing=cr})
 end
 local prefs=require(modules.Settings).defaults()
-prefs.espEnabled=true;prefs.skeleton=true;prefs.boxStyle="None";prefs.healthBar=false;prefs.teamCheck=false;prefs.espTextSize=20;prefs.updateRate="30"
+prefs.espEnabled=true;prefs.skeleton=true;prefs.boxStyle="None";prefs.healthBar=false;prefs.teamCheck=false;prefs.espTextSize=12;prefs.updateRate="Auto"
 local camera=workspace.CurrentCamera;local previousType,previousCF=camera.CameraType,camera.CFrame
 camera.CameraType=Enum.CameraType.Scriptable;camera.CFrame=CFrame.lookAt(Vector3.new(0,11,35),Vector3.new(0,3,0))
 scope:add(function() camera.CameraType=previousType;camera.CFrame=previousCF end)

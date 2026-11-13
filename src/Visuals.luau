@@ -65,6 +65,7 @@ return function(hub,parent,getPrefs,playerSource)
   r.tracer=line(r.root);r.health=line(r.root)
   r.name=Ui.text(r.root,"",{size=UDim2.fromOffset(500,30),align=Enum.TextXAlignment.Center})
   r.name.AnchorPoint=Vector2.new(0.5,1);r.name.TextWrapped=false
+  r.distance=Ui.text(r.root,"",{size=UDim2.fromOffset(220,24),align=Enum.TextXAlignment.Center});r.distance.AnchorPoint=Vector2.new(0.5,0);r.distance.TextWrapped=false
   r.dot=Ui.new("Frame",{Size=UDim2.fromOffset(5,5),AnchorPoint=Vector2.new(0.5,0.5),BorderSizePixel=0,Parent=r.root});Ui.corner(r.dot,3)
   r.arrow=Ui.text(r.root,"▲",{size=UDim2.fromOffset(20,20),textSize=20});r.arrow.AnchorPoint=Vector2.new(0.5,0.5)
   r.highlight=owned:add(Ui.new("Highlight",{Name="ErviVisibleHighlight",DepthMode=Enum.HighlightDepthMode.Occluded,Enabled=false,Parent=gui}))
@@ -114,7 +115,7 @@ return function(hub,parent,getPrefs,playerSource)
      local tint=color(Policy.color(p,c));r.highlight.Enabled=false
      for _,l in ipairs(r.lines) do l.Visible=false end
      for _,l in ipairs(r.bones) do l.Visible=false end
-     r.tracer.Visible=false;r.health.Visible=false;r.dot.Visible=false;r.name.Visible=false;r.arrow.Visible=false
+     r.tracer.Visible=false;r.health.Visible=false;r.dot.Visible=false;r.name.Visible=false;r.distance.Visible=false;r.arrow.Visible=false
      if not c.on then
       local vp=cam.ViewportSize;local dx,dy=c.point.X-vp.X/2,c.point.Y-vp.Y/2
       if c.depth<0 then dx,dy=-dx,-dy end
@@ -150,9 +151,13 @@ return function(hub,parent,getPrefs,playerSource)
        for i,pair in ipairs(points) do segment(r.lines[i],pair[1],pair[2],tint) end
       end
       if p.healthBar then segment(r.health,Vector2.new(left-4,yBottom),Vector2.new(left-4,yBottom-(yBottom-yTop)*math.clamp(c.hum.Health/c.hum.MaxHealth,0,1)),Theme.good,3) end
-      local texts={};if p.espNames then table.insert(texts,c.player.DisplayName~="" and c.player.DisplayName or c.player.Name) end
-      if p.espDistance then table.insert(texts,("%.0f studs"):format(c.distance)) end
-      r.name.Text=table.concat(texts," · ");r.name.Position=UDim2.fromOffset((left+right)/2,yTop-3);TextStyle.apply(r.name,Color3.new(1,1,1),Color3.new(0,0,0));r.name.TextSize=p.espTextSize;r.name.Size=UDim2.fromOffset(math.min(cam.ViewportSize.X,math.max(220,r.name.TextBounds.X+16)),p.espTextSize*1.5);r.name.Visible=#texts>0
+      local function label(obj,text,x,y,on)
+       obj.Text=text;obj.Position=UDim2.fromOffset(x,y)
+       TextStyle.apply(obj,Color3.new(1,1,1),Color3.new(0,0,0))
+       obj.TextSize=p.espTextSize;obj.Size=UDim2.fromOffset(math.min(cam.ViewportSize.X,math.max(220,obj.TextBounds.X+16)),p.espTextSize*1.5);obj.Visible=on
+      end
+      label(r.name,c.player.DisplayName~="" and c.player.DisplayName or c.player.Name,top.X,top.Y-p.espTextSize-3,p.espNames)
+      label(r.distance,("%.0f studs"):format(c.distance),(left+right)/2,yBottom+3,p.espDistance)
       r.dot.Position=UDim2.fromOffset(top.X,top.Y+p.verticalOffset);r.dot.BackgroundColor3=tint;r.dot.Visible=p.headDot
       if p.tracers then
        local vp=cam.ViewportSize;local origin=p.tracerOrigin=="Top" and 0 or p.tracerOrigin=="Middle" and vp.Y/2 or vp.Y
@@ -184,7 +189,7 @@ return function(hub,parent,getPrefs,playerSource)
        end
       end
       if p.chams and (not p.chamsEnemies or not c.sameTeam) then
-       r.highlight.Adornee=c.char;r.highlight.FillColor=tint;r.highlight.OutlineColor=tint
+       r.highlight.Adornee=c.char;local chamsTint=Policy.chamsColor(p,c)=="#FFFFFF" and Color3.new(1,1,1) or tint;r.highlight.FillColor=chamsTint;r.highlight.OutlineColor=chamsTint
        r.highlight.FillTransparency=p.chamsFill;r.highlight.OutlineTransparency=p.chamsOutline;r.highlight.Enabled=true
       end
      end
@@ -208,7 +213,7 @@ return function(hub,parent,getPrefs,playerSource)
   if visuals.active or hub.closed then return end
   local supported=pcall(function() assert(RaycastParams.new());assert(type(workspace.Raycast)=="function") end)
   if not supported then p.espEnabled=false;visuals.status="Unsupported: native raycast API unavailable";return end
-  scope=Scope.new("visible-overlays");gui=scope:add(Ui.new("ScreenGui",{Name="Ervi_VisibleOverlays",IgnoreGuiInset=true,ResetOnSpawn=false,DisplayOrder=200,Parent=parent}))
+  scope=Scope.new("visible-overlays");gui=scope:add(Ui.new("ScreenGui",{Name="Ervi_VisibleOverlays",IgnoreGuiInset=true,ResetOnSpawn=false,DisplayOrder=351,Parent=parent}))
   -- Friend checks are cached and performed once per player, only when explicitly requested.
   local function friend(player)
    if player==Game.player or not getPrefs().markFriends or friends[player]~=nil then return end

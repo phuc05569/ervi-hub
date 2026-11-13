@@ -253,12 +253,14 @@ local function sidebarLayout()
  sidebar.Size=UDim2.new(0,SW,1,prefs.communityLink~="" and -158 or -120)
 end
 local userScale = prefs.scale
+local mainX,mainY=0.5,0.5
+local mainX,mainY=0.5,0.5 -- opening position is session-local, independent of legacy saved drag offsets
 local searchBox, searchInput, expansionKeys, onSearchInput
 local function fitPosition()
  local cam=workspace.CurrentCamera;local vp=cam and cam.ViewportSize or Vector2.new(1280,720)
  local scale=uiScale.Scale
  local availableX=math.max(0,vp.X/scale-W-16);local availableY=math.max(0,vp.Y/scale-H-48)
- window.Position=UDim2.fromOffset(availableX*prefs.winX,availableY*prefs.winY)
+ window.Position=UDim2.fromOffset(availableX*mainX+8,availableY*mainY+24)
 end
 local function applyScale()
 	Ui.cancelAnimation(uiScale)
@@ -274,9 +276,9 @@ onWindowDragged=function(commit)
  local cam=workspace.CurrentCamera;local vp=cam and cam.ViewportSize or Vector2.new(1280,720)
  local x=window.Position.X.Scale*vp.X/uiScale.Scale+window.Position.X.Offset
  local y=window.Position.Y.Scale*vp.Y/uiScale.Scale+window.Position.Y.Offset
- prefs.winX=math.clamp(x/math.max(1,vp.X/uiScale.Scale-W-16),0,1)
- prefs.winY=math.clamp(y/math.max(1,vp.Y/uiScale.Scale-H-48),0,1)
- fitPosition();if commit then savePrefs() end
+ mainX=math.clamp((x-8)/math.max(1,vp.X/uiScale.Scale-W-16),0,1)
+ mainY=math.clamp((y-24)/math.max(1,vp.Y/uiScale.Scale-H-48),0,1)
+ fitPosition()
 end
 local viewportScope
 local function bindViewport()
@@ -307,6 +309,7 @@ local function setMinimized(on)
   end)
  else
   window.Visible=true;body.Visible=true
+  mainX,mainY=0.5,0.5
   applyScale()
   local target=uiScale.Scale
   uiScale.Scale=target*0.97

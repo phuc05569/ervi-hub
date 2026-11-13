@@ -6,6 +6,10 @@ local Schema=require("FeatureSchema")
 local Locale=require("Locale")
 local Boot=require("BootLog")
 return {
+ {"default chams white preserves custom relation colors",function(_,eq)
+  local p=Settings.defaults();eq(Policy.chamsColor(p,{}),"#FFFFFF")
+  p.enemyColor="#112233";eq(Policy.chamsColor(p,{}),"#112233")
+ end},
  {"new speed defaults to Multiply and explicit saved mode is retained",function(_,eq)
   eq(Settings.defaults().speedMode,"Multiply")
   eq(Settings.parse("[A]\nspeedMode=Set\n",{}).configs.A.speedMode,"Set")

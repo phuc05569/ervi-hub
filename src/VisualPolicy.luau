@@ -11,4 +11,9 @@ end
 function Policy.color(p,c)
  return p.markFriends and c.friend and p.friendColor or c.sameTeam and p.teamColor or p.enemyColor
 end
+-- Keep legacy custom relation colors; only the former factory pink becomes white for chams.
+function Policy.chamsColor(p,c)
+ local tint=Policy.color(p,c)
+ return tint=="#F0628E" and "#FFFFFF" or tint
+end
 return Policy

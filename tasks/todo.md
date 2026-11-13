@@ -13,3 +13,9 @@
 - [x] E1 tracker cached model/sort/selection/lifecycle tests.
 - [x] E2 embedded tracker UI, resize/live verification and cleanup; commit.
 - [ ] F complete validation, documentation, backup/deploy/hash, dev push, immutable URL verification and final artifacts.
+
+## New handoff continuation
+- [x] Preserve pending state and five local commits.
+- [x] 12px separate labels, factory-white chams and preserved update cadence.
+- [x] Main GUI recenter, smoke regression and native Studio reopen.
+- [ ] Interpolation, variable refresh benchmark, physical live regression, layering/hit-test proof and final release gate.

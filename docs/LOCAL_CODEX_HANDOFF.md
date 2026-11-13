@@ -1,3 +1,5 @@
+> 14 Nov 2026: current **development checkpoint 3.3.0+5ba5f7088681**, 161 unit / 527 smoke passing. Release remains incomplete. See [checkpoint report](../reports/CONTINUATION_3_3_CHECKPOINT.md).
+
 # Current local handoff — Ervi Hub 3.2 development
 
 **This section supersedes the historical 3.1 notes below.** Continue `C:\Users\ASUS\ervi-hub` on `dev/ervi-hub-3.1-handoff`. Stable main remains `608dc220da4cd144d54c0415a31556264fd1ea0a`. Baseline `31dafe61b1a8b48839e937bd576de9c1c8060071` was reproduced at 144 unit / 476 smoke before edits.

@@ -1,3 +1,5 @@
+> 14 Nov 2026: current **development checkpoint 3.3.0+5ba5f7088681**, 161 unit / 527 smoke passing. Release remains incomplete. See [checkpoint report](reports/CONTINUATION_3_3_CHECKPOINT.md).
+
 > **Current development checkpoint: 3.2.0+4e59db554fde.** 148 unit tests / 494 smoke checks pass; both artifacts compile and rebuild deterministically. See [current handoff](docs/LOCAL_CODEX_HANDOFF.md), [phase report](reports/CONTINUATION_3_2_0.md), and [release verification](docs/RELEASE_VERIFICATION_3_2_0.md) for exact commit/loader and evidence. Bundle SHA-256: `6eb609a7dc0ef0bb8998ff6bbfd7a459bae49c760fdece5908699a79511a2443`.
 
 Current navigation is Auto Roll, Styles, Home, Combat, Visuals, Player, World, Safe Zone, Teleports, Utility, Config, Settings. Settings stays docked at the bottom. Friends/Sounds/Triggerbot/Freecam remain removed. Saved keys and settings remain compatible; RightShift is the default menu key. Auto Roll retains one worker/request, terminal results, ordinary readiness/respawn handling and no blind retry. Custom N stays integer 1–5000.
