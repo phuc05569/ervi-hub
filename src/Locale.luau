@@ -1,5 +1,5 @@
 -- Interface labels only. Player names, API errors and diagnostic evidence stay verbatim.
-local RU={
+local RU={["Status Bar"]="Строка состояния",["Status Bar Opacity"]="Непрозрачность строки состояния",["Exact N"]="Точное N",
  ["Confirm action"]="Подтверждение",["Confirm"]="Подтвердить",["Cancel"]="Отмена",
  ["Notifications"]="Уведомления",["Notification Duration"]="Длительность уведомлений",
  ["Motion"]="Анимация",["Reduce Animations"]="Уменьшить анимацию",["Animation Speed"]="Скорость анимации",["UI Scale"]="Масштаб интерфейса",

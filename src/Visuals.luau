@@ -2,6 +2,7 @@
 local Scope=require("Scope")
 local Game=require("Game")
 local Policy=require("VisualPolicy")
+local TextStyle=require("VisualTextStyle")
 local Ui=require("Ui")
 local Theme=require("Theme")
 local Players=game:GetService("Players")
@@ -132,7 +133,7 @@ return function(hub,parent,getPrefs)
       if p.healthBar then segment(r.health,Vector2.new(left-4,yBottom),Vector2.new(left-4,yBottom-(yBottom-yTop)*math.clamp(c.hum.Health/c.hum.MaxHealth,0,1)),Theme.good,3) end
       local texts={};if p.espNames then table.insert(texts,c.player.DisplayName~="" and c.player.DisplayName or c.player.Name) end
       if p.espDistance then table.insert(texts,("%.0f studs"):format(c.distance)) end
-      r.name.Text=table.concat(texts," · ");r.name.Position=UDim2.fromOffset((left+right)/2,yTop-3);r.name.TextColor3=tint;r.name.TextSize=p.espTextSize;r.name.Visible=#texts>0
+      r.name.Text=table.concat(texts," · ");r.name.Position=UDim2.fromOffset((left+right)/2,yTop-3);TextStyle.apply(r.name,Color3.new(1,1,1),Color3.new(0,0,0));r.name.TextSize=p.espTextSize;r.name.Visible=#texts>0
       r.dot.Position=UDim2.fromOffset(top.X,top.Y+p.verticalOffset);r.dot.BackgroundColor3=tint;r.dot.Visible=p.headDot
       if p.tracers then
        local vp=cam.ViewportSize;local origin=p.tracerOrigin=="Top" and 0 or p.tracerOrigin=="Middle" and vp.Y/2 or vp.Y

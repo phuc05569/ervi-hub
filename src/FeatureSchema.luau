@@ -12,6 +12,8 @@ for _,d in ipairs({{"fullbright","Fullbright"},{"noFog","No Fog"},{"noShadows","
 add("timeOfDay","world","Lighting","Time of Day","number",12,{0,24,0.25})
 add("notificationsEnabled","settings","Notifications","Notifications","bool",true)
 add("notificationDuration","settings","Notifications","Notification Duration","number",3,{1,8,0.5})
+add("customN","roll","Stop Conditions","Custom N","number",500,{1,5000,1})
+add("statusOpacity","settings","Status Bar","Status Bar Opacity","number",0.7,{0,1,0.05},"Opacity of the minimized status bar background.")
 add("backgroundBlur","settings","Interface","Background Blur","bool",false)
 add("reduceAnimations","settings","Motion","Reduce Animations","bool",false,nil,"Apply visual changes immediately without changing feature behavior.")
 add("animationSpeed","settings","Motion","Animation Speed","number",1,{0.5,2,0.1},"Controls transition speed; features always respond immediately.")

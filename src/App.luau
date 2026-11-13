@@ -617,13 +617,44 @@ do
 	end
 	local customRow = Ui.row(chanceBox, 3)
 	Ui.text(customRow, "Custom N:", { size = UDim2.new(0, 70, 1, 0), textSize = Theme.size.small, color = Theme.muted })
-	Ui.input(hub, customRow, "e.g. 750", { width = 110, order = 1 }, function(text)
-		local n = tonumber(text)
-		if n and n >= 1 then
-			target = { mode = "chance", min = math.floor(n) }
+	local exactN
+	local customN = Ui.slider(hub, customRow, "Custom N", {
+		min = 1,
+		max = 5000,
+		step = 1,
+		value = prefs.customN,
+		order = 1,
+		format = function(value)
+			return ("%d"):format(value)
+		end,
+	}, function(value)
+		prefs.customN = value
+		if exactN then
+			exactN.Text = tostring(value)
 		end
+		savePrefs()
+		target = { mode = "chance", min = value }
 		refreshTarget()
 	end)
+	customN.node.Name = "Setting_customN"
+	customN.node:SetAttribute("SettingKey", "customN")
+	exactN = Ui.input(hub, customRow, "Exact N", {
+		width = 90,
+		order = 2,
+		text = tostring(prefs.customN),
+	}, function(text)
+		local value = tonumber(text)
+		if value and value == math.floor(value) then
+			value = math.clamp(value, 1, 5000)
+			customN.set(value)
+			prefs.customN = value
+			exactN.Text = tostring(value)
+			savePrefs()
+			target = { mode = "chance", min = value }
+			refreshTarget()
+		end
+	end)
+	exactN.Name = "Input_customN"
 
 	Ui.text(styleBox, "Stop only on these exact style names (comma separated, case-sensitive).", { textSize = Theme.size.small, color = Theme.muted, order = 1 })
 	local styleCheck = Ui.text(styleBox, "", { textSize = Theme.size.small, color = Theme.warn, order = 3 })
@@ -1478,7 +1509,7 @@ local function headerRefresh() if searchInput then searchInput.PlaceholderText=p
 local notify=Ui.notifications(hub,window,function() return prefs end)
 local expansion=makeExpansion({notify=notify,hub=hub,parent=playerGui,prefs=function() return prefs end,save=savePrefs,pages=pages,addPage=addPage,onRefresh=onRefresh,syncs=syncs,content=content,
  width=function() return W end,isOpen=function() return window.Visible and not minimized end,metrics=metrics,build=Build,session=session,roll=autoRoll,safe=safeZone,stop=stopHub,applyPrefs=applyPrefs,
- headerRefresh=headerRefresh,sidebarLayout=sidebarLayout,logs=function() return logs end,bootLog=boot.text,
+ headerRefresh=headerRefresh,statusBarRefresh=function() if statusBar then statusBar.refresh() end end,sidebarLayout=sidebarLayout,logs=function() return logs end,bootLog=boot.text,
  keyConflict=keyConflict,capture=function(fn) if onKeyCaptured then return false end;onKeyCaptured=fn;return true end})
 expansionKeys=expansion.keyHandler
 statusBar=makeStatusBar(hub,playerGui,function() return prefs end,savePrefs,function() setMinimized(false) end,selectPage,function()

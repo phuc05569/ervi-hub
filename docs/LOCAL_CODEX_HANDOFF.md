@@ -3,11 +3,11 @@
 ## Identity and exact transfer checkpoint
 Repository: https://github.com/phuc05569/ervi-hub
 Branch: `dev/ervi-hub-3.1-handoff`
-Exact tested source commit: `2727a912de29ccd505694fd0f26dd0077fd94d56`
+Previous verified development base: `6efc419b3c2c2bb012f7c5acc7f54eb4de84ddf7`. The latest release checkpoint adds the regression coverage and control fixes described below.
 Stable main: `608dc220da4cd144d54c0415a31556264fd1ea0a` (3.0.0).
-The subsequent handoff commit only adds documentation. Fetch the branch and record its tip with `git rev-parse HEAD`; verify the source commit above is an ancestor. Do not replace main or rewrite history. Repository visibility was not changed or independently verified.
+Historical 3.1 source checkpoints are preserved in branch history. Fetch the branch and record its tip with `git rev-parse HEAD`; verify the development base above is an ancestor. Do not replace main or rewrite history. Repository visibility was not changed or independently verified.
 
-Target: RNG RollAttacks, PlaceId 119338513416973, universe 10768634654. Windows/Potassium client hub, Luau modules, Python deterministic bundler. Current build **3.1.0+a7c09a9da20a**; bundle SHA256 `a37ea196d4eed5408ee436e9037c30075ce126a071a23ad24729f09981aaacc9`.
+Target: RNG RollAttacks, PlaceId 119338513416973, universe 10768634654. Windows/Potassium client hub, Luau modules, Python deterministic bundler. Current verified build **3.1.0+fab970143613**; bundle SHA256 `b8b827cae9760798c935a6dec0884cdd943e9139cd9068cfc27ffc44dbc6bee4`.
 Entry: `src/App.luau`; generated `build/Ervi_Hub.luau`, line map `build/Ervi_Hub.luau.map.json`. Never edit generated files. `build/loader.lua` is an intentionally unconfigured distribution template; `loader.json` has no distribution URL. Existing local execution: `loadstring(readfile("Ervi_Hub.luau"))()`.
 
 ## History and preserved work
@@ -39,8 +39,17 @@ Entry: `src/App.luau`; generated `build/Ervi_Hub.luau`, line map `build/Ervi_Hub
 
 Avoid duplicate character observers where shared state suffices, per-frame property fights, duplicate workers or orphaned GUIs. Do not overwrite subsequent game-owned property changes. Status updates run at4Hz only while visible; benchmark native logo/static geometry and overlays locally before optimizing.
 
+## Latest regression checkpoint (2026-11-13)
+Status Bar Opacity is a schema-backed number (default 0.70, range 0–1, 0.05 step). Changing it immediately refreshes the minimized pill's actual background transparency; it is saved with each configuration. Older configurations receive the default through schema migration.
+
+ESP name/distance labels use the shared `VisualTextStyle` helper: white text, black stroke, stroke transparency 0. Existing color, scale, and transparency preferences continue through the prior appearance system.
+
+Auto Roll Custom N is an integer slider from 1 through 5000 plus exact numeric input. Both controls update the same rarity target and preference. Integer values outside the range clamp to the nearest bound; decimals and nonnumeric input are ignored. New and legacy config behavior is covered by settings round-trip tests.
+
+Latest headless verification on this checkpoint: **140 unit tests passed; 467 smoke checks passed; release and loader Luau compilation passed; two consecutive release builds were byte-identical**. Smoke coverage asserts the live minimized bar background changes immediately, a visible mock ESP name label has white text and visible black outline, and Custom N synchronizes, persists, clamps at both ends, rejects decimal/invalid text, and updates the Auto Roll target summary. These tests use MockEngine and do not constitute Roblox Studio or live-game verification. No Studio visual test, Potassium deployment, or live server test was performed for this checkpoint.
+
 ## Verification evidence and commands
-Cloud Linux results on the exact source checkpoint: **131 unit tests, 0 failures; 441 smoke checks, 0 failures**. Release and loader compile successfully with Luau0.746. Rebuilding bundle/map/loader produces identical bytes. `git diff --check` clean; baseline and pre-3.1 backup verified. These are headless mocks, not live Roblox/Studio/Potassium tests. Tests cover config round trips, key/search behavior, exact Safe Zone A→B→A rotation and anchor ordering, return failure/rapid toggles/unload/corrections, worker respawn/single-request/terminal-result behavior, speed restoration, budgets and cleanup.
+Historical cloud Linux results on the earlier source checkpoint: **131 unit tests, 0 failures; 441 smoke checks, 0 failures**. Release and loader compile successfully with Luau0.746. Rebuilding bundle/map/loader produces identical bytes. `git diff --check` clean; baseline and pre-3.1 backup verified. These are headless mocks, not live Roblox/Studio/Potassium tests. Tests cover config round trips, key/search behavior, exact Safe Zone A→B→A rotation and anchor ordering, return failure/rapid toggles/unload/corrections, worker respawn/single-request/terminal-result behavior, speed restoration, budgets and cleanup.
 
 From repository root on Windows PowerShell (check `$LASTEXITCODE` after EACH command):
 ```powershell

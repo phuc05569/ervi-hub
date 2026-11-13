@@ -1,7 +1,13 @@
 # Changelog
 
 ## 3.1.0 development handoff (2026-11-13), NOT LIVE TESTED
-- Build 3.1.0+a7c09a9da20a; source and WIP preserved on dedicated development branch.
+- Verified checkpoint build 3.1.0+fab970143613; bundle SHA-256 `b8b827cae9760798c935a6dec0884cdd943e9139cd9068cfc27ffc44dbc6bee4`.
+- Added persisted Status Bar Opacity control with immediate updates to the minimized pill background.
+- ESP name/distance labels now share white text and visible black outlines through a reusable style helper.
+- Added Auto Roll Custom N integer slider (1–5000) and synchronized exact input; values clamp at bounds, reject decimal/text input, persist, and update the active rarity target.
+- Added dedicated regression tests for schema defaults/ranges, save/load and legacy compatibility, actual pill updates, rendered ESP styling, and Custom N synchronization/clamping/target application.
+- Verification: **140 unit tests, 0 failures; 467 smoke checks, 0 failures; both Luau artifacts compile; two consecutive bundles are byte-identical**. Roblox Studio and live-game behavior were not verified.
+- The original 3.1 features remain on the development branch. CFrame Speed/Fly and live Windows/Roblox verification remain unfinished.
 - Transparent owner-logo assets and native mark; independent draggable minimized status pill with real feature chips/FPS/ping/roll state and click-to-restore.
 - Auto Roll/Styles first, Settings last; removed Friends/Sounds/Triggerbot/Freecam. Multiply default preserves saved Set.
 - Safe Zone key controls in its own tab and Settings; typing/conflict guards; explicit OFF returns to per-activation origin before releasing hold. Corrections/death release without return.

@@ -31,6 +31,8 @@ Settings.DEFAULTS = {
 	winH = 580,
 	winX = 0.5, winY = 0.5,
 	statusX=0.5,statusY=0.93,
+	statusOpacity=0.7,
+	customN=500,
 	communityLink = "",
 	movementX=0.1, movementY=0.3, movementW=330, movementH=240,
 	m1Enabled = false,

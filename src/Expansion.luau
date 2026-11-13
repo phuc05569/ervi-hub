@@ -26,6 +26,7 @@ return function(ctx)
   Ui.setLanguage(ctx.prefs().language)
   Ui.configureMotion(ctx.prefs())
   ctx.headerRefresh()
+  if ctx.statusBarRefresh then ctx.statusBarRefresh() end
   world.apply();world.setBlur(ctx.prefs().backgroundBlur and ctx.isOpen());playerTools.apply();actions.applyFPS();visuals.apply()
   for _,fn in ipairs(refreshControls) do fn(true) end
  end
