@@ -16,6 +16,15 @@ function Geometry.heightForWidth(width)
 	return width / Geometry.aspectRatio
 end
 
+function Geometry.rowsForWidth(width)
+	return math.clamp(math.ceil(math.max(0, width) / Geometry.aspectRatio * 2), 32, Geometry.rows)
+end
+
+function Geometry.featherSpan(left, right, displayWidth)
+	local edge = Geometry.width * 0.65 / math.max(1, displayWidth)
+	return left - edge, right + edge, edge / (right - left + 2 * edge)
+end
+
 function Geometry.spanAt(polygon, y)
 	local intersections = {}
 	for i, a in ipairs(polygon) do

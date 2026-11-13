@@ -209,6 +209,18 @@ return function(API)
 			return typed("ColorSequenceKeypoint", { Time = t, Value = c })
 		end,
 	}
+	local NumberSequence = {
+		new = function(a, b)
+			return typed("NumberSequence", { Keypoints = type(a) == "table" and kinds[a] == nil and a or { a, b or a } })
+		end,
+	}
+	local NumberSequenceKeypoint = {
+		new = function(t, value, envelope)
+			assert(type(t) == "number" and t >= 0 and t <= 1)
+			assert(type(value) == "number" and value == value)
+			return typed("NumberSequenceKeypoint", { Time = t, Value = value, Envelope = envelope or 0 })
+		end,
+	}
 	local V2 = {}
 	V2.__index = V2
 	V2.__sub = function(a, b)
@@ -223,6 +235,7 @@ return function(API)
     local Vector3={}
     local V3={}
     V3.__index=function(v,key)
+        if key=="Cross" then return function(a,b) return Vector3.new(a.Y*b.Z-a.Z*b.Y,a.Z*b.X-a.X*b.Z,a.X*b.Y-a.Y*b.X) end end
         if key=="Magnitude" then return math.sqrt(v.X*v.X+v.Y*v.Y+v.Z*v.Z) end
         if key=="Unit" then local n=v.Magnitude;return n>0 and Vector3.new(v.X/n,v.Y/n,v.Z/n) or Vector3.new() end
     end
@@ -316,10 +329,14 @@ return function(API)
 			end
 		end
 		d.parent = parent
-		if oldParent and oldParent ~= parent then fireIf(data[oldParent], "ChildRemoved", self) end
+		if oldParent and oldParent ~= parent then
+			fireIf(data[oldParent], "ChildRemoved", self)
+			if d.class == "Player" and data[oldParent].class == "Players" then fireIf(data[oldParent], "PlayerRemoving", self) end
+		end
 		if parent then
 			table.insert(data[parent].children, self)
 			fireIf(data[parent], "ChildAdded", self)
+			if oldParent ~= parent and d.class == "Player" and data[parent].class == "Players" then fireIf(data[parent], "PlayerAdded", self) end
 			local a = parent
 			while a do
 				local ad = data[a]
@@ -588,9 +605,20 @@ return function(API)
         local v=Vector3.new(self.ViewportSize.X/2+delta.X/math.max(0.1,depth)*400,self.ViewportSize.Y/2-delta.Y/math.max(0.1,depth)*400,depth)
         return v,depth>0 and v.X>=0 and v.X<=self.ViewportSize.X and v.Y>=0 and v.Y<=self.ViewportSize.Y
     end
-    function METHODS.Raycast()
+    function METHODS.GetMouseLocation() return Vector2.new(400,300) end
+    function METHODS.GetGuiInset() return Vector2.new(0,58),Vector2.new() end
+    function METHODS.GetGuiObjectsAtPosition(self,x,y) ctl.lastGuiHitPoint={x,y};return ctl.guiHits or {} end
+    function METHODS.FindFirstAncestorOfClass(self,class)
+        local p=self.Parent
+        while p do if p:IsA(class) then return p end;p=p.Parent end
+    end
+    function METHODS.ScreenPointToRay(self) return {Origin=self.CFrame.Position,Direction=Vector3.new(0,-1,0)} end
+    function METHODS.ViewportPointToRay(self,x,y) ctl.lastViewportRay={x,y};return {Origin=self.CFrame.Position,Direction=Vector3.new(0,-1,0)} end
+    CFrame.fromMatrix=function(p,x,y,z) return ctl.cframe(p.X,p.Y,p.Z,x.X,y.X,z.X,x.Y,y.Y,z.Y,x.Z,y.Z,z.Z) end
+    function METHODS.Raycast(self,origin,direction,params)
+        ctl.lastRaycastParams=params
         ctl.raycasts=(ctl.raycasts or 0)+1
-        return ctl.occluded and {Instance=ctl.wall} or nil
+        return ctl.raycastResult or (ctl.occluded and {Instance=ctl.wall} or nil)
     end
     function METHODS.IsFriendsWith(_,id) return ctl.friendIds and ctl.friendIds[id]==true or false end
 	function METHODS.GetPivot(self)
@@ -785,6 +813,8 @@ return function(API)
 		Vector2 = Vector2,
 		ColorSequence = ColorSequence,
 		ColorSequenceKeypoint = ColorSequenceKeypoint,
+		NumberSequence = NumberSequence,
+		NumberSequenceKeypoint = NumberSequenceKeypoint,
         Vector3 = Vector3,
         CFrame = CFrame,
         RaycastParams = {new=function() return {} end},
