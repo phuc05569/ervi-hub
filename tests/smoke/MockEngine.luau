@@ -266,7 +266,7 @@ return function(API)
 		return false
 	end
 
-	local DEFAULTS = { Visible = true, Text = "", Enabled = true, Health = 100, MaxHealth = 100, TextSize = 14 }
+	local DEFAULTS = { Anchored = false, Visible = true, Text = "", Enabled = true, Health = 100, MaxHealth = 100, TextSize = 14 }
 	local new
 	local METHODS = {}
 	local Proxy = {}

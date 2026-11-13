@@ -721,12 +721,14 @@ return function(API, makeEngine, hubFn, loaderFn)
     local content=hudFrame:FindFirstChildOfClass("ScrollingFrame")
     check(content and content.Size.Y.Offset==-62,"M1 layout: scrolling content reserves title and grip space")
 
-    -- Fixed Safe Zone, one local movement per activation; default key NONE.
+    -- Fixed Safe Zone with scoped gravity hold; default key NONE.
     local activeChar=ctl.player.Character
     local activeHum=activeChar:FindFirstChildOfClass("Humanoid")
     local activeRoot=ctl.new("Part",activeChar); activeRoot.Name="HumanoidRootPart"
     activeRoot.CFrame=ctl.cframe(10,20,30,0,0,1,0,1,0,-1,0,0)
     local originalFrame=activeRoot.CFrame
+    activeRoot.AssemblyLinearVelocity=env.Vector3.new(0,-100,0)
+    activeRoot.AssemblyAngularVelocity=env.Vector3.new(0,5,0)
     click(find(hubGui(),"TextLabel","Safe Zone").Parent)
     check(find(hubGui(),"TextButton","Set Current Position as Safe Zone")==nil and find(hubGui(),"TextButton","Clear Safe Zone")==nil,"Safe Zone: setup controls removed")
     check((ctl.pivotCalls or 0)==0,"Safe Zone: loading does not move character")
@@ -734,13 +736,19 @@ return function(API, makeEngine, hubFn, loaderFn)
     local moved={activeRoot.CFrame:GetComponents()}
     check(math.abs(moved[1]-278.78)<1e-6 and math.abs(moved[2]+16.3)<1e-6 and math.abs(moved[3]-7.82)<1e-6,"Safe Zone: activation moves root to fixed coordinates", table.concat(moved,","))
     check(moved[4]==0 and moved[6]==1 and moved[10]==-1,"Safe Zone: facing preserved")
+    check(activeRoot.Anchored==true,"Safe Zone hold: root anchored against gravity")
+    check(activeRoot.AssemblyLinearVelocity.Y==0 and activeRoot.AssemblyAngularVelocity.Y==0,"Safe Zone hold: falling and spin velocities cleared")
     local moves=ctl.pivotCalls or 0
     ctl.run(2)
-    check(ctl.pivotCalls==moves,"Safe Zone: no repeated movement or holding loop")
+    check(ctl.pivotCalls==moves,"Safe Zone hold: no repeated teleports or polling loop")
     activeRoot.CFrame=originalFrame; ctl.run(1)
     check(activeRoot.CFrame==originalFrame and ctl.pivotCalls==moves,"Safe Zone: does not fight server correction")
+    check(activeRoot.Anchored==false,"Safe Zone hold: external position update releases physics")
+    click(toggleRow("Enable Safe Zone")); moves=ctl.pivotCalls
     click(toggleRow("Enable Safe Zone"))
     check(ctl.pivotCalls==moves,"Safe Zone: OFF never moves character")
+    check(activeRoot.Anchored==false and activeRoot.AssemblyLinearVelocity.Y==0,"Safe Zone hold: OFF restores movement without old falling velocity")
+    activeRoot.CFrame=originalFrame
     ctl.set(activeHum,"Health",0)
     click(toggleRow("Enable Safe Zone")); ctl.run(0.2)
     check(ctl.pivotCalls==moves,"Safe Zone: dead character rejected without deferred move")
@@ -752,7 +760,22 @@ return function(API, makeEngine, hubFn, loaderFn)
     ctl.rejectPivot=true
     click(toggleRow("Enable Safe Zone")); ctl.run(0.2)
     check(ctl.pivotCalls==moves+1 and activeRoot.CFrame==originalFrame,"Safe Zone: failed local move is not retried")
+    check(activeRoot.Anchored==false,"Safe Zone hold: failed move rolls back anchoring")
     ctl.rejectPivot=false
+    activeRoot.Anchored=true
+    click(toggleRow("Enable Safe Zone")); click(toggleRow("Enable Safe Zone"))
+    check(activeRoot.Anchored==true,"Safe Zone hold: preserves a pre-existing game anchor")
+    activeRoot.Anchored=false
+    click(toggleRow("Enable Safe Zone"))
+    ctl.set(activeHum,"Health",0); activeHum.Died:Fire()
+    check(activeRoot.Anchored==false,"Safe Zone hold: death releases physics immediately")
+    ctl.set(activeHum,"Health",100)
+    click(toggleRow("Enable Safe Zone")); activeRoot.Anchored=false
+    check(activeRoot.Anchored==false,"Safe Zone hold: external unanchor is not counteracted")
+    local afterUnanchor=ctl.pivotCalls
+    click(toggleRow("Enable Safe Zone"))
+    check(ctl.pivotCalls==afterUnanchor+1,"Safe Zone hold: external unanchor resets toggle OFF")
+    click(toggleRow("Enable Safe Zone"))
     click(find(hubGui(),"TextLabel","Settings").Parent)
     check(find(hubGui(),"TextButton","NONE")~=nil,"Safe Zone key: default NONE")
     click(find(hubGui(),"TextButton","NONE")); press("F4")
@@ -766,8 +789,10 @@ return function(API, makeEngine, hubFn, loaderFn)
     check(win().Visible==false and ctl.pivotCalls==moves,"Safe Zone key: ignored while typing")
     ctl.focusedTextBox=nil; press("F8"); ctl.run(0.2)
     check(ctl.pivotCalls==moves+1 and win().Visible==false,"Safe Zone key: moves once without opening menu")
+    check(activeRoot.Anchored==true,"Safe Zone hold: key enables holding")
     press("F8"); ctl.run(0.2)
     check(ctl.pivotCalls==moves+1,"Safe Zone key: second press disables without movement")
+    check(activeRoot.Anchored==false,"Safe Zone hold: key releases holding")
     win().Visible=true
     click(find(hubGui(),"TextButton","F8")); press("Backspace")
     check(find(hubGui(),"TextButton","NONE")~=nil and (ctl.files["RNG_Hub_settings.txt"] or ""):find("safeZoneKey=NONE",1,true),"Safe Zone key: clearing saves NONE")
@@ -780,9 +805,20 @@ return function(API, makeEngine, hubFn, loaderFn)
     ctl.player.CharacterRemoving:Fire(activeChar)
     ctl.player.CharacterAdded:Fire(activeChar); ctl.run(0.2)
     check(ctl.pivotCalls==moves,"Safe Zone: character replacement does not repeat a move")
+    check(activeRoot.Anchored==false,"Safe Zone hold: character removal releases old root")
     click(toggleRow("Enable Safe Zone")); ctl.run(0.2)
     check(ctl.pivotCalls==moves+1,"Safe Zone: character replacement resets toggle OFF")
     click(toggleRow("Enable Safe Zone"))
+
+    click(toggleRow("Enable Safe Zone"))
+    env._G.RNG_HUB_STOP(); ctl.run(0.2)
+    check(activeRoot.Anchored==false,"Safe Zone hold: unloading restores root physics")
+    check(ctl.conns==baseConns,"Safe Zone hold: unloading disconnects hold listeners")
+    runHub(); ctl.run(0.3)
+    click(find(hubGui(),"TextLabel","Safe Zone").Parent)
+    click(toggleRow("Enable Safe Zone"))
+    runHub(); ctl.run(0.3)
+    check(activeRoot.Anchored==false,"Safe Zone hold: rerunning releases old hold")
 
     click(find(hubGui(),"TextLabel","Combat").Parent)
     click(toggleRow("Enable target selection")); ctl.run(0.3)

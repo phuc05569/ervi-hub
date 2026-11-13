@@ -692,8 +692,8 @@ end
 -- ===================================================================== Safe Zone
 local safePage = addPage("safe", "Safe Zone")
 do
-    local card=Ui.card(safePage,"Fixed Safe Zone",1,"Destination: X 278.78 · Y -16.30 · Z 7.82. Turning ON makes one local move; OFF restores normal menu state without moving you.")
-    local toggle=Ui.toggle(hub,card,"Enable Safe Zone", "One move per activation. No floating, repeated movement or automatic respawn movement.",false,safeZone.setEnabled,1)
+    local card=Ui.card(safePage,"Fixed Safe Zone",1,"Destination: X 278.78 · Y -16.30 · Z 7.82. ON moves you here and holds you against gravity. OFF releases normal movement.")
+    local toggle=Ui.toggle(hub,card,"Enable Safe Zone", "Hold at the destination while ON. Death/unload releases it; server corrections are not retried.",false,safeZone.setEnabled,1)
     safeZone.onChanged=function(on) toggle.set(on,true) end
     local coords=Ui.text(card,"",{order=2,textSize=Theme.size.small})
     local status=Ui.text(card,"",{order=3,textSize=Theme.size.small,color=Theme.muted})
@@ -708,7 +708,7 @@ end
 
 -- Manual-combat alternative while no authorized movement/attack API is known.
 do
-    local card=Ui.card(combat,"Auto Kill · manual combat",3,"Selects an eligible low-health player. Approach and attack manually. Safe Zone offers one local return attempt; floating and Auto M1 remain unavailable.")
+    local card=Ui.card(combat,"Auto Kill · manual combat",3,"Selects an eligible low-health player. Approach and attack manually. Safe Zone offers a local return and position hold; Auto M1 remains unavailable.")
     local enabled=Ui.toggle(hub,card,"Enable target selection",nil,prefs.targetEnabled,function(on)
         prefs.targetEnabled=on; targets.refresh(); savePrefs()
     end,1)

@@ -10,9 +10,9 @@ import pathlib
 import sys
 
 ROOT = pathlib.Path(__file__).parent
-VERSION = "2.6.1"
-APP_MODULES = ["Scope", "Rarity", "AutoRoll", "Settings", "WindowGeometry", "FloatingWindow", "SafeZoneState", "SafeZone", "TargetState", "Targets", "M1State", "M1", "Theme", "Ui", "Game", "RollAdapter", "RollObserver", "Session", "Prompts", "App"]
-PURE_MODULES = ["Scope", "Rarity", "AutoRoll", "Settings", "M1State", "Loader", "WindowGeometry", "SafeZoneState", "TargetState"]
+VERSION = "2.6.2"
+APP_MODULES = ["Scope", "Rarity", "AutoRoll", "Settings", "WindowGeometry", "FloatingWindow", "SafeZoneState", "PositionHold", "SafeZone", "TargetState", "Targets", "M1State", "M1", "Theme", "Ui", "Game", "RollAdapter", "RollObserver", "Session", "Prompts", "App"]
+PURE_MODULES = ["Scope", "Rarity", "AutoRoll", "Settings", "M1State", "Loader", "WindowGeometry", "SafeZoneState", "TargetState", "PositionHold"]
 
 
 def read(path):

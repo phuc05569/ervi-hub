@@ -1,7 +1,7 @@
 # Ervi Hub (RNG RollAttacks)
 
 **Run this file:** `build/Ervi_Hub.luau` (paste it into Potassium and execute it while you're in RNG RollAttacks).
-Build `2.6.1+e630a2ff0ebf`, sha256 `aa4be410c74b12b94e2d4dd18030ece21c09afe070a65e3fe116581c377b5994`. This cloud build has **not** been copied to the Windows Potassium installation. Auto-execute, anti-AFK and auto-reconnect are toggles on the Session tab; nothing is placed in Potassium's autoexec folder.
+Build `2.6.2+3bd3d5e499ce`, sha256 `072c56ea27921f490a8e3ea1950f7afb52834e32993b60217bb1a7790a7a4b3d`. This cloud build has **not** been copied to the Windows Potassium installation. Auto-execute, anti-AFK and auto-reconnect are toggles on the Session tab; nothing is placed in Potassium's autoexec folder.
 
 Status: **NOT LIVE TESTED** in the game. It passes the offline checks listed below, and the M1 timing remains based on a candidate client-visible attribute.
 
@@ -12,7 +12,7 @@ Status: **NOT LIVE TESTED** in the game. It passes the offline checks listed bel
 | Dashboard | Equipped style, odds and tier, roll readiness, luck attributes, hub health checks, FPS and ping, recent log |
 | Auto Roll | Rolls until a result meets your target (odds 1/N or rarer, or an exact style name), then stops before another roll |
 | Combat | One resizable M1 HUD, current health, equipped-style config, low-health target selection for manual combat |
-| Safe Zone | Fixed destination X 278.78, Y −16.30, Z 7.82; one local move when enabled; key defaults to NONE |
+| Safe Zone | Fixed destination X 278.78, Y −16.30, Z 7.82; local move and hold while enabled; key defaults to NONE |
 | Styles | Searchable list of every style from the game's data: odds, tier, cooldown, owned |
 | Diagnostics | Read-only roll observer (90 s max), environment snapshot, hub log, Copy buttons |
 | Settings | Show/hide key (rebindable), menu opacity slider, window size, reset settings and position, emergency unload |
@@ -58,15 +58,15 @@ Details: [reports/AUDIT_AND_EVIDENCE.md](reports/AUDIT_AND_EVIDENCE.md), [CHANGE
 
 - **Combat → Show M1 cooldown HUD** controls the only M1 HUD. There is no standalone Cyborg HUD or Close button. Drag its title and resize from the bottom-right corner. Its enabled state, normalized screen position and dimensions save in the active config; Reset M1 HUD layout restores defaults. Long content scrolls and the title truncates rather than overlapping. Layout adapts when the viewport changes.
 - **Settings → Menu opacity** accepts 0–100% background opacity; text remains readable. Existing theme, font, text and config controls remain available.
-- **Safe Zone → Enable Safe Zone** makes one client-side move to **X 278.78, Y −16.30, Z 7.82**, preserving your current facing. The position setup/replacement/clear buttons are removed. The fixed destination applies only in RNG RollAttacks. OFF sends no move; the feature does not hold position or retry if the server corrects it. Loading/reloading or respawning never automatically moves you.
+- **Safe Zone → Enable Safe Zone** moves once to **X 278.78, Y −16.30, Z 7.82**, preserving your facing, then anchors your local root and clears falling/spin velocity so gravity does not pull you away. **Turn it OFF to release normal movement/gravity.** The original anchor state is restored, including a pre-existing game anchor. Death, character/root removal, unload and rerun clean up the hold. The feature releases on external unanchor/position corrections instead of fighting them. It never automatically moves you on reload/respawn. Setup controls remain removed; the fixed destination applies only in RNG RollAttacks.
 - **Settings → Safe Zone toggle key** defaults to **NONE**. Click its key button and press a key to bind; Backspace clears it to NONE and Esc cancels. It toggles Safe Zone ON/OFF, ignores typing, and cannot conflict with the menu key. Your old F6 reference shortcut does not carry over to this new movement action. The new binding persists through configs.
-- **Combat → Auto Kill · manual combat → Enable target selection** observes replicated health at 4 Hz and selects a player strictly below the HP threshold (slider or numeric input). It uses the fixed destination and requires a living local character. Approach and combat remain manual; Safe Zone provides a separate one-shot local return attempt. Dead, missing, departed or no-longer-eligible targets are cleared. An eligible target remains stable rather than switching every refresh. No world overlays are drawn.
-- **Auto M1 (request only)** records your preference. OFF means manual attacks and skills. ON explicitly reports unsupported and sends no attacks. Floating and Auto M1 remain unavailable. The Safe Zone movement is an owner-requested local PivotTo translation, not a verified server-approved mechanic; no physics changes, correction bypasses or invented remotes are used.
+- **Combat → Auto Kill · manual combat → Enable target selection** observes replicated health at 4 Hz and selects a player strictly below the HP threshold (slider or numeric input). It uses the fixed destination and requires a living local character. Approach and combat remain manual; Safe Zone provides a separate local return and hold. Dead, missing, departed or no-longer-eligible targets are cleared. An eligible target remains stable rather than switching every refresh. No world overlays are drawn.
+- **Auto M1 (request only)** records your preference. OFF means manual attacks and skills. ON explicitly reports unsupported and sends no attacks. Auto M1 remains unavailable. Safe Zone uses owner-requested local translation/anchoring, not a verified server-approved mechanic; no correction bypasses or invented remotes are used.
 - **Auto Roll → Resume Auto Roll After Death** persists your choice. ON keeps the existing worker waiting through death, then checks normal character/arena/cooldown readiness. OFF pauses for manual continuation. It retains the rarity/style target, rechecks equipped styles after waiting, and never treats respawn as a roll result. Uncertain or failed in-flight requests still pause without retry; enabling recovery does not bypass that safeguard.
 
 The M1 HUD still labels the `AttackReadyAt` server-clock interpretation **UNVERIFIED** and displays UNKNOWN without usable evidence. Removal of the Cyborg fallback does not establish live universal support.
 
-Version 2.6.1 validation: **101 unit tests and 256 smoke checks pass**, both artifacts compile, and repeat builds match. The original baseline remains in `baseline/`. See [the current continuation report](reports/CONTINUATION_2_6_1.md). Windows/Potassium copies remain unverified; cloud tests are not live Roblox validation.
+Version 2.6.2 validation: **106 unit tests and 271 smoke checks pass**, both artifacts compile, and repeat builds match. The original baseline remains in `baseline/`. See [the current continuation report](reports/CONTINUATION_2_6_2.md). Windows/Potassium copies remain unverified; cloud tests are not live Roblox validation.
 
 ## Historical 2.5.0 cooldown evidence and loader (superseded by 2.6.0)
 

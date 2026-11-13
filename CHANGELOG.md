@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.6.2 (2026-11-13), build 2.6.2+3bd3d5e499ce, NOT LIVE TESTED
+- Fix Safe Zone falling after its one-shot move: ON now holds the root anchored and clears falling/spin velocity. OFF restores its previous anchor state without replaying old velocity.
+- Transactional PositionHold helper rolls back physics on move failure. Hold listeners/physics release on death, root/character removal, unload and rerun.
+- External unanchor or position correction disables the hold without a retry or correction-fighting loop. Key defaults to NONE; existing bindings remain supported.
+- Tests: 106 unit / 271 smoke checks, both artifact compilations and deterministic build verification. Real game/server acceptance remains unverified.
+
 ## 2.6.1 (2026-11-13), build 2.6.1+e630a2ff0ebf, NOT LIVE TESTED
 - Owner's screenshot coordinates are now the fixed Safe Zone: X 278.78, Y -16.30, Z 7.82. Removed setup/capture/replace/clear controls.
 - Enable Safe Zone performs one local PivotTo translation, preserving facing direction. OFF does not move. No holding, retries, server-correction counteraction or automatic respawn movement; wrong-place/dead/missing-character/error paths fail visibly.
