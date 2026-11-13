@@ -936,6 +936,14 @@ return function(API, makeEngine, hubFn, loaderFn, schema)
         if page then for _,d in ipairs(page:GetDescendants()) do if d:GetAttribute("SettingKey")==spec.key then control=d end end end
         check(control~=nil,"Catalog setting mounted: "..spec.key)
     end
+    -- Unsupported movement remains disabled in the real target-place integration.
+    local flyRow=hubGui():FindFirstChild("Setting_flyEnabled",true)
+    local noclipRow=hubGui():FindFirstChild("Setting_noclipEnabled",true)
+    check(flyRow:GetAttribute("Disabled") and noclipRow:GetAttribute("Disabled"),"Movement: target game lacks authorized movement; toggles disabled")
+    click(flyRow);click(noclipRow)
+    check(not flyRow:GetAttribute("Value") and not noclipRow:GetAttribute("Value"),"Movement: disabled controls cannot create fake active state")
+    press("L");press("N");ctl.run(0.1)
+    check(not flyRow:GetAttribute("Value") and not noclipRow:GetAttribute("Value"),"Movement: unsupported keys never modify physics")
     -- Slider input and shared visual preferences: real mounted controls, mock engine.
     click(nav("Player"))
     local speedRow=find(hubGui(),"TextLabel","Walk Speed").Parent

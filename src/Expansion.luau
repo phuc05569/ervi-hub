@@ -8,6 +8,8 @@ local makeActions=require("RuntimeActions")
 local makeVisuals=require("Visuals")
 local makeClickTP=require("ClickTP")
 local makeDiagnostics=require("Diagnostics")
+local makeAuthority=require("MovementAuthority")
+local makeFlight=require("Flight")
 local makePreview=require("VisualPreview")
 local Logo=require("Logo")
 return function(ctx)
@@ -16,13 +18,15 @@ return function(ctx)
  local playerTools=makePlayer(hub,ctx.parent,ctx.prefs,ctx.save)
  local actions=makeActions(hub,ctx.prefs)
  local visuals=makeVisuals(hub,ctx.parent,ctx.prefs)
- local clickTP=makeClickTP(hub,ctx.parent,ctx.prefs)
- local diagnostics=makeDiagnostics(ctx,{visuals=visuals,clickTP=clickTP,player=playerTools,world=world})
+ local authority=makeAuthority(hub)
+ local flight=makeFlight(hub,ctx.prefs,ctx.save,authority)
+ local clickTP=makeClickTP(hub,ctx.parent,ctx.prefs,authority,function() return flight.active end)
  local pages=ctx.pages
  local new={}
  for _,tab in ipairs({{"visuals","Visuals","Visible player overlays and preview"},{"player","Player","Local speed and movement panel"},{"world","World","Lighting and camera"}}) do
   new[tab[1]]=ctx.addPage(tab[1],tab[2],tab[3])
  end
+ local diagnostics=makeDiagnostics(ctx,{visuals=visuals,clickTP=clickTP,player=playerTools,world=world,flight=flight})
  local refreshControls={}
  local pageRefresh={}
  local function apply()
@@ -31,7 +35,7 @@ return function(ctx)
   Ui.configureMotion(ctx.prefs())
   ctx.headerRefresh()
   if ctx.statusBarRefresh then ctx.statusBarRefresh() end
-  world.apply();world.setBlur(ctx.prefs().backgroundBlur and ctx.isOpen());playerTools.apply();actions.applyFPS();visuals.apply();clickTP.apply()
+  world.apply();world.setBlur(ctx.prefs().backgroundBlur and ctx.isOpen());playerTools.apply();actions.applyFPS();visuals.apply();flight.apply();clickTP.apply()
   for _,fn in ipairs(refreshControls) do fn(true) end
  end
  local function changed(key,value)
@@ -85,6 +89,7 @@ return function(ctx)
   end
   if control and control.node then control.node.Name="Setting_"..key;control.node:SetAttribute("SettingKey",key) end
   if key=="fpsCap" and control.setEnabled then control.setEnabled(actions.fpsSupported) end
+  if (key=="flyEnabled" or key=="noclipEnabled") and control.setEnabled then control.setEnabled(flight.available) end
   if control then
    local last=ctx.prefs()[key]
    local refresh=function(force) local value=ctx.prefs()[key];if force or value~=last then control.set(value,true);last=value end end
@@ -99,7 +104,7 @@ return function(ctx)
   local button,setEnabled=Ui.button(hub,card,"Unsupported",{width=160},function() end);setEnabled(false)
   Ui.register(button,title,description)
  end
- unsupported(new.player,"CFrame Speed / Noclip / Fly","No game-authorized movement/collision API is established. No CFrame correction fallback, collision bypass, fly or infinite-jump control is enabled. Requested Fly key, Velocity/CFrame mode and speed remain unsupported.")
+ unsupported(new.player,"CFrame Speed / Infinite Jump","No game-authorized API is established. Flight and Noclip above require the explicitly installed owned Studio server; they are disabled in RNG RollAttacks.")
  unsupported(new.visuals,"Mobile Renderer / Dim Behind Walls","All overlays already use native GUI objects, including mobile. Fully hidden players are suppressed, not dimmed. Behind Wall color and hidden-target preview are sample-only; no wallhack or AlwaysOnTop chams is installed.")
  local preview=makePreview(new.visuals)
  pages.visuals.preview=preview.frame
@@ -118,7 +123,7 @@ return function(ctx)
  local visualStatus=Ui.text(new.visuals,"",{order=100,textSize=Theme.size.small})
  ctx.onRefresh("visuals","visual statistics",function() Ui.set(visualStatus,"Text",visuals.status) end)
  local playerStatus=Ui.text(new.player,"",{order=100,textSize=Theme.size.small})
- ctx.onRefresh("player","player status",function() playerTools.refreshStatus();Ui.set(playerStatus,"Text",playerTools.status) end)
+ ctx.onRefresh("player","player status",function() playerTools.refreshStatus();Ui.set(playerStatus,"Text",playerTools.status.."\n"..flight.status) end)
  Ui.button(hub,Ui.card(new.world,"Camera",75),"Reset Camera",{order=20,width=180},function() world.resetCamera();apply() end)
  local cameraStatus=Ui.text(new.world,"",{order=100,textSize=Theme.size.small})
  ctx.onRefresh("world","world status",function() Ui.set(cameraStatus,"Text",world.status) end)
@@ -196,6 +201,7 @@ return function(ctx)
  Ui.button(hub,diagnostic,"Clear diagnostic output",{order=4,width=220},function() table.clear(ctx.logs()) end)
  local liveDiagnostic=Ui.card(pages.utility.page,"Live diagnostics",90,"Bounded UI and feature state; no remote code is executed.")
  Ui.button(hub,liveDiagnostic,"Export diagnostics",{order=1,width=220},diagnostics.export).Name="ExportDiagnostics"
+ Ui.button(hub,liveDiagnostic,"Measure render cadence (5s)",{order=2,width=240},diagnostics.measure).Name="MeasureRenderCadence"
  local diagnosticStatus=Ui.text(liveDiagnostic,"Diagnostics ready",{order=2,textSize=Theme.size.small})
  ctx.onRefresh("utility","live diagnostic status",function() Ui.set(diagnosticStatus,"Text",diagnostics.status) end)
  local function keyHandler(input)
@@ -204,10 +210,13 @@ return function(ctx)
   if p.walkKey~="NONE" and name==p.walkKey then changed("walkEnabled",not p.walkEnabled);return true end
   if p.espKey~="NONE" and name==p.espKey then changed("espEnabled",not p.espEnabled);return true end
   if p.diagnosticKey~="NONE" and name==p.diagnosticKey then diagnostics.export();return true end
-  if clickTP.keyDown(input) then return true end
+  for _,binding in ipairs({{"flyKey","flyEnabled"},{"noclipKey","noclipEnabled"}}) do
+   if p[binding[1]]~="NONE" and name==p[binding[1]] and not ctx.keyConflict(name,binding[1]) then flight.toggle(binding[2]);apply();return true end
+  end
+  if not flight.active and not ctx.keyConflict(name,"clickTPKey") and clickTP.keyDown(input) then return true end
   return false
  end
  table.insert(ctx.syncs,apply)
  apply();previewLayout()
- return {apply=apply,keyHandler=keyHandler,actions=actions,world=world,visuals=visuals,player=playerTools,clickTP=clickTP,diagnostics=diagnostics}
+ return {apply=apply,keyHandler=keyHandler,actions=actions,world=world,visuals=visuals,player=playerTools,clickTP=clickTP,diagnostics=diagnostics,flight=flight,authority=authority}
 end

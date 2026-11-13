@@ -10,6 +10,7 @@ local Ui = { registry=Registry.new(),language="EN" }
 Ui.localeText=function(text) return Locale.text(text,Ui.language) end
 function Ui.register(control,title,description)
  if not title or title=="" or title=="+" or title=="−" then return end
+ control:SetAttribute("ControlTitle",title)
  local node=control
  local page,section
  while node do
@@ -493,6 +494,7 @@ function Ui.toggle(scope, parent, label, desc, initial, onChange, order)
 	ownAnimation(scope,knob)
 	ownAnimation(scope,track)
 	local value = false
+ local enabled=true
 	local api = {node=row}
 	function api.set(on, silent)
 		value = on == true
@@ -508,8 +510,12 @@ function Ui.toggle(scope, parent, label, desc, initial, onChange, order)
 	end
 	Ui.register(row,label,desc)
 	api.set(initial, true)
+	function api.setEnabled(on)
+  enabled=on==true;row:SetAttribute("Disabled",not enabled or nil)
+  for _,node in ipairs(row:GetDescendants()) do if node:IsA("TextLabel") then node.TextTransparency=enabled and Ui.textAlpha or math.max(0.5,Ui.textAlpha) end end
+ end
 	scope:connect(row.Activated, function()
-		api.set(not value)
+		if enabled then api.set(not value) end
 	end)
 	return api
 end

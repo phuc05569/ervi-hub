@@ -5,8 +5,8 @@ local Target=require("ClickTarget")
 local Motion=require("Motion")
 local Input=game:GetService("UserInputService")
 local Run=game:GetService("RunService")
-return function(hub,parent,getPrefs)
- local feature={active=false,held=false,status="Off · targeting preview only",selected=nil,teleportAvailable=false}
+return function(hub,parent,getPrefs,authority,moving)
+ local feature={active=false,held=false,status="Off · targeting preview only",selected=nil,teleportAvailable=authority and authority.available==true}
  local scope,marker,lastCharacter,target,motion,boundKey
  local function hide()
   feature.held=false;target=nil
@@ -49,7 +49,7 @@ return function(hub,parent,getPrefs)
   scope:connect(Run.Heartbeat,function(dt)
    if not feature.held then return end
    elapsed+=dt;if elapsed<1/30 then return end;elapsed=0
-   if not Game.alive() or Input:GetFocusedTextBox() then hide();return end
+   if not Game.alive() or Input:GetFocusedTextBox() or (moving and moving()) then hide();return end
    local cam=workspace.CurrentCamera;if not cam then hide();return end
    local mouse=Input:GetMouseLocation()
    if overGui(mouse) then marker.Parent=nil;target=nil;return end
@@ -60,13 +60,13 @@ return function(hub,parent,getPrefs)
     -- GetMouseLocation is raw viewport space. ScreenPointToRay would add the
     -- top-bar inset again and visibly shift the circle away from the pointer.
     local ray=cam:ViewportPointToRay(mouse.X,mouse.Y)
-    return workspace:Raycast(ray.Origin,ray.Direction*500,params)
+    return workspace:Raycast(ray.Origin,ray.Direction*getPrefs().clickTPRange,params)
    end)
    if not ok or not result then marker.Parent=nil;target=nil;feature.status="Aim at a valid world surface · preview only";return end
    local model=result.Instance:FindFirstAncestorOfClass("Model")
    if model and model:FindFirstChildOfClass("Humanoid") then marker.Parent=nil;target=nil;return end
    local pos,normal=result.Position,result.Normal
-   if not Target.valid({pos.X,pos.Y,pos.Z},{normal.X,normal.Y,normal.Z},(pos-cam.CFrame.Position).Magnitude) then marker.Parent=nil;target=nil;return end
+   if not Target.valid({pos.X,pos.Y,pos.Z},{normal.X,normal.Y,normal.Z},(pos-(Game.player.Character and Game.player.Character:FindFirstChild("HumanoidRootPart") and Game.player.Character.HumanoidRootPart.Position or cam.CFrame.Position)).Magnitude,getPrefs().clickTPRange) then marker.Parent=nil;target=nil;return end
    local p=getPrefs();target=pos
    marker.Size=Vector3.new(0.03,p.clickTPSize,p.clickTPSize)
    marker.Transparency=1-p.clickTPOpacity;marker.Color=Color3.fromHex(p.clickTPColor:sub(2))
@@ -75,19 +75,30 @@ return function(hub,parent,getPrefs)
    motion.configure(p.reduceAnimations,p.animationSpeed)
    if not marker.Parent then marker.CFrame=destination else motion.to(marker,{CFrame=destination},0.05) end
    marker.Parent=workspace
-   feature.status=feature.selected and ("Selected preview (%.1f, %.1f, %.1f) · no server teleport"):format(feature.selected.X,feature.selected.Y,feature.selected.Z) or "Preview active · server teleport unavailable"
+   feature.status=feature.teleportAvailable and (feature.resultStatus or "Owned Studio server ready · click to request teleport") or feature.selected and ("Selected preview (%.1f, %.1f, %.1f) · no server teleport"):format(feature.selected.X,feature.selected.Y,feature.selected.Z) or "Preview active · server teleport unavailable"
   end)
   scope:connect(Input.InputBegan,function(input,processed)
    if processed or input.UserInputType~=Enum.UserInputType.MouseButton1 or not feature.held or not target or Input:GetFocusedTextBox() then return end
    if overGui(Input:GetMouseLocation()) then return end
    feature.selected=target
+   if feature.teleportAvailable then
+    if moving and moving() then feature.status="Stop flight and noclip first";return end
+    if authority.busy then feature.status="Server request pending";return end
+    local selected=target
+    feature.resultStatus="Waiting for owned Studio server";feature.status=feature.resultStatus
+    authority.request("teleport",{position=selected,range=getPrefs().clickTPRange},function(result)
+     if not feature.active then return end
+     feature.resultStatus=result.ok and "Teleport confirmed by owned Studio server" or tostring(result.message or "Server rejected teleport");feature.status=feature.resultStatus
+    end)
+    return
+   end
    feature.status=("Selected preview (%.1f, %.1f, %.1f); no server teleport performed"):format(target.X,target.Y,target.Z)
   end)
   scope:connect(Input.InputEnded,function(input) if input.KeyCode.Name==getPrefs().clickTPKey then hide() end end)
   scope:connect(Input.WindowFocusReleased,hide)
   scope:connect(Game.player.CharacterRemoving,function() hide();feature.selected=nil end)
   scope:connect(Game.player.CharacterAdded,function() hide();feature.selected=nil end)
-  feature.active=true;feature.status="Preview ready · bind and hold a key; server teleport unavailable"
+  feature.active=true;feature.status=feature.teleportAvailable and "Owned Studio server ready · hold to aim" or "Preview ready · bind and hold a key; server teleport unavailable"
  end
  function feature.keyDown(input)
   if not feature.active or getPrefs().clickTPKey=="NONE" or input.KeyCode.Name~=getPrefs().clickTPKey or not Game.alive() then return false end
