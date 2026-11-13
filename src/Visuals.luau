@@ -18,10 +18,14 @@ local function segment(frame,a,b,tint,thickness)
  frame.Size=UDim2.fromOffset(math.sqrt(dx*dx+dy*dy),thickness or 1)
  frame.Rotation=math.deg(math.atan2(dy,dx));frame.BackgroundColor3=tint;frame.Visible=true
 end
-return function(hub,parent,getPrefs)
+return function(hub,parent,getPrefs,playerSource)
+ local playerService=playerSource or Players
  local visuals={status="Off · visible players only",active=false,drawn=0,projections=0,rays=0}
  local scope,gui
  local records,friends={},{}
+ local tracked,candidates,kept={},{},{}
+ local params
+ local lastCharacter,friendMode
  local tick,elapsed=0,0
  local lastCamera
  local function drop(player,leaving)
@@ -29,10 +33,10 @@ return function(hub,parent,getPrefs)
   if leaving then friends[player]=nil end
  end
  function visuals.stop()
-  visuals.active=false;visuals.drawn=0
+  visuals.active=false;visuals.drawn=0;visuals.cached=0
   if scope then scope:close();scope=nil end
   for player in pairs(records) do drop(player) end
-  records={};friends={}
+  records={};friends={};tracked={};table.clear(candidates);table.clear(kept);params=nil;lastCharacter=nil;friendMode=nil
  end
  local function project(cam,position)
   visuals.projections+=1
@@ -45,9 +49,11 @@ return function(hub,parent,getPrefs)
   return not hit or hit.Instance:IsDescendantOf(char)
  end
  local function record(player)
-  if records[player] then return records[player] end
+  if records[player] then
+   local r=records[player];r.root.Parent=gui;r.highlight.Parent=gui;return r
+  end
   local owned=Scope.new("visual-player")
-  local r={scope=owned,lines={},bones={}}
+  local r={scope=owned,lines={},bones={},boneCache={}}
   r.root=owned:add(Ui.new("Frame",{Name="ErviPlayerOverlay",Size=UDim2.fromScale(1,1),ClipsDescendants=true,BackgroundTransparency=1,Visible=false,Parent=gui}))
   for _=1,8 do table.insert(r.lines,line(r.root)) end
   r.tracer=line(r.root);r.health=line(r.root)
@@ -62,10 +68,12 @@ return function(hub,parent,getPrefs)
   local p=getPrefs();local cam=workspace.CurrentCamera
   if not cam then return end
   tick+=1;visuals.projections=0;visuals.rays=0
-  local params=RaycastParams.new();params.FilterType=Enum.RaycastFilterType.Exclude
-  params.FilterDescendantsInstances=Game.player.Character and {Game.player.Character} or {}
-  local candidates={}
-  for _,player in ipairs(Players:GetPlayers()) do
+  if lastCharacter~=Game.player.Character then
+   lastCharacter=Game.player.Character
+   params.FilterDescendantsInstances=lastCharacter and {lastCharacter} or {}
+  end
+  table.clear(candidates)
+  for player,candidate in pairs(tracked) do
    if player~=Game.player then
     local char=player.Character
     local h=char and char:FindFirstChildOfClass("Humanoid")
@@ -76,13 +84,16 @@ return function(hub,parent,getPrefs)
      local sameTeam=not Game.player.Neutral and not player.Neutral and Game.player.Team~=nil and player.Team==Game.player.Team
      if distance<=p.maxDistance and (not p.teamCheck or not sameTeam or p.showTeammates) then
       local point,on,depth=project(cam,head.Position)
-      table.insert(candidates,{player=player,char=char,hum=h,root=root,head=head,distance=distance,sameTeam=sameTeam,friend=friends[player]==true,point=point,on=on,depth=depth,alive=true})
+      candidate.player,candidate.char,candidate.hum,candidate.root,candidate.head=player,char,h,root,head
+      candidate.distance,candidate.sameTeam,candidate.friend=distance,sameTeam,friends[player]==true
+      candidate.point,candidate.on,candidate.depth,candidate.alive=point,on,depth,true
+      table.insert(candidates,candidate)
      end
     end
    end
   end
   table.sort(candidates,function(a,b) if a.on~=b.on then return a.on end;return a.distance<b.distance end)
-  local kept={};local drawn=0
+  table.clear(kept);local drawn=0
   for rank,c in ipairs(candidates) do
    if drawn>=p.maxTargets then break end
    c.clearLine=clearLine(cam,c.head.Position,c.char,params)
@@ -141,7 +152,7 @@ return function(hub,parent,getPrefs)
       end
       if p.skeleton and bones then
        if #r.bones==0 then for _=1,#BONE_PAIRS do table.insert(r.bones,line(r.root)) end end
-       local cache={Head=c.point}
+       local cache=r.boneCache;table.clear(cache);cache.Head=c.point
        for i,pair in ipairs(BONE_PAIRS) do
         local joint={}
         for j,name in ipairs(pair) do
@@ -162,7 +173,15 @@ return function(hub,parent,getPrefs)
     end
    end
   end
-  for player,r in pairs(records) do if not kept[player] then drop(player) end end
+  local allocated=0
+  for _ in pairs(records) do allocated+=1 end
+  for player,r in pairs(records) do
+   if not kept[player] then
+    r.root.Visible=false;r.highlight.Enabled=false;r.root.Parent=nil;r.highlight.Parent=nil
+    if not tracked[player] or allocated>p.maxTargets then drop(player);allocated-=1 end
+   end
+  end
+  visuals.cached=allocated
   visuals.drawn=drawn;visuals.status=("Visible targets %d/%d · projections %d · rays %d per update"):format(drawn,p.maxTargets,visuals.projections,visuals.rays)
  end
  function visuals.apply()
@@ -182,15 +201,20 @@ return function(hub,parent,getPrefs)
     if scope==owner and not owner.closed and ok then friends[player]=value==true end
    end))
   end
-  for _,player in ipairs(Players:GetPlayers()) do friend(player) end
-  scope:connect(Players.PlayerAdded,friend)
-  scope:connect(Players.PlayerRemoving,function(player) drop(player,true) end)
+  params=RaycastParams.new();params.FilterType=Enum.RaycastFilterType.Exclude
+  local function added(player) if player~=Game.player then tracked[player]={};friend(player) end end
+  for _,player in ipairs(playerService:GetPlayers()) do added(player) end
+  scope:connect(playerService.PlayerAdded,added)
+  scope:connect(playerService.PlayerRemoving,function(player) tracked[player]=nil;drop(player,true) end)
   scope:connect(Run.Heartbeat,function(dt)
    elapsed+=dt
    local cam=workspace.CurrentCamera
    local rate=getPrefs().updateRate=="Auto" and ((cam and cam.CFrame~=lastCamera) and 30 or 10) or tonumber(getPrefs().updateRate)
    if elapsed<1/rate then return end;elapsed=0
-   for _,player in ipairs(Players:GetPlayers()) do friend(player) end
+   if friendMode~=getPrefs().markFriends then
+    friendMode=getPrefs().markFriends
+    if friendMode then for player in pairs(tracked) do friend(player) end end
+   end
    local ok,err=pcall(update)
    lastCamera=cam and cam.CFrame
    visuals.effectiveRate=rate
