@@ -6,9 +6,11 @@
 - [x] P0-1 native Click TP attempt + local observation (headless verified; live pending).
 - [x] P0-2 independent A/B configuration (B deliberately unconfigured).
 - [x] P0-3 low-health state machine and functional controls (headless only).
-- [ ] P0-4 avatar ESP; P0-5 combat feasibility; P0-6 speed repair.
-- [ ] Flight, key modes, ESP migration, background, notifications, full audit and UI handoff.
-- [ ] Final live acceptance, deterministic build, review. No push/deploy/release without approval.
+- [x] P0-4 avatar ESP; P0-5 combat feasibility (unsupported attacks documented); P0-6 speed repair.
+- [x] Flight/Noclip, key modes, ESP migration, background, notifications, full audit and UI handoff.
+- [x] 20 owned-Studio controller checks plus scoped input/render evidence; 181 unit / 602 smoke.
+- [ ] Target-game acceptance and full physical UI regression require the next approved testing stage.
+- [x] Final determinism/compile gate and local code checkpoint recorded in the validation manifest. No push/deploy/release without approval.
 
 - [x] Initial repository/deployed hash/Studio identity inspection; reproduce 148 unit / 494 smoke baseline.
 - [x] A1 live GUI inspection, defect fixes and integrated diagnostics; test and commit.

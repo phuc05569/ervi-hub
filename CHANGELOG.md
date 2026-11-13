@@ -1,3 +1,14 @@
+# Local unreleased functional candidate — 3.5.0-dev
+
+- Native one-shot Click TP with position observation, GUI/sky suppression and no correction retries.
+- Separate configurable A/B destinations, place-scoped position management and once-per-recovery low-health emergency movement.
+- Avatar ESP, inverted/migrated Visibility Mode, no obsolete team/hidden-preview controls, configurable health colors.
+- Correct Set default/Multiply preservation and speed-state synchronization; scoped native flight/collision controllers and shared key modes.
+- Fixed swatches; lazy HSV pickers, validated background inputs/presets and viewport notifications (new default 1 second).
+- Owned Studio server ground/root integration fixed without weakening validation. Development only: target-game movement/protection remains an acceptance gate, automated combat unsupported. No new release published.
+
+---
+
 ## 3.4.0 interface redesign — released 2026-11-14 (tag v3.4.0, see docs/RELEASE_3_4_0.md)
 - Liquid-glass-inspired look: specular gradient rims re-derived on every theme change, soft luminance gradients, 16/14/12/8 px radii, glass nav pill, title chips, search, cards, dropdowns, notifications, tooltips and profile card. No backdrop blur is claimed (Roblox UI has none).
 - Exact Ervi logo as an antialiased PNG rendered from `LogoGeometry`; Lucide (ISC) icon atlas with a distinct icon per section. Both PNGs are embedded in the bundle, written to the executor workspace at start and used via `getcustomasset` only after `ContentProvider:PreloadAsync` reports Success; otherwise the native logo/icons are used.

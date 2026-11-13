@@ -1,3 +1,9 @@
+# Functional continuation status — 14 November 2026
+
+The current inventory and evidence classification are in [FEATURE_FUNCTIONAL_AUDIT](FEATURE_FUNCTIONAL_AUDIT.md). New controls and callback/settings contracts are in [CODEX_TO_CLAUDE_UI_HANDOFF](CODEX_TO_CLAUDE_UI_HANDOFF.md). Visibility Mode replaces/inverts Through Walls; team and hidden-target preview controls are removed. Native Click TP/Fly/Noclip and A/B/emergency controls are implemented, but target-game support is not established by Studio success. Existing 3.4 design remains; visual redesign is a later stage. Tables below record historical versions and must not override this current classification.
+
+---
+
 > **Current 3.2 development:** build 3.2.0+4e59db554fde; 148 unit / 494 smoke pass. See [handoff](../docs/LOCAL_CODEX_HANDOFF.md) and [phase report](CONTINUATION_3_2_0.md). Inventory below the current additions is historical 3.0 material, including removed tools.
 
 | Current component | Status | Verification / limitation |

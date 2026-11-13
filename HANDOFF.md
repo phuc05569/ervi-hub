@@ -1,3 +1,9 @@
+# Current functional continuation — 14 November 2026
+
+Local source is now a 3.5.0-dev functional candidate on `dev/functional-audit-3.4`. Read `reports/FEATURE_FUNCTIONAL_AUDIT.md`, `FEATURE_REPAIR_LOG.md`, `MOVEMENT_AND_SAFEZONE_TESTS.md`, `COMBAT_FEASIBILITY.md` and `CODEX_TO_CLAUDE_UI_HANDOFF.md` first. They supersede older feature-state instructions below. Published v3.4.0/main/history/installed Potassium scripts remain unchanged; no push/deployment/release is approved. New B protection and target-game movement remain unverified. Do not revert newer user settings geometry to the starting backup.
+
+---
+
 > **Current state (3.4.0, 2026-11-14):** read [reports/UI_REDESIGN_3_4.md](reports/UI_REDESIGN_3_4.md) and [docs/PAUSED_HANDOFF_2026_11_14.md](docs/PAUSED_HANDOFF_2026_11_14.md) first; they supersede the sections below.
 
 > **Earlier 3.1 handoff:** See [LOCAL_CODEX_HANDOFF](docs/LOCAL_CODEX_HANDOFF.md). Build **3.1.0+5e9595329868**, 144 unit tests / 476 smoke checks passing. The material below records 3.0 and is historical: 3.1 removes Freecam/Friends/Sounds/Triggerbot, reorganizes navigation, defaults speed to Multiply, adds the logo/status pill, fixes search/key capture, and returns Safe Zone to its activation origin on explicit OFF.

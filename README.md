@@ -1,3 +1,13 @@
+# Local functional development candidate
+
+Current local candidate: **3.5.0-dev+b391196c1bb3**, on `dev/functional-audit-3.4`. Published **v3.4.0 remains unchanged**. No development push, Potassium deployment or new release is authorized yet.
+
+Read [functional audit](reports/FEATURE_FUNCTIONAL_AUDIT.md), [movement evidence](reports/MOVEMENT_AND_SAFEZONE_TESTS.md), and [Claude UI handoff](reports/CODEX_TO_CLAUDE_UI_HANDOFF.md). The candidate adds native Click TP, configurable A/B zones, low-health emergency movement, avatar ESP, corrected Set/Multiply speed, scoped Fly/Noclip, position tools, key modes, Visibility Mode migration, color/background controls and independent viewport notifications. UI design is preserved. Target-game movement/protection and automated combat are **not** newly verified. Build/test instructions below still apply; use `python build.py --test`, Luau unit runner, `--smoke`, smoke runner and compile both artifacts.
+
+The remaining README describes the **published 3.4 baseline**. Its older feature limitations/defaults are superseded only in the local candidate by the linked audit; do not use historical claims as current live evidence.
+
+---
+
 > 14 Nov 2026: current **development checkpoint 3.3.0+5ba5f7088681**, 161 unit / 527 smoke passing. Release remains incomplete. See [checkpoint report](reports/CONTINUATION_3_3_CHECKPOINT.md).
 
 > **Current development checkpoint: 3.2.0+4e59db554fde.** 148 unit tests / 494 smoke checks pass; both artifacts compile and rebuild deterministically. See [current handoff](docs/LOCAL_CODEX_HANDOFF.md), [phase report](reports/CONTINUATION_3_2_0.md), and [release verification](docs/RELEASE_VERIFICATION_3_2_0.md) for exact commit/loader and evidence. Bundle SHA-256: `6eb609a7dc0ef0bb8998ff6bbfd7a459bae49c760fdece5908699a79511a2443`.

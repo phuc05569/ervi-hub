@@ -1,0 +1,90 @@
+{
+  "date": "2026-11-14",
+  "branch": "dev/functional-audit-3.4",
+  "build": "3.5.0-dev+b391196c1bb3",
+  "unit": {
+    "passed": 181,
+    "failed": 0
+  },
+  "smoke": {
+    "passed": 602,
+    "failed": 0
+  },
+  "compiled": [
+    "bundle",
+    "loader"
+  ],
+  "deterministic": true,
+  "hashes": {
+    "build\\Ervi_Hub.luau": "bd93a2e1bb8f3a47efb219d6356858b02504b2e85268d5df8d9814b664e7bf1f",
+    "build\\Ervi_Hub.luau.map.json": "ecdffb204fca064886abef4d159dc8092c28e72ef25ad2258c7bbfcf401d1f39",
+    "build\\loader.lua": "1908e88deb3c4704f499385b97c7fcbb1604b25e87747cb9faf9b06c70f80a4a"
+  },
+  "installedReleaseHashes": {
+    "scripts\\Ervi_Hub.luau": "e27fe7f83d2c2abf9625e5eb30092a762b7acb1331208559f747197aebd8d26c",
+    "workspace\\Ervi_Hub.luau": "e27fe7f83d2c2abf9625e5eb30092a762b7acb1331208559f747197aebd8d26c"
+  },
+  "releaseTagArtifactHash": "e27fe7f83d2c2abf9625e5eb30092a762b7acb1331208559f747197aebd8d26c",
+  "mainAndReleaseRefPreserved": true,
+  "autoexecFiles": 0,
+  "deployment": "not performed",
+  "push": "not performed",
+  "settings": "newer current geometry retained; protected backup unchanged; separate verification backup made",
+  "evidenceFiles": {
+    "settings-catalog-26d9e8676395.json": 15838,
+    "settings-catalog.json": 15837,
+    "studio-avatar-health.png": 439209,
+    "studio-benchmark-intermediate.json": 1662,
+    "studio-click-client.json": 300,
+    "studio-click-gui.json": 40,
+    "studio-click-server-immediate.json": 137,
+    "studio-click-sky.json": 96,
+    "studio-final-correction-detected.json": 1003,
+    "studio-flight-direction.json": 148,
+    "studio-functional-acceptance.json": 1429,
+    "studio-functional-candidate-26d9e8676395.json": 1740,
+    "studio-functional-final.json": 1419,
+    "studio-functional-release-candidate.json": 4652,
+    "studio-home.png": 394169,
+    "studio-isolated-move-after-correction.json": 3718,
+    "studio-key-toggle-off.json": 340,
+    "studio-key-toggle-on.json": 312,
+    "studio-original-protocol-final.json": 409,
+    "studio-post-flight-physics-probe.json": 2205,
+    "studio-server-landing-failure-before-fix.json": 167,
+    "studio-through-wall.png": 364302,
+    "studio-visibility.json": 98,
+    "studio-visual-controls.png": 441525
+  },
+  "codeCommit": "b5c9c8f7c9edcb6ff15b03b883b443236059bbf2",
+  "studio": {
+    "environment": "owned unpublished fixture; not RNG RollAttacks",
+    "build": "3.5.0-dev+b391196c1bb3",
+    "checksPassed": 20,
+    "latestRunPassed": true,
+    "earlierCorrectedMoveAssertionFailed": true,
+    "correctionCause": "unestablished; no retries",
+    "cleanup": {
+      "notifications": true,
+      "movers": true
+    }
+  },
+  "pngEvidence": {
+    "studio-avatar-health.png": {
+      "bytes": 439209,
+      "signatureValid": true
+    },
+    "studio-home.png": {
+      "bytes": 394169,
+      "signatureValid": true
+    },
+    "studio-through-wall.png": {
+      "bytes": 364302,
+      "signatureValid": true
+    },
+    "studio-visual-controls.png": {
+      "bytes": 441525,
+      "signatureValid": true
+    }
+  }
+}
