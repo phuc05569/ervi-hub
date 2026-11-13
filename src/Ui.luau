@@ -815,14 +815,19 @@ function Ui.dropdown(scope,parent,title,options,value,onChange,order)
  local group=Ui.new("Frame",{BackgroundTransparency=1,Size=UDim2.new(1,0,0,0),AutomaticSize=Enum.AutomaticSize.Y,LayoutOrder=order or 0,Parent=parent})
  Ui.list(group,4)
  local current,opened=value,false
- local button,choices
+ local button,choices,chevron
  local function expand(on)
   opened=on
   group:SetAttribute("Expanded",on)
+  Ui.animate(chevron,{Rotation=on and 180 or 0},0.18)
   if on then choices.Visible=true end
   Ui.animate(choices,{Size=UDim2.new(1,0,0,on and math.min(#options*34+8,178) or 0)},0.18,function() choices.Visible=opened end)
  end
  button=Ui.button(scope,group,title,{order=0,size=UDim2.new(1,0,0,34)},function() expand(not opened) end)
+ -- Native strokes avoid missing disclosure glyphs in supported user fonts.
+ chevron=Ui.new("Frame",{Name="DropdownChevron",BackgroundTransparency=1,AnchorPoint=Vector2.new(1,0.5),Position=UDim2.new(1,-12,0.5,0),Size=UDim2.fromOffset(10,10),Parent=button})
+ for i,angle in ipairs({45,-45}) do Ui.new("Frame",{BorderSizePixel=0,BackgroundColor3=Theme.muted,AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromOffset(i==1 and 3 or 7,5),Size=UDim2.fromOffset(6,2),Rotation=angle,Parent=chevron}) end
+ ownAnimation(scope,chevron)
  choices=Ui.scroll(group,{Name="DropdownOptions",Visible=false,Size=UDim2.new(1,0,0,0),LayoutOrder=1,BackgroundTransparency=0,BackgroundColor3=Theme.surface,ClipsDescendants=true})
  Ui.pad(choices,4);Ui.list(choices,4);Ui.corner(choices);ownAnimation(scope,choices)
  local buttons={}
@@ -830,7 +835,7 @@ function Ui.dropdown(scope,parent,title,options,value,onChange,order)
   if not table.find(options,v) then return end
   local changed=current~=v
   current=v
-  Ui.set(button,"Text",Ui.localeText(title)..": "..Ui.localeText(v).."  ▾")
+  Ui.set(button,"Text",Ui.localeText(title)..": "..Ui.localeText(v))
   for option,b in pairs(buttons) do Ui.select(b,option==v) end
   if changed or not silent then expand(false) end
   if not silent then onChange(v) end
