@@ -56,7 +56,7 @@ return function(hub)
      if release then
       local watchers=Scope.new("safe-zone-observers")
       context={char=char,root=part,originPivot=originPivot,originRoot=originRoot,release=release,watchers=watchers}
-      feature.enabled=true;feature.status="Holding at Safe Zone · OFF returns to activation origin"
+      feature.enabled=true;feature.status="Local hold only · server position/protection unverified · OFF returns to origin"
       local function stop(reason) feature.setEnabled(false,true);feature.status=reason end
       local humanoid=Game.humanoid()
       if humanoid then watchers:connect(humanoid.Died,function() stop("Released · character died; origin cleared") end) end
