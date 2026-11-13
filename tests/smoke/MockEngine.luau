@@ -292,6 +292,7 @@ return function(API)
 	end
 
 	local DEFAULTS = { Transparency=0, LocalTransparencyModifier=0, Anchored = false, Visible = true, Text = "", Enabled = true, Health = 100, MaxHealth = 100, TextSize = 14, WalkSpeed=16, DisplayName="", Neutral=true }
+    DEFAULTS.TextBounds=Vector2.new(0,0)
     DEFAULTS.AbsolutePosition=Vector2.new(0,0);DEFAULTS.AbsoluteSize=Vector2.new(100,30)
 	local new
 	local METHODS = {}
@@ -656,9 +657,12 @@ return function(API)
 	end
 
 	function ctl.set(inst, key, value)
+        local prior=key=="Character" and inst.Character or nil
+        if key=="Character" and prior and prior~=value then inst.CharacterRemoving:Fire(prior) end
 		ctl.engineWrite = true
 		inst[key] = value
 		ctl.engineWrite = false
+        if key=="Character" and prior~=value and value then inst.CharacterAdded:Fire(value) end
 	end
 
 	---------------------------------------------------------------- world
@@ -773,9 +777,15 @@ return function(API)
 		error("MOCK: require of unexpected module " .. tostring(mod))
 	end
 
+	local renderBindings={}
+    function METHODS.BindToRenderStep(_,name,priority,callback) renderBindings[name]={priority=priority,callback=callback} end
+    function METHODS.UnbindFromRenderStep(_,name) renderBindings[name]=nil end
+    ctl.renderBindings=renderBindings
 	function ctl.step(dt)
 		ctl.clock += dt
 		RunService.Heartbeat:Fire(dt)
+        RunService.RenderStepped:Fire(dt)
+        for _,binding in pairs(table.clone(renderBindings)) do task.spawn(binding.callback,dt) end
 		local due = {}
 		for i = #queue, 1, -1 do
 			if queue[i].at <= ctl.clock then

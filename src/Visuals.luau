@@ -7,7 +7,8 @@ local Ui=require("Ui")
 local Theme=require("Theme")
 local Players=game:GetService("Players")
 local Run=game:GetService("RunService")
-local BONE_PAIRS={{"Head","UpperTorso"},{"UpperTorso","LowerTorso"},{"UpperTorso","LeftUpperArm"},{"LeftUpperArm","LeftLowerArm"},{"LeftLowerArm","LeftHand"},{"UpperTorso","RightUpperArm"},{"RightUpperArm","RightLowerArm"},{"RightLowerArm","RightHand"},{"LowerTorso","LeftUpperLeg"},{"LeftUpperLeg","LeftLowerLeg"},{"LeftLowerLeg","LeftFoot"},{"LowerTorso","RightUpperLeg"},{"RightUpperLeg","RightLowerLeg"},{"RightLowerLeg","RightFoot"},{"Head","Torso"},{"Torso","Left Arm"},{"Torso","Right Arm"},{"Torso","Left Leg"},{"Torso","Right Leg"}}
+local Rig=require("RigSkeleton")
+local Geometry=require("SkeletonGeometry")
 local function color(hex) return Color3.fromHex(hex:sub(2)) end
 local function line(parent)
  return Ui.new("Frame",{Name="OverlayLine",BorderSizePixel=0,BackgroundColor3=Theme.accent,AnchorPoint=Vector2.new(0.5,0.5),Visible=false,Parent=parent})
@@ -27,7 +28,11 @@ return function(hub,parent,getPrefs,playerSource)
  local params
  local lastCharacter,friendMode
  local tick,elapsed=0,0
- local lastCamera
+ local renderName="ErviVisibleOverlays"
+ local function closeTracked(player)
+  local c=tracked[player]
+  if c then if c.characterScope then c.characterScope:close() end;c.scope:close();tracked[player]=nil end
+ end
  local function drop(player,leaving)
   if records[player] then records[player].scope:close();records[player]=nil end
   if leaving then friends[player]=nil end
@@ -36,7 +41,8 @@ return function(hub,parent,getPrefs,playerSource)
   visuals.active=false;visuals.drawn=0;visuals.cached=0
   if scope then scope:close();scope=nil end
   for player in pairs(records) do drop(player) end
-  records={};friends={};tracked={};table.clear(candidates);table.clear(kept);params=nil;lastCharacter=nil;friendMode=nil
+  for player in pairs(tracked) do closeTracked(player) end
+  records={};friends={};tracked={};table.clear(candidates);table.clear(kept);params=nil;lastCharacter=nil;friendMode=nil;elapsed=0;tick=0
  end
  local function project(cam,position)
   visuals.projections+=1
@@ -57,7 +63,7 @@ return function(hub,parent,getPrefs,playerSource)
   r.root=owned:add(Ui.new("Frame",{Name="ErviPlayerOverlay",Size=UDim2.fromScale(1,1),ClipsDescendants=true,BackgroundTransparency=1,Visible=false,Parent=gui}))
   for _=1,8 do table.insert(r.lines,line(r.root)) end
   r.tracer=line(r.root);r.health=line(r.root)
-  r.name=Ui.text(r.root,"",{size=UDim2.fromOffset(220,22),align=Enum.TextXAlignment.Center})
+  r.name=Ui.text(r.root,"",{size=UDim2.fromOffset(500,30),align=Enum.TextXAlignment.Center})
   r.name.AnchorPoint=Vector2.new(0.5,1)
   r.dot=Ui.new("Frame",{Size=UDim2.fromOffset(5,5),AnchorPoint=Vector2.new(0.5,0.5),BorderSizePixel=0,Parent=r.root});Ui.corner(r.dot,3)
   r.arrow=Ui.text(r.root,"▲",{size=UDim2.fromOffset(20,20),textSize=20});r.arrow.AnchorPoint=Vector2.new(0.5,0.5)
@@ -75,10 +81,12 @@ return function(hub,parent,getPrefs,playerSource)
   table.clear(candidates)
   for player,candidate in pairs(tracked) do
    if player~=Game.player then
-    local char=player.Character
-    local h=char and char:FindFirstChildOfClass("Humanoid")
-    local root=char and char:FindFirstChild("HumanoidRootPart")
-    local head=char and char:FindFirstChild("Head")
+    local char=candidate.char
+    if char and candidate.dirty then
+     candidate.hum=char:FindFirstChildOfClass("Humanoid");candidate.root=char:FindFirstChild("HumanoidRootPart");candidate.head=char:FindFirstChild("Head")
+     candidate.links=Rig.build(char);candidate.dirty=false
+    end
+    local h,root,head=candidate.hum,candidate.root,candidate.head
     if h and h.Health>0 and h.MaxHealth>0 and root and head and head.Transparency<1 and head.LocalTransparencyModifier<1 then
      local distance=(root.Position-cam.CFrame.Position).Magnitude
      local sameTeam=not Game.player.Neutral and not player.Neutral and Game.player.Team~=nil and player.Team==Game.player.Team
@@ -144,25 +152,35 @@ return function(hub,parent,getPrefs,playerSource)
       if p.healthBar then segment(r.health,Vector2.new(left-4,yBottom),Vector2.new(left-4,yBottom-(yBottom-yTop)*math.clamp(c.hum.Health/c.hum.MaxHealth,0,1)),Theme.good,3) end
       local texts={};if p.espNames then table.insert(texts,c.player.DisplayName~="" and c.player.DisplayName or c.player.Name) end
       if p.espDistance then table.insert(texts,("%.0f studs"):format(c.distance)) end
-      r.name.Text=table.concat(texts," · ");r.name.Position=UDim2.fromOffset((left+right)/2,yTop-3);TextStyle.apply(r.name,Color3.new(1,1,1),Color3.new(0,0,0));r.name.TextSize=p.espTextSize;r.name.Visible=#texts>0
+      r.name.Text=table.concat(texts," · ");r.name.Position=UDim2.fromOffset((left+right)/2,yTop-3);TextStyle.apply(r.name,Color3.new(1,1,1),Color3.new(0,0,0));r.name.TextSize=p.espTextSize;r.name.Size=UDim2.fromOffset(math.min(cam.ViewportSize.X,math.max(220,r.name.TextBounds.X+16)),p.espTextSize*1.5);r.name.Visible=#texts>0
       r.dot.Position=UDim2.fromOffset(top.X,top.Y+p.verticalOffset);r.dot.BackgroundColor3=tint;r.dot.Visible=p.headDot
       if p.tracers then
        local vp=cam.ViewportSize;local origin=p.tracerOrigin=="Top" and 0 or p.tracerOrigin=="Middle" and vp.Y/2 or vp.Y
        segment(r.tracer,Vector2.new(vp.X/2,origin),Vector2.new(bottom.X,bottom.Y+p.verticalOffset),tint)
       end
       if p.skeleton and bones then
-       if #r.bones==0 then for _=1,#BONE_PAIRS do table.insert(r.bones,line(r.root)) end end
-       local cache=r.boneCache;table.clear(cache);cache.Head=c.point
-       for i,pair in ipairs(BONE_PAIRS) do
-        local joint={}
-        for j,name in ipairs(pair) do
-         if cache[name]==nil then
-          local part=c.char:FindFirstChild(name)
-          cache[name]=part and part:IsA("BasePart") and clearLine(cam,part.Position,c.char,params) and project(cam,part.Position) or false
+       local links=c.links or {}
+       while #r.bones<#links*2 do table.insert(r.bones,line(r.root)) end
+       local cache=r.boneCache;table.clear(cache)
+       local function point(part)
+        if cache[part]~=nil then return cache[part] end
+        if not part.Parent or part.Transparency>=1 or part.LocalTransparencyModifier>=1 or not clearLine(cam,part.Position,c.char,params) then cache[part]=false;return false end
+        local v,_,z=project(cam,part.Position);local value={v.X,v.Y+p.verticalOffset,z};cache[part]=value;return value
+       end
+       local function bone(index,a,b)
+        if not a or not b then return end
+        local clippedA,clippedB=Geometry.clip(a,b,cam.ViewportSize.X,cam.ViewportSize.Y)
+        if clippedA then segment(r.bones[index],Vector2.new(clippedA[1],clippedA[2]),Vector2.new(clippedB[1],clippedB[2]),Color3.new(1,1,1),1.5) end
+       end
+       for i,link in ipairs(links) do
+        local a,b=point(link.a),point(link.b)
+        if link.joint and link.joint.Parent and link.joint.Enabled then
+         local world=link.b.CFrame:PointToWorldSpace(link.joint.C1.Position)
+         if a and b and clearLine(cam,world,c.char,params) then
+          local v,_,z=project(cam,world);local joint={v.X,v.Y+p.verticalOffset,z}
+          bone(i*2-1,a,joint);bone(i*2,joint,b)
          end
-         joint[j]=cache[name]
-        end
-        if joint[1] and joint[2] then segment(r.bones[i],Vector2.new(joint[1].X,joint[1].Y+p.verticalOffset),Vector2.new(joint[2].X,joint[2].Y+p.verticalOffset),tint) end
+        elseif not link.joint then bone(i*2-1,a,b) end
        end
       end
       if p.chams and (not p.chamsEnemies or not c.sameTeam) then
@@ -202,24 +220,40 @@ return function(hub,parent,getPrefs,playerSource)
    end))
   end
   params=RaycastParams.new();params.FilterType=Enum.RaycastFilterType.Exclude
-  local function added(player) if player~=Game.player then tracked[player]={};friend(player) end end
+  local function added(player)
+   if player==Game.player or tracked[player] then return end
+   local c={scope=Scope.new("visual-character-cache"),dirty=true};tracked[player]=c
+   local function bind(char)
+    if c.characterScope then c.characterScope:close() end
+    c.characterScope=Scope.new("visual-rig");c.char=char;c.hum=nil;c.head=nil;c.root=nil;c.links=nil;c.dirty=true
+    drop(player)
+    if char then
+     local function dirty() c.dirty=true end
+     c.characterScope:connect(char.DescendantAdded,dirty);c.characterScope:connect(char.DescendantRemoving,dirty)
+    end
+   end
+   bind(player.Character)
+   c.scope:connect(player.CharacterAdded,bind);c.scope:connect(player.CharacterRemoving,function() bind(nil) end)
+   friend(player)
+  end
   for _,player in ipairs(playerService:GetPlayers()) do added(player) end
   scope:connect(playerService.PlayerAdded,added)
-  scope:connect(playerService.PlayerRemoving,function(player) tracked[player]=nil;drop(player,true) end)
-  scope:connect(Run.Heartbeat,function(dt)
+  scope:connect(playerService.PlayerRemoving,function(player) closeTracked(player);drop(player,true) end)
+  Run:BindToRenderStep(renderName,Enum.RenderPriority.Camera.Value+1,function(dt)
    elapsed+=dt
    local cam=workspace.CurrentCamera
-   local rate=getPrefs().updateRate=="Auto" and ((cam and cam.CFrame~=lastCamera) and 30 or 10) or tonumber(getPrefs().updateRate)
-   if elapsed<1/rate then return end;elapsed=0
+   local rate=getPrefs().updateRate=="Auto" and 30 or tonumber(getPrefs().updateRate)
+   if elapsed<1/rate then return end;elapsed=math.min(elapsed-1/rate,1/rate)
    if friendMode~=getPrefs().markFriends then
     friendMode=getPrefs().markFriends
     if friendMode then for player in pairs(tracked) do friend(player) end end
    end
-   local ok,err=pcall(update)
-   lastCamera=cam and cam.CFrame
+   local started=os.clock();local ok,err=pcall(update)
+   local ms=(os.clock()-started)*1000;visuals.updates=(visuals.updates or 0)+1;visuals.totalMs=(visuals.totalMs or 0)+ms;visuals.maxMs=math.max(visuals.maxMs or 0,ms)
    visuals.effectiveRate=rate
    if not ok then visuals.stop();getPrefs().espEnabled=false;visuals.status="Rendering disabled: "..tostring(err) end
   end)
+  scope:add(function() Run:UnbindFromRenderStep(renderName) end)
   visuals.active=true
  end
  hub:add(visuals.stop)

@@ -1,0 +1,77 @@
+[
+    {
+        "rect":  {
+                     "y":  67,
+                     "x":  266,
+                     "w":  420,
+                     "h":  38
+                 },
+        "renderedTransparency":  1,
+        "logo":  {
+                     "h":  19.10769271850586,
+                     "w":  18,
+                     "descendants":  99
+                 },
+        "opacity":  0
+    },
+    {
+        "rect":  {
+                     "y":  67,
+                     "x":  266,
+                     "w":  420,
+                     "h":  38
+                 },
+        "renderedTransparency":  0.75,
+        "logo":  {
+                     "h":  19.10769271850586,
+                     "w":  18,
+                     "descendants":  99
+                 },
+        "opacity":  0.25
+    },
+    {
+        "rect":  {
+                     "y":  67,
+                     "x":  266,
+                     "w":  420,
+                     "h":  38
+                 },
+        "renderedTransparency":  0.5,
+        "logo":  {
+                     "h":  19.10769271850586,
+                     "w":  18,
+                     "descendants":  99
+                 },
+        "opacity":  0.5
+    },
+    {
+        "rect":  {
+                     "y":  67,
+                     "x":  266,
+                     "w":  420,
+                     "h":  38
+                 },
+        "renderedTransparency":  0.25,
+        "logo":  {
+                     "h":  19.10769271850586,
+                     "w":  18,
+                     "descendants":  99
+                 },
+        "opacity":  0.75
+    },
+    {
+        "rect":  {
+                     "y":  67,
+                     "x":  266,
+                     "w":  420,
+                     "h":  38
+                 },
+        "renderedTransparency":  0,
+        "logo":  {
+                     "h":  19.10769271850586,
+                     "w":  18,
+                     "descendants":  99
+                 },
+        "opacity":  1
+    }
+]
