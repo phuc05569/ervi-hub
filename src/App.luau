@@ -22,6 +22,7 @@ local makeSession = require("Session")
 local makePrompts = require("Prompts")
 local makeExpansion = require("Expansion")
 local Logo=require("Logo")
+local MainGeometry=require("WindowGeometry")
 local makeStatusBar=require("StatusBar")
 
 local HUB_NAME = "RNG_RollAttacks_Hub"
@@ -170,6 +171,7 @@ local W, H, TH, SW = prefs.winW, prefs.winH, Theme.titleH, Theme.sidebarW -- W/H
 local HOME = UDim2.new(0.5, -W / 2, 0.5, -H / 2)
 local window = Ui.new("CanvasGroup", {
  Name="ErviWindow",
+ AnchorPoint=Vector2.new(0.5,0.5),
 	Size = UDim2.fromOffset(W, H),
 	Position = HOME,
 	BackgroundColor3 = Theme.bg,
@@ -253,31 +255,34 @@ local function sidebarLayout()
  sidebar.Size=UDim2.new(0,SW,1,prefs.communityLink~="" and -158 or -120)
 end
 local userScale = prefs.scale
-local mainX,mainY=0.5,0.5
-local mainX,mainY=0.5,0.5 -- opening position is session-local, independent of legacy saved drag offsets
+local mainX,mainY=0.5,0.5 -- session-local center; legacy saved top-left offsets are ignored
 local searchBox, searchInput, expansionKeys, onSearchInput
-local function fitPosition()
+local function usableViewport()
  local cam=workspace.CurrentCamera;local vp=cam and cam.ViewportSize or Vector2.new(1280,720)
- local scale=uiScale.Scale
- local availableX=math.max(0,vp.X/scale-W-16);local availableY=math.max(0,vp.Y/scale-H-48)
- window.Position=UDim2.fromOffset(availableX*mainX+8,availableY*mainY+24)
+ local tl,br=game:GetService("GuiService"):GetGuiInset()
+ return math.max(1,vp.X-tl.X-br.X),math.max(1,vp.Y-tl.Y-br.Y)
+end
+local function fitPosition()
+ local vw,vh=usableViewport()
+ local x,y=MainGeometry.mainAnchor(W,H,uiScale.Scale,vw,vh,mainX,mainY)
+ window.Position=UDim2.fromScale(x,y)
 end
 local function applyScale()
 	Ui.cancelAnimation(uiScale)
 	local cam = workspace.CurrentCamera
 	local vp = cam and cam.ViewportSize or Vector2.new(1280, 720)
-	local fit = math.min((vp.X - 24) / W, (vp.Y - 24) / H)
+	local vw,vh=usableViewport()
+	local fit = math.min((vw - 16) / W, (vh - 16) / H)
 	uiScale.Scale = math.max(0.2, math.min(userScale, fit))
     headerTitle.Visible=W>=760;headerDesc.Visible=W>=760
     fitPosition()
 end
 applyScale()
 onWindowDragged=function(commit)
- local cam=workspace.CurrentCamera;local vp=cam and cam.ViewportSize or Vector2.new(1280,720)
- local x=window.Position.X.Scale*vp.X/uiScale.Scale+window.Position.X.Offset
- local y=window.Position.Y.Scale*vp.Y/uiScale.Scale+window.Position.Y.Offset
- mainX=math.clamp((x-8)/math.max(1,vp.X/uiScale.Scale-W-16),0,1)
- mainY=math.clamp((y-24)/math.max(1,vp.Y/uiScale.Scale-H-48),0,1)
+ local vw,vh=usableViewport()
+ mainX=window.Position.X.Scale+window.Position.X.Offset/vw
+ mainY=window.Position.Y.Scale+window.Position.Y.Offset/vh
+ mainX,mainY=MainGeometry.mainAnchor(W,H,uiScale.Scale,vw,vh,mainX,mainY)
  fitPosition()
 end
 local viewportScope

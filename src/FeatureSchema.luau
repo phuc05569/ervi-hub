@@ -39,13 +39,16 @@ add("espEnabled","visuals","General","Enabled","bool",false,nil,"Visible players
 add("espKey","visuals","General","Visualization key","key","NONE")
 add("boxStyle","visuals","Player Overlays","Box Style","choice","Corners",{"Box","Corners","None"})
 for _,d in ipairs({{"healthBar","HealthBar",true},{"espNames","Names",true},{"espDistance","Distance",true},{"skeleton","Skeleton",false},{"headDot","Head Dot",false},{"chams","Chams",false},{"chamsEnemies","Chams: Enemies Only",true}}) do add(d[1],"visuals","Player Overlays",d[2],"bool",d[3]) end
-add("chamsFill","visuals","Appearance","Chams Fill","number",0.6,{0,1,0.05},"1 hides the fill; uses Occluded depth mode.")
+add("throughWalls","visuals","Player Overlays","Through Walls","bool",true,nil,"Show client-replicated characters through world geometry. Disable for line-of-sight-only overlays.")
+add("chamsFill","visuals","Appearance","Chams Fill","number",0.6,{0,1,0.05},"1 hides the fill; depth follows Through Walls.")
 add("chamsOutline","visuals","Appearance","Chams Outline","number",0,{0,1,0.05})
 add("tracers","visuals","Tracers","Tracers Enabled","bool",false)
 add("tracerOrigin","visuals","Tracers","Origin","choice","Bottom",{"Bottom","Middle","Top"})
+add("tracerColor","visuals","Tracers","Tracer Color","color","#FFFFFF")
+add("skeletonThickness","visuals","Appearance","Skeleton Thickness","number",1,{0.5,3,0.5},"White core width; black outline adds one pixel on each side.")
 add("offscreenArrows","visuals","Tracers","Off-screen Arrows","bool",false,nil,"Only for unobstructed targets within the distance and target budgets.")
 for _,d in ipairs({{"teamCheck","Team Check",true},{"showTeammates","Show Teammates",false},{"markFriends","Mark Friends",false}}) do add(d[1],"visuals","Filters",d[2],"bool",d[3]) end
-for _,d in ipairs({{"enemyColor","Enemy","#F0628E"},{"teamColor","Team","#40C492"},{"friendColor","Friend","#70AFFF"},{"wallColor","Behind Wall (preview only)","#9294A3"}}) do add(d[1],"visuals","Appearance",d[2],"color",d[3],nil,"Hidden targets are never drawn; Behind Wall is used only in the sample preview.") end
+for _,d in ipairs({{"enemyColor","Enemy","#F0628E"},{"teamColor","Team","#40C492"},{"friendColor","Friend","#70AFFF"},{"wallColor","Behind Wall (preview only)","#9294A3"}}) do add(d[1],"visuals","Appearance",d[2],"color",d[3],nil,"Player palette; visibility follows the Through Walls setting.") end
 add("updateRate","visuals","Performance","Update Rate","choice","Auto",{"Auto","10","20","30","60"})
 add("cheapBoxes","visuals","Performance","Cheap Boxes","bool",true,nil,"2 projections from root/head instead of 8 bounding-box corners.")
 for _,d in ipairs({{"maxTargets","Max Targets",24,1,48,1},{"skeletonBudget","Skeleton Budget",8,0,16,1},{"fullRateTargets","FullRate Targets",12,1,24,1},{"farTargetRate","Far Target Rate",2,1,6,1},{"maxDistance","Max Distance",1000,50,3000,50},{"espTextSize","Text Size",12,9,32,1},{"verticalOffset","Vertical Offset",0,-100,100,1}}) do add(d[1],"visuals",(d[1]=="espTextSize" or d[1]=="verticalOffset") and "Appearance" or "Performance",d[2],"number",d[3],{d[4],d[5],d[6]}) end

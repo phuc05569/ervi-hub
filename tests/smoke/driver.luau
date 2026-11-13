@@ -1,6 +1,8 @@
 -- Headless GUI + lifecycle smoke test. Drives the real hub bundle against MockEngine.
 return function(API, makeEngine, hubFn, loaderFn, schema)
 	local env, ctl = makeEngine(API)
+    -- Existing saved appearance must remain stable despite revised fresh-config defaults.
+    ctl.files["RNG_Hub_settings.txt"]="[Default]\nopacity=0.95\nscale=1\ntheme=Bloom\naccent=\ntextColor=Theme\ntextScale=1\nthroughWalls=false\n"
 	local passed, failed = 0, 0
 	local function check(cond, name, detail)
 		if cond then
@@ -302,7 +304,7 @@ return function(API, makeEngine, hubFn, loaderFn, schema)
 	click(toggleRow("Show M1 cooldown HUD")) -- overlay is built now, after the size change
 	ctl.run(0.2)
 	local hudTitle = find(ctl.pg:FindFirstChild("RNG_Hub_M1HUD"), "TextLabel", "Punch  M1")
-	check(hudTitle and hudTitle.TextSize == 16, "newly built HUD text is scaled (13 -> 16)", hudTitle and hudTitle.TextSize)
+	check(hudTitle and hudTitle.TextSize == 12, "newly built HUD uses compact resize-responsive title", hudTitle and hudTitle.TextSize)
 	click(toggleRow("Show M1 cooldown HUD"))
 	click(nav("Settings"))
 	click(find(hubGui(), "TextButton", "On"))
@@ -376,8 +378,8 @@ return function(API, makeEngine, hubFn, loaderFn, schema)
 	check(hex(label("CONTROLS").Parent.BackgroundColor3) ~= hex(rgb(32, 40, 48)), "cards get a lighter shade of a custom background")
 	click(find(hubGui(), "TextButton", "Reset appearance"))
 	ctl.run(0.1)
-	check(hex(win().BackgroundColor3) == hex(rgb(17, 15, 22)), "reset appearance: Bloom again")
-	check(label(probe).TextSize == 13 and near(label(probe).TextTransparency, 0) and label(probe).Font == E.Font.GothamMedium, "reset appearance: text back to normal")
+	check(hex(win().BackgroundColor3) == hex(rgb(14, 15, 20)), "reset appearance: owner Midnight default")
+	check(label(probe).TextSize == 18 and near(label(probe).TextTransparency, 0) and label(probe).Font == E.Font.GothamMedium, "reset appearance: text back to normal")
 	noErrors("appearance")
 
 	-- 7. close via X: full cleanup
@@ -528,12 +530,14 @@ return function(API, makeEngine, hubFn, loaderFn, schema)
 	end
 	local w0 = win().Size.X.Offset
 	local h0 = win().Size.Y.Offset
+    local resizeScale=win():FindFirstChildOfClass("UIScale").Scale
+    local resizedW=math.min(1100,math.floor(w0+100/resizeScale));local resizedH=math.min(820,math.floor(h0+50/resizeScale))
 	grip.InputBegan:Fire({ UserInputType = E.UserInputType.MouseButton1, Position = env.Vector2.new(500, 500) })
 	ctl.UIS.InputChanged:Fire({ UserInputType = E.UserInputType.MouseMovement, Position = env.Vector2.new(600, 550) })
 	ctl.UIS.InputEnded:Fire({ UserInputType = E.UserInputType.MouseButton1 })
 	ctl.run(0.1)
-	check(win().Size.X.Offset == w0 + 100 and win().Size.Y.Offset == h0 + 50, "corner grip resizes the window", ("%dx%d"):format(win().Size.X.Offset, win().Size.Y.Offset))
-	check((ctl.files["RNG_Hub_settings.txt"] or ""):find(("winW=%d"):format(w0 + 100), 1, true) ~= nil, "new size saved")
+	check(win().Size.X.Offset == resizedW and win().Size.Y.Offset == resizedH, "corner grip resizes the window", ("%dx%d"):format(win().Size.X.Offset, win().Size.Y.Offset))
+	check((ctl.files["RNG_Hub_settings.txt"] or ""):find(("winW=%d"):format(resizedW), 1, true) ~= nil, "new size saved")
 	grip.InputBegan:Fire({ UserInputType = E.UserInputType.MouseButton1, Position = env.Vector2.new(500, 500) })
 	ctl.UIS.InputChanged:Fire({ UserInputType = E.UserInputType.MouseMovement, Position = env.Vector2.new(-900, -900) })
 	ctl.UIS.InputEnded:Fire({ UserInputType = E.UserInputType.MouseButton1 })
@@ -735,7 +739,11 @@ return function(API, makeEngine, hubFn, loaderFn, schema)
         ctl.UIS.InputChanged:Fire({UserInputType=env.Enum.UserInputType.MouseMovement,Position=env.Vector2.new(dx,dy)})
         ctl.UIS.InputEnded:Fire({UserInputType=env.Enum.UserInputType.MouseButton1})
     end
+    local countdown=layoutHud:FindFirstChild("M1Countdown",true)
+    local smallText=countdown.TextSize
     gesture(hudGrip,80,60)
+    check(countdown.TextSize>smallText,"M1 layout: enlarging the HUD enlarges text")
+    check(layoutHud:FindFirstChild("M1CooldownBar",true)~=nil,"M1 layout: cooldown progress bar exists")
     check(hudFrame.Size.X.Offset==initialW+80,"M1 layout: corner gesture resizes")
     gesture(hudTitle,-10000,-10000)
     check(hudFrame.Position.X.Offset==0 and hudFrame.Position.Y.Offset==0,"M1 layout: drag clamped on screen")
@@ -1106,6 +1114,9 @@ return function(API, makeEngine, hubFn, loaderFn, schema)
     click(toggleRow("Enabled"));ctl.run(0.3)
     local overlay=ctl.pg:FindFirstChild("Ervi_VisibleOverlays")
     check(overlay~=nil,"Visuals: native overlay root created")
+    check(overlay.DisplayOrder>hubGui().DisplayOrder,"Visuals: graphics render above the hub")
+    local passiveRoot=overlay:FindFirstChild("ErviPlayerOverlay")
+    check(passiveRoot and not passiveRoot.Active and not passiveRoot.Interactable,"Visuals: overlay root is noninteractive")
     check(find(overlay,"TextLabel","VisibleSample · 23 studs")~=nil or (function() for _,d in ipairs(overlay:GetDescendants()) do if d.ClassName=="TextLabel" and d.Text:find("VisibleSample",1,true) then return true end end return false end)(),"Visuals: visible target name and distance drawn")
     local espLabel
     for _,d in ipairs(overlay:GetDescendants()) do if d.ClassName=="TextLabel" and d.Text:find("VisibleSample",1,true) then espLabel=d;break end end
@@ -1116,15 +1127,30 @@ return function(API, makeEngine, hubFn, loaderFn, schema)
     for _,d in ipairs(overlay:GetDescendants()) do if d.ClassName=="TextLabel" and d.Text:find("studs",1,true) then distanceLabel=d;break end end
     check(espLabel.Text=="VisibleSample" and distanceLabel and distanceLabel.Position.Y.Offset>espLabel.Position.Y.Offset,"Visuals: name above head and distance below feet")
     check(espLabel.TextSize==12 and distanceLabel.TextSize==12,"Visuals: factory labels are 12px")
+    local render=ctl.renderBindings["ErviVisibleOverlays"].callback
+    local oldX=espLabel.Position.X.Offset;local rays=ctl.raycasts
+    visibleHead.CFrame=env.CFrame.new(4,3,0);visibleRoot.CFrame=env.CFrame.new(4,0,0)
+    render(0)
+    check(espLabel.Position.X.Offset~=oldX,"Visuals: current transforms presented between visibility ticks")
+    check(ctl.raycasts==rays,"Visuals: intermediate presentation performs no additional raycasts")
+    visibleHead.Transparency=1;render(0)
+    check(not espLabel.Parent.Visible,"Visuals: invisible head suppressed before next expensive update")
+    visibleHead.Transparency=0;visibleHead.CFrame=env.CFrame.new(2,3,0);visibleRoot.CFrame=env.CFrame.new(2,0,0)
     visibleHead.Transparency=1;ctl.run(0.3)
     check(#overlay:GetChildren()==0,"Visuals: invisible head does not reveal a hidden character")
     visibleHead.Transparency=0;ctl.run(0.3)
     click(toggleRow("Chams"));ctl.run(0.3)
     local highlight=overlay:FindFirstChildOfClass("Highlight")
-    check(highlight and highlight.DepthMode==env.Enum.HighlightDepthMode.Occluded and highlight.Enabled,"Visuals: chams always use Occluded depth")
+    check(highlight and highlight.DepthMode==env.Enum.HighlightDepthMode.Occluded and highlight.Enabled,"Visuals: Visible Only chams use Occluded depth")
     local retainedOverlay=overlay:FindFirstChild("ErviPlayerOverlay")
     ctl.occluded=true;ctl.run(0.3)
     check(overlay:FindFirstChildOfClass("Highlight")==nil,"Visuals: fully occluded target resources removed")
+    click(toggleRow("Through Walls"));ctl.run(0.3)
+    check(overlay:FindFirstChild("ErviPlayerOverlay")~=nil,"Visuals: Through Walls retains replicated occluded players")
+    local wallHighlight=overlay:FindFirstChildOfClass("Highlight")
+    check(wallHighlight and wallHighlight.DepthMode==env.Enum.HighlightDepthMode.AlwaysOnTop,"Visuals: Through Walls chams use AlwaysOnTop")
+    click(toggleRow("Through Walls"));ctl.run(0.3)
+    check(overlay:FindFirstChild("ErviPlayerOverlay")==nil,"Visuals: turning Through Walls off reapplies occlusion")
     ctl.occluded=false;ctl.run(0.3)
     check(overlay:FindFirstChild("ErviPlayerOverlay")==retainedOverlay,"Visuals: temporary occlusion reuses the bounded drawing record")
     click(toggleRow("Skeleton"));click(toggleRow("Head Dot"));click(toggleRow("Tracers Enabled"));ctl.run(0.3)
@@ -1177,7 +1203,7 @@ return function(API, makeEngine, hubFn, loaderFn, schema)
     check(notice and near(notice.BackgroundTransparency,0.42),"Notifications: surface remains translucent")
     local noticeText
     if notice then for _,d in ipairs(notice:GetDescendants()) do if d.ClassName=="TextLabel" then noticeText=d;break end end end
-    check(notice and notice.Size.Y.Offset==48 and noticeText and noticeText.TextSize==11,"Notifications: compact dimensions and readable text")
+    check(notice and notice.Size.Y.Offset==48 and noticeText and noticeText.TextSize==15,"Notifications: compact dimensions and readable text")
     click(nav("Settings"))
     click(find(hubGui(),"TextButton","RU"));ctl.run(0.2)
     check(find(hubGui(),"TextLabel","Настройки")~=nil,"Language: Russian interface labels apply")
@@ -1256,15 +1282,21 @@ return function(API, makeEngine, hubFn, loaderFn, schema)
     for _=1,8 do click(sliderBtn("Skeleton Budget","−")) end
     ctl.run(0.3)
     local function visibleLines()
-        local n=0;for _,d in ipairs(overlay:GetDescendants()) do if d.Name=="OverlayLine" and d.Visible then n+=1 end end;return n
+        local n=0;for _,d in ipairs(overlay:GetDescendants()) do if d.Name=="SkeletonCore" and d.Visible then n+=1 end end;return n
     end
     check(visibleLines()==0,"Visual budgets: zero Skeleton Budget disables bone projections")
     click(sliderBtn("Skeleton Budget","+"));ctl.run(0.3)
     check(visibleLines()>0,"Visual budgets: skeleton renders within a positive budget")
     local limbLines=visibleLines()
     local allWhite=true
-    for _,node in ipairs(overlay:GetDescendants()) do if node.Name=="OverlayLine" and node.Visible and node.BackgroundColor3~=env.Color3.new(1,1,1) then allWhite=false end end
+    for _,node in ipairs(overlay:GetDescendants()) do if node.Name=="SkeletonCore" and node.Visible and node.BackgroundColor3~=env.Color3.new(1,1,1) then allWhite=false end end
     check(allWhite,"Skeleton: white lines are independent of friend/team/enemy palette")
+    local outlines,cores=0,0;local correct=true
+    for _,node in ipairs(overlay:GetDescendants()) do
+     if node.Name=="SkeletonOutline" and node.Visible then outlines+=1;if node.BackgroundColor3~=env.Color3.new(0,0,0) or node.Size.Y.Offset~=3 then correct=false end end
+     if node.Name=="SkeletonCore" and node.Visible then cores+=1;if node.Size.Y.Offset~=1 then correct=false end end
+    end
+    check(correct and outlines==cores and cores>0,"Skeleton: thin white cores have matching black outline segments")
     local arm=samplePlayers[1].Character:FindFirstChild("Left Arm")
     local oldArm=arm.CFrame;arm.CFrame=env.CFrame.new(0,0,100);ctl.run(0.3)
     check(visibleLines()<limbLines,"Skeleton: behind-camera limb cannot mirror into oversized line")
@@ -1286,7 +1318,7 @@ return function(API, makeEngine, hubFn, loaderFn, schema)
     click(sliderBtn("Max Distance","+"));click(sliderBtn("Max Distance","+"));ctl.run(0.3)
     check(overlayCount()==1,"Visual budgets: raising distance restores at most the target cap")
     setToggle("Preview hidden target",true);ctl.run(0.2)
-    check(find(hubGui(),"TextLabel","Hidden: live overlay suppressed")~=nil,"Preview: hidden-target setting responds without revealing real occluded players")
+    check(find(hubGui(),"TextLabel","Hidden: overlay suppressed")~=nil,"Preview: hidden-target setting responds without revealing real occluded players")
     ctl.occluded=true;ctl.run(0.3)
     check(overlayCount()==0,"Visuals: all occluded targets remain suppressed with every option enabled")
     ctl.occluded=false
@@ -1343,9 +1375,17 @@ return function(API, makeEngine, hubFn, loaderFn, schema)
     check(not win().Visible and barGui.Enabled,"Status bar: minimize hides entire main window")
     check(bar:GetAttribute("AutoRollState")~=nil,"Status bar: reports Auto Roll state while hidden")
     local beforeX=bar.Position.X.Offset
-    gesture(bar,-10000,-10000);ctl.run(0.3)
+    bar.InputBegan:Fire({UserInputType=E.UserInputType.MouseButton1,Position=env.Vector2.new(100,100)})
+    ctl.UIS.InputChanged:Fire({UserInputType=E.UserInputType.MouseMovement,Position=env.Vector2.new(-10000,-10000)})
+    click(bar)
+    check(not win().Visible,"Status bar: Activated before global release cannot open after drag")
+    ctl.UIS.InputEnded:Fire({UserInputType=E.UserInputType.MouseButton1})
+    ctl.run(0.5);click(bar)
+    check(not win().Visible,"Status bar: delayed drag-release activation stays suppressed")
     check(bar.Position.X.Offset==0 and bar.Position.Y.Offset==0,"Status bar: dragging remains on screen")
     check((ctl.files["RNG_Hub_settings.txt"] or ""):find("statusX=0.000000",1,true),"Status bar: position persists")
+    bar.InputBegan:Fire({UserInputType=E.UserInputType.MouseButton1,Position=env.Vector2.new(0,0)})
+    ctl.UIS.InputEnded:Fire({UserInputType=E.UserInputType.MouseButton1})
     click(bar);ctl.run(0.1)
     check(win().Visible and not barGui.Enabled,"Status bar: click restores full GUI")
     press("F4");check(not win().Visible and barGui.Enabled,"Status bar: GUI key minimizes")

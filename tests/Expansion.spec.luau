@@ -6,6 +6,20 @@ local Schema=require("FeatureSchema")
 local Locale=require("Locale")
 local Boot=require("BootLog")
 return {
+ {"through-wall mode admits replicated occluded targets and still respects filters",function(check)
+  local p=Settings.defaults();local c={alive=true,clearLine=false,distance=20,sameTeam=false}
+  check(Policy.eligible(p,c));p.throughWalls=false;check(not Policy.eligible(p,c))
+  p.throughWalls=true;c.alive=false;check(not Policy.eligible(p,c));c.alive=true;c.distance=99999;check(not Policy.eligible(p,c))
+ end},
+ {"tracers default white and skeleton core defaults one pixel",function(_,eq)
+  local p=Settings.defaults();eq(p.tracerColor,"#FFFFFF");eq(p.skeletonThickness,1)
+  local c=Settings.parse("[A]\ntracerColor=#12AB34\nskeletonThickness=0.5\n",{}).configs.A
+  eq(c.tracerColor,"#12AB34");eq(c.skeletonThickness,0.5)
+ end},
+ {"Auto targets 60Hz and manual rates remain explicit",function(_,eq)
+  eq(Policy.rate("Auto"),60)
+  for _,v in ipairs({10,20,30,60}) do eq(Policy.rate(tostring(v)),v) end
+ end},
  {"default chams white preserves custom relation colors",function(_,eq)
   local p=Settings.defaults();eq(Policy.chamsColor(p,{}),"#FFFFFF")
   p.enemyColor="#112233";eq(Policy.chamsColor(p,{}),"#112233")
@@ -85,8 +99,8 @@ return {
   local a={Value=false};local b={Value=true};local o=Overrides.new();o:set("v",a,"Value",true);o:set("v",b,"Value",false)
   eq(a.Value,false);o:close();eq(b.Value,true)
  end},
- {"invisible players never pass visualization eligibility",function(check)
-  local p=Settings.defaults();check(not Policy.eligible(p,{alive=true,clearLine=false,distance=10,sameTeam=false}))
+ {"Visible Only rejects occluded players",function(check)
+  local p=Settings.defaults();p.throughWalls=false;check(not Policy.eligible(p,{alive=true,clearLine=false,distance=10,sameTeam=false}))
   check(Policy.eligible(p,{alive=true,clearLine=true,distance=10,sameTeam=false}))
  end},
  {"distance team and dead filters are explicit",function(check)

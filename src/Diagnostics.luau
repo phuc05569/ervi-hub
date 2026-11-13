@@ -45,7 +45,7 @@ return function(ctx,features)
   for name,feature in pairs(features) do
    local out={active=feature.active,status=feature.status};result.features[name]=out
    if feature.snapshot then out.detail=feature.snapshot() end
-   for _,key in ipairs({"held","teleportAvailable","flying","noclip","available","rows","selected","drawn","cached","rays","projections","effectiveRate","updates","totalMs","maxMs"}) do
+   for _,key in ipairs({"held","teleportAvailable","flying","noclip","available","rows","selected","drawn","cached","rays","projections","effectiveRate","updates","totalMs","maxMs","presentationFrames","presentationMs","presentationProjections"}) do
     local v=feature[key];if type(v)=="boolean" or type(v)=="number" or type(v)=="string" then out[key]=v end
    end
   end
@@ -89,7 +89,7 @@ return function(ctx,features)
    measurementConnection:Disconnect();measurementConnection=nil
    table.sort(frames);local total=0;for _,value in ipairs(frames) do total+=value end
    local count=(v.updates or 0)-initialCount
-   api.measurement={seconds=os.clock()-started,samples=#frames,meanFrameMs=total/math.max(1,#frames),p95FrameMs=frames[math.max(1,math.ceil(#frames*0.95))],overlayUpdates=count,overlayMeanCpuMs=count>0 and ((v.totalMs or 0)-initialMs)/count or nil,drawn=v.drawn,rays=v.rays,projections=v.projections,note="RenderStepped event cadence; not GPU presentation timing"}
+   api.measurement={seconds=os.clock()-started,samples=#frames,meanFrameMs=total/math.max(1,#frames),p95FrameMs=frames[math.max(1,math.ceil(#frames*0.95))],p99FrameMs=frames[math.max(1,math.ceil(#frames*0.99))],overlayHz=count/(os.clock()-started),overlayUpdates=count,overlayMeanCpuMs=count>0 and ((v.totalMs or 0)-initialMs)/count or nil,drawn=v.drawn,rays=v.rays,projections=v.projections,note="RenderStepped event cadence; not GPU presentation timing"}
    api.status="Render sample complete";api.export()
   end)
   return true

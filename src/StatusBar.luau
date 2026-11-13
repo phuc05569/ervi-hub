@@ -15,14 +15,20 @@ return function(hub,parent,getPrefs,save,restore,navigate,getState)
  local stats=Ui.text(frame,"",{size=UDim2.fromOffset(132,34),textSize=10,font=Theme.mono,align=Enum.TextXAlignment.Right})
  stats.AnchorPoint=Vector2.new(1,0);stats.Position=UDim2.new(1,-23,0,2)
  Ui.text(frame,"↗",{size=UDim2.fromOffset(18,38),align=Enum.TextXAlignment.Center,textSize=14}).Position=UDim2.new(1,-20,0,0)
+ local dragging,pointer,start,travel
+ local gestureDragged=false
+ local function activate(page)
+  if gestureDragged or dragging and (travel or 0)>3 then return end
+  restore();if page then navigate(page) end
+ end
  local chipButtons={};local chipTargets={}
  for i=1,3 do
   local index=i
-  chipButtons[i]=Ui.button(hub,frame,"",{width=62,height=26,textSize=9},function() restore();navigate(chipTargets[index] or "dash") end)
+  chipButtons[i]=Ui.button(hub,frame,"",{width=62,height=26,textSize=9},function() activate(chipTargets[index] or "dash") end)
   chipButtons[i].TextTruncate=Enum.TextTruncate.AtEnd;chipButtons[i].TextWrapped=false
   chipButtons[i].Position=UDim2.fromOffset(44+(i-1)*66,6)
  end
- local rect={};local dragging,pointer,start,travel;local lastDrag=-math.huge
+ local rect={}
  local function layout()
   local cam=workspace.CurrentCamera;local vp=cam and cam.ViewportSize or Vector2.new(1280,720)
   rect.w=math.max(80,math.min(420,vp.X-16));rect.h=math.min(38,vp.Y)
@@ -54,14 +60,16 @@ return function(hub,parent,getPrefs,save,restore,navigate,getState)
   Ui.set(stats,"Text",("%d FPS · %d ms\nRoll: %s"):format(state.fps,state.ping,state.rollState))
   frame:SetAttribute("AutoRollState",state.rollState)
  end
- hub:connect(frame.InputBegan,function(input)
+ local function beginGesture(input)
   if input.UserInputType==Enum.UserInputType.MouseButton1 or input.UserInputType==Enum.UserInputType.Touch then
-   dragging=true;pointer=input.Position;start={x=rect.x,y=rect.y};travel=0
+   dragging=true;gestureDragged=false;pointer=input.Position;start={x=rect.x,y=rect.y};travel=0
   end
- end)
+ end
+ hub:connect(frame.InputBegan,beginGesture)
+ for _,button in ipairs(chipButtons) do hub:connect(button.InputBegan,beginGesture) end
  hub:connect(Input.InputChanged,function(input)
   if dragging and (input.UserInputType==Enum.UserInputType.MouseMovement or input.UserInputType==Enum.UserInputType.Touch) then
-   local dx,dy=input.Position.X-pointer.X,input.Position.Y-pointer.Y;travel=math.abs(dx)+math.abs(dy)
+   local dx,dy=input.Position.X-pointer.X,input.Position.Y-pointer.Y;travel=math.max(travel or 0,math.abs(dx)+math.abs(dy));if travel>3 then gestureDragged=true end
    rect.x=math.clamp(start.x+dx,0,rect.maxX);rect.y=math.clamp(start.y+dy,0,rect.maxY)
    frame.Position=UDim2.fromOffset(rect.x,rect.y)
   end
@@ -69,10 +77,10 @@ return function(hub,parent,getPrefs,save,restore,navigate,getState)
  hub:connect(Input.InputEnded,function(input)
   if dragging and (input.UserInputType==Enum.UserInputType.MouseButton1 or input.UserInputType==Enum.UserInputType.Touch) then
    dragging=false
-   if travel>3 then lastDrag=os.clock();local p=getPrefs();p.statusX=rect.maxX>0 and rect.x/rect.maxX or 0;p.statusY=rect.maxY>0 and rect.y/rect.maxY or 0;save() end
+   if gestureDragged then local p=getPrefs();p.statusX=rect.maxX>0 and rect.x/rect.maxX or 0;p.statusY=rect.maxY>0 and rect.y/rect.maxY or 0;save() end
   end
  end)
- hub:connect(frame.Activated,function() if os.clock()-lastDrag>0.2 then restore() end end)
+ hub:connect(frame.Activated,function() activate() end)
  local elapsed=0
  hub:connect(Run.Heartbeat,function(dt)
   if not gui.Enabled then return end

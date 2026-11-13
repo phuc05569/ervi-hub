@@ -1,6 +1,9 @@
 local Policy={}
+function Policy.rate(selected)
+ return selected=="Auto" and 60 or tonumber(selected) or 60
+end
 function Policy.eligible(p,c)
- if not c.alive or not c.clearLine or c.distance>p.maxDistance then return false end
+ if not c.alive or (not p.throughWalls and not c.clearLine) or c.distance>p.maxDistance then return false end
  if p.teamCheck and c.sameTeam and not p.showTeammates then return false end
  return true
 end

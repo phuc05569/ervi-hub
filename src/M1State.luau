@@ -14,17 +14,20 @@ end
 function M1State:reset(style)
 	self.style = style
 	self.deadline = nil
+ self.duration = nil
 	self.reason = "Waiting for a fresh AttackReadyAt sample"
 end
 
 function M1State:observe(value, now)
 	self.deadline = nil
+ self.duration = nil
 	if not self.style or not finite(value) or value <= 0 or not finite(now) then
 		self.reason = "AttackReadyAt missing or invalid"
 	elseif math.abs(value - now) > 120 then
 		self.reason = "AttackReadyAt clock unverified (outside 120 s window)"
 	else
 		self.deadline = value
+  self.duration=math.max(0,value-now)
 		self.reason = "Observed AttackReadyAt; server-time interpretation UNVERIFIED"
 	end
 end
@@ -38,6 +41,7 @@ function M1State:snapshot(now, equipped, alive)
 	elseif self.deadline and finite(now) then
 		state.remaining = math.max(0, self.deadline - now)
 		state.status = state.remaining > 0 and "COOLDOWN" or "READY"
+  state.fraction=state.status=="READY" and 1 or math.clamp(state.remaining/math.max(0.001,self.duration or 0),0,1)
 	end
 	return state
 end

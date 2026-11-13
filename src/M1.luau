@@ -89,14 +89,32 @@ return function(hub, parent, getPrefs, save)
 			end)
 			feature.refreshLayout = floating.refresh
 			local title = floating.title
-			local big = Ui.text(floating.body, "UNKNOWN", { order = 1, textSize = Theme.size.big })
-			local note = Ui.text(floating.body, "", { order = 2, textSize = Theme.size.small, color = Theme.muted })
-			local elapsed = 0
+			local big = Ui.text(floating.body, "UNKNOWN", { order = 1, textSize = 20 })
+			local note = Ui.text(floating.body, "", { order = 2, textSize = 9, color = Theme.muted })
+			big.Name="M1Countdown";big.TextWrapped=false;big.TextTruncate=Enum.TextTruncate.AtEnd
+            note.Name="M1Evidence"
+            local bar=Ui.new("Frame",{Name="M1CooldownBar",Size=UDim2.new(1,0,0,6),LayoutOrder=2,BackgroundColor3=Theme.raised,BorderSizePixel=0,Parent=floating.body});Ui.corner(bar,3)
+            note.LayoutOrder=3
+            local fill=Ui.new("Frame",{Name="M1CooldownFill",Size=UDim2.fromScale(0,1),BorderSizePixel=0,BackgroundColor3=Theme.accent,Parent=bar});Ui.corner(fill,3)
+            local function responsive()
+             local z=floating.frame.Size
+             local factor=math.clamp(math.min(z.X.Offset/330,z.Y.Offset/180),0.75,1.8)
+             for _,pair in ipairs({{title,12,10,20},{big,20,14,32},{note,9,8,14}}) do
+              local size=math.clamp(math.floor(pair[2]*factor+0.5),pair[3],pair[4])
+              pair[1]:SetAttribute("ResponsiveTextSize",size);Ui.set(pair[1],"TextSize",size)
+             end
+            end
+            overlayScope:connect(floating.frame:GetPropertyChangedSignal("Size"),responsive)
+            responsive()
+            local elapsed = 0
 			local function render()
 				local s = feature.snapshot()
 				Ui.set(title, "Text", (s.style or "No style") .. "  M1")
 				Ui.set(big, "Text", s.status == "COOLDOWN" and ("%.2fs"):format(s.remaining) or s.status)
 				Ui.set(note, "Text", s.evidence)
+                fill.Size=UDim2.fromScale(s.fraction or 0,1)
+                fill.BackgroundColor3=s.status=="READY" and Theme.good or Theme.accent
+                bar:SetAttribute("KnownCooldown",s.fraction~=nil)
                 Ui.set(big,"TextColor3",s.status=="READY" and Theme.good or s.status=="COOLDOWN" and Theme.accent or Theme.muted)
 			end
 			render()

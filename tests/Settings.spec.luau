@@ -12,15 +12,20 @@ end
 local V = {
 	toggleKey = oneOf({ "RightShift", "F4", "K" }),
 	theme = oneOf({ "Midnight", "Ocean" }),
-	accent = oneOf({ "", "Rose" }),
+	accent = oneOf({ "", "Rose", "Indigo" }),
 	font = oneOf({ "Gotham", "Arcade" }),
-	textColor = oneOf({ "Theme", "Gold" }),
+	textColor = oneOf({ "Theme", "Gold", "White" }),
 	bgColor = function(v)
 		return v == "" or v:match("^#%x%x%x%x%x%x$") ~= nil
 	end,
 }
 
 return {
+ {"fresh appearance matches owner defaults while saved choices win",function(_,eq)
+  local p=Settings.defaults();eq(p.opacity,0.75);eq(p.scale,0.85);eq(p.theme,"Midnight");eq(p.accent,"Indigo");eq(p.font,"Gotham");eq(p.outline,"auto");eq(p.textScale,1.4);eq(p.textColor,"White")
+  local saved=Settings.parse("[A]\nopacity=0.30\nscale=1.00\noutline=off\n",V).configs.A
+  eq(saved.opacity,0.3);eq(saved.scale,1);eq(saved.outline,"off")
+ end},
     { "new teleport action is unbound and ignores old reference settings", function(_,eq)
         eq(Settings.defaults().safeZoneKey,"NONE")
         local c=Settings.parse("[A]\nsafeKey=F6\nsafeZone=legacy\n",V).configs.A
@@ -57,7 +62,7 @@ return {
 		local s = Settings.newStore()
 		local a = Settings.defaults()
 		a.toggleKey, a.opacity, a.theme, a.accent, a.font, a.textScale, a.outline, a.textAlpha = "F4", 0.6, "Ocean", "Rose", "Arcade", 1.2, "on", 0.3
-		Settings.put(s, "Default", Settings.defaults())
+		local legacy=Settings.defaults();legacy.accent="";Settings.put(s, "Default", legacy)
 		Settings.put(s, "PvP", a)
 		s.autoload = "PvP"
 		local r = Settings.parse(Settings.serialize(s), V)
@@ -80,7 +85,7 @@ return {
 		eq(a.toggleKey, "RightShift", "unknown key ignored")
 		eq(a.opacity, Settings.MIN_OPACITY, "opacity clamped")
 		eq(a.scale, 1.5, "scale clamped")
-		eq(a.theme, "Bloom", "unknown theme ignored")
+		eq(a.theme, "Midnight", "unknown theme ignored")
 		eq(a.outline, "auto", "bad outline ignored")
 		eq(a.textAlpha, 0.6, "text transparency clamped")
 	end },

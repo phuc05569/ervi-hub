@@ -1,0 +1,109 @@
+{
+  "movement": "{\"enabled\":{\"modernConstraint\":true,\"platform\":true,\"ghostPartsVerified\":true},\"timeout\":{\"platformRestored\":true,\"moversRemoved\":true,\"groupsRestored\":true,\"rotationRestored\":true},\"teleport\":{\"replicated\":[12,3.522728204727173,0],\"ack\":[12,3.6727283000946047,0]},\"invalidSpeed\":{\"ok\":false,\"message\":\"Invalid movement state\"},\"passed\":true,\"invalidControl\":{\"controllerReleased\":true}}",
+  "benchmark": {
+    "after": [
+      {
+        "geometryHz": 9.663601372220555,
+        "seconds": 3.000950500019826,
+        "mean": 16.70880457542462,
+        "presentationHz": 59.64774441330475,
+        "p99": 20.21840028464794,
+        "samples": 179,
+        "geometryMeanCpu": 0.5014999930200905,
+        "raysPerUpdate": 28,
+        "drawn": 2,
+        "p95": 18.376000225543976,
+        "selected": "10",
+        "maxUpdateMs": 5.578299984335899,
+        "presentationTotalCpu": 60.65930018667132
+      },
+      {
+        "geometryHz": 20.308944322376046,
+        "seconds": 3.0036019000108354,
+        "mean": 16.66419894449948,
+        "presentationHz": 60.260963933860275,
+        "p99": 19.122999161481857,
+        "samples": 181,
+        "geometryMeanCpu": 0.48907705178087363,
+        "raysPerUpdate": 28,
+        "drawn": 2,
+        "p95": 18.241599202156067,
+        "selected": "20",
+        "maxUpdateMs": 2.8841999592259526,
+        "presentationTotalCpu": 44.0556998946704
+      },
+      {
+        "geometryHz": 29.955908895859654,
+        "seconds": 3.0044145000283606,
+        "mean": 16.664071148261428,
+        "presentationHz": 59.91181180929784,
+        "p99": 18.818100914359093,
+        "samples": 180,
+        "geometryMeanCpu": 0.4946788928161065,
+        "raysPerUpdate": 28,
+        "drawn": 2,
+        "p95": 18.308499827980995,
+        "selected": "30",
+        "maxUpdateMs": 2.6230000075884163,
+        "presentationTotalCpu": 32.92609995696694
+      },
+      {
+        "geometryHz": 54.96574168475965,
+        "seconds": 3.001868600025773,
+        "mean": 16.66745516209148,
+        "presentationHz": 60.295750991023674,
+        "p99": 18.56829971075058,
+        "samples": 181,
+        "geometryMeanCpu": 0.49339393965166173,
+        "raysPerUpdate": 28,
+        "drawn": 2,
+        "p95": 17.906999215483665,
+        "selected": "60",
+        "maxUpdateMs": 3.0187999946065247,
+        "presentationTotalCpu": 6.147499894723296
+      },
+      {
+        "geometryHz": 59.917044851003574,
+        "seconds": 3.004152100009378,
+        "mean": 16.66502161986298,
+        "presentationHz": 59.917042856514975,
+        "p99": 19.41470056772232,
+        "samples": 180,
+        "geometryMeanCpu": 0.45487055354492945,
+        "raysPerUpdate": 28,
+        "drawn": 2,
+        "p95": 18.51869933307171,
+        "selected": "Auto",
+        "maxUpdateMs": 2.719900046940893,
+        "presentationTotalCpu": 0
+      }
+    ],
+    "baseline": {
+      "current": {
+        "rays": 28,
+        "meanFrameMs": 16.662487648427486,
+        "samples": 300,
+        "status": "Visible targets 2/24 · projections 30 · rays 28 per update",
+        "updates": 165,
+        "drawn": 2,
+        "p95FrameMs": 18.03000085055828,
+        "totalUpdateMs": 84.04519961914048,
+        "projections": 30,
+        "maxUpdateMs": 4.188599996268749,
+        "effectiveRate": 30,
+        "p99FrameMs": 18.68930086493492
+      },
+      "off": {
+        "rays": 0,
+        "meanFrameMs": 16.705128674705822,
+        "samples": 300,
+        "status": "disabled",
+        "drawn": 0,
+        "p95FrameMs": 18.45569908618927,
+        "projections": 0,
+        "effectiveRate": 0,
+        "p99FrameMs": 18.887899816036224
+      }
+    }
+  }
+}

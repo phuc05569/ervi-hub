@@ -61,7 +61,7 @@ local function styleText(inst)
 		base = inst.TextSize
 		inst:SetAttribute("BaseTextSize", base)
 	end
-	inst.TextSize = math.floor(base * Ui.textScale + 0.5)
+	inst.TextSize = inst:GetAttribute("ResponsiveTextSize") or math.floor(base * Ui.textScale + 0.5)
 	inst.TextTransparency = inst:GetAttribute("Disabled") and math.max(0.5, Ui.textAlpha) or Ui.textAlpha
 	inst.TextStrokeTransparency = outlineOn() and TEXT_STROKE or 1
 end
@@ -578,7 +578,11 @@ function Ui.drag(scope, handle, target, onEnd, onMove)
 		local t = input.UserInputType
 		if t == Enum.UserInputType.MouseMovement or t == Enum.UserInputType.Touch then
 			local d = input.Position - startInput
-            local scale=target:FindFirstChildOfClass("UIScale");local factor=scale and scale.Scale or 1
+            local factor=1;local ancestor=target.Parent
+            while ancestor and ancestor:IsA("GuiObject") do
+             local scale=ancestor:FindFirstChildOfClass("UIScale");if scale then factor*=scale.Scale end
+             ancestor=ancestor.Parent
+            end
 			target.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + d.X/factor, startPos.Y.Scale, startPos.Y.Offset + d.Y/factor)
             if onMove then onMove() end
 		end

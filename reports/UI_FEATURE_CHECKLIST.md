@@ -126,8 +126,8 @@ All rows below have a persisted setting, genuine shared control, registry/search
 | A1 | Noclip toggle, collision restoration and respawn behavior | Expansion | Unsupported; no collision changes are installed | No authorized collision-bypass mechanic established |
 | A1 | Fly toggle/key, Velocity/CFrame mode, speed, WASD/Space/Shift | Expansion | Unsupported; requested controls documented together in disabled section | No authorized fly mechanic; no physics or CFrame bypass |
 | A3 | Mobile Renderer toggle | Visuals | Native rendering always implemented; redundant toggle unsupported | There is no separate executor Drawing/mobile path |
-| A6 | Dim Behind Walls | Visuals, VisualPreview | Unsupported for live hidden targets; hidden sample/colour preview implemented | Occluded players are suppressed, not revealed/dimmed |
-| A4 | Through-wall chams | Visuals | Unsupported; only Occluded highlights implemented/tested | Never AlwaysOnTop |
+| A6 | Dim Behind Walls | Visuals, VisualPreview | Not implemented (no dimming); preview sample only | Occlusion follows the 3.3 Through Walls toggle |
+| A4 | Through-wall chams | Visuals | Owner-requested in 3.3: Through Walls toggle (default on) switches AlwaysOnTop/Occluded | Disable for line-of-sight-only overlays |
 | Navigation | Triggerbot / aimbot / automated attacks | Expansion | Unsupported, disabled explanation; no active chips | Explicit task boundary |
 | Navigation | Sounds detailed feature controls | Expansion | Reference only; tab contents not supplied | No speculative sound system added |
 | Navigation | Friends detailed social controls | Expansion | Reference only; official friendship filtering implemented in Visuals | No speculative friend mutations added |

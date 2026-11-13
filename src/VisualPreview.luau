@@ -3,7 +3,7 @@ local Ui=require("Ui")
 local Theme=require("Theme")
 local TextStyle=require("VisualTextStyle")
 return function(parent)
- local frame=Ui.card(parent,"Visualization preview",0,"Native sample · live hidden players are never drawn")
+ local frame=Ui.card(parent,"Visualization preview",0,"Native sample · visibility follows Through Walls")
  local canvas=Ui.new("Frame",{Size=UDim2.new(1,0,0,270),BackgroundColor3=Color3.fromRGB(21,25,35),LayoutOrder=1,Parent=frame})
  canvas:SetAttribute("FixedBackground",true);Ui.corner(canvas,10)
  local center=Ui.new("Frame",{Size=UDim2.fromOffset(150,210),Position=UDim2.new(0.5,-75,0,26),BackgroundTransparency=1,Parent=canvas})
@@ -21,8 +21,12 @@ return function(parent)
  for _,p in ipairs({{18,16,25,2},{18,16,2,25},{107,16,25,2},{130,16,2,25},{18,194,25,2},{18,171,2,25},{107,194,25,2},{130,171,2,25}}) do table.insert(corners,block("Corner",p[1],p[2],p[3],p[4],Theme.accent)) end
  local health=block("Health",12,54,3,142,Theme.good)
  local head=block("HeadDot",72,33,6,6,Theme.accent)
- local bones={}
- for _,p in ipairs({{74,36,2,148},{32,66,86,2},{32,66,2,45},{116,66,2,45},{59,123,2,61},{89,123,2,61},{59,122,32,2}}) do table.insert(bones,block("Bone",p[1],p[2],p[3],p[4],Theme.accent)) end
+ local bones={};local outlines={};local boneRects={}
+ for _,p in ipairs({{74,36,2,148},{32,66,86,2},{32,66,2,45},{116,66,2,45},{59,123,2,61},{89,123,2,61},{59,122,32,2}}) do
+  local o=block("BoneOutline",p[1]-1,p[2]-1,p[3]+2,p[4]+2,Color3.new(0,0,0));o.ZIndex=1
+  local b=block("Bone",p[1],p[2],p[3],p[4],Color3.new(1,1,1));b.ZIndex=2
+  table.insert(outlines,o);table.insert(bones,b);table.insert(boneRects,p)
+ end
  local name=Ui.text(canvas,"Sample player",{size=UDim2.new(1,0,0,22),textSize=12,align=Enum.TextXAlignment.Center})
  local distance=Ui.text(canvas,"58 studs",{size=UDim2.new(1,0,0,22),textSize=11,align=Enum.TextXAlignment.Center});distance.Position=UDim2.new(0,0,1,-25)
  local tracer=Ui.new("Frame",{Position=UDim2.new(0.5,0,0,0),Size=UDim2.fromOffset(1,40),BorderSizePixel=0,Parent=canvas})
@@ -33,18 +37,22 @@ return function(parent)
  local state=Ui.text(frame,"",{order=2,textSize=Theme.size.tiny,color=Theme.muted})
  return {frame=frame,render=function(p,status)
   local tint=Color3.fromHex((p.previewOccluded and p.wallColor or p.enemyColor):sub(2))
-  local visible=not p.previewOccluded
+  local visible=not p.previewOccluded or p.throughWalls
   box.Visible=visible and p.boxStyle=="Box";boxStroke.Color=tint
   for _,c in ipairs(corners) do c.Visible=visible and p.boxStyle=="Corners";c.BackgroundColor3=tint end
   health.Visible=p.healthBar and visible;head.Visible=p.headDot and visible;head.BackgroundColor3=tint
-  for _,b in ipairs(bones) do b.Visible=p.skeleton and visible;b.BackgroundColor3=Color3.new(1,1,1) end
+  for i,b in ipairs(bones) do
+   local rect=boneRects[i];local w=rect[3]<=2 and p.skeletonThickness or rect[3];local h=rect[4]<=2 and p.skeletonThickness or rect[4]
+   b.Size=UDim2.fromOffset(w,h);outlines[i].Size=UDim2.fromOffset(w+2,h+2)
+   b.Visible=p.skeleton and visible;b.BackgroundColor3=Color3.new(1,1,1);outlines[i].Visible=b.Visible
+  end
   TextStyle.apply(name,Color3.new(1,1,1),Color3.new(0,0,0));TextStyle.apply(distance,Color3.new(1,1,1),Color3.new(0,0,0))
-  name.Visible=p.espNames;name.TextSize=p.espTextSize;name.Text=p.previewOccluded and "Hidden: live overlay suppressed" or "Sample player"
+  name.Visible=p.espNames;name.TextSize=p.espTextSize;name.Text=p.previewOccluded and not p.throughWalls and "Hidden: overlay suppressed" or "Sample player"
   distance.Visible=p.espDistance;distance.TextSize=p.espTextSize
   center.Position=UDim2.new(0.5,-75,0,26+p.verticalOffset)
   fill.Visible=p.chams and visible;fill.BackgroundColor3=p.enemyColor=="#F0628E" and Color3.new(1,1,1) or tint;fill.BackgroundTransparency=p.chamsFill
   boxStroke.Transparency=0;fillStroke.Color=tint;fillStroke.Transparency=p.chamsOutline
-  tracer.Visible=p.tracers and visible;tracer.BackgroundColor3=tint
+  tracer.Visible=p.tracers and visible;tracer.BackgroundColor3=Color3.fromHex(p.tracerColor:sub(2))
   tracer.Position=UDim2.new(0.5,0,p.tracerOrigin=="Top" and 0 or p.tracerOrigin=="Middle" and 0.5 or 1,p.tracerOrigin=="Bottom" and -40 or 0)
   arrow.Visible=p.offscreenArrows;arrow.TextColor3=tint
   state.Text=(p.espEnabled and "ON requested" or "OFF").." · "..status

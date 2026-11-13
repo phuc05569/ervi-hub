@@ -14,4 +14,10 @@ end
 function Geometry.saved(rect)
  return {w=rect.w,h=rect.h,x=rect.vw>rect.w and rect.x/(rect.vw-rect.w) or 0,y=rect.vh>rect.h and rect.y/(rect.vh-rect.h) or 0}
 end
+-- Main window positions use parent pixels. Its own UIScale affects size, not its center.
+function Geometry.mainAnchor(w,h,scale,vw,vh,x,y)
+ local hx=math.min(0.5,(w*scale/2+8)/math.max(1,vw))
+ local hy=math.min(0.5,(h*scale/2+8)/math.max(1,vh))
+ return math.clamp(x,hx,1-hx),math.clamp(y,hy,1-hy)
+end
 return Geometry

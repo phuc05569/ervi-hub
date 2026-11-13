@@ -13,13 +13,13 @@ Settings.MIN_OPACITY = 0
 Settings.DEFAULT_NAME = "Default"
 Settings.DEFAULTS = {
 	toggleKey = "RightShift",
-	opacity = 0.95, -- on the slider's 5% grid
-	scale = 1,
-	theme = "Bloom",
-	accent = "", -- "" = the design's own accent
+	opacity = 0.75, -- on the slider's 5% grid
+	scale = 0.85,
+	theme = "Midnight",
+	accent = "Indigo", -- "" = the design's own accent
 	font = "Gotham",
-	textColor = "Theme",
-	textScale = 1,
+	textColor = "White",
+	textScale = 1.4,
 	outline = "auto", -- auto | on | off
 	textAlpha = 0,
 	bgColor = "", -- "" = the design's own background, or "#RRGGBB"

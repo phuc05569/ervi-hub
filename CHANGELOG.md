@@ -1,7 +1,10 @@
-## 3.3 continuation checkpoint — 2026-11-14 (release pending)
-- 12px factory labels; names above heads and distance below feet; preserved explicit saved sizes and Auto 30Hz cadence.
-- White factory chams, retained custom colors; main-window recenter on reopening.
-- 161 unit / 527 smoke; Studio native label/reopen captures and bounded timings recorded in reports/CONTINUATION_3_3_CHECKPOINT.md. Full live regression/interpolation pending.
+## 3.3.0 development integration — 2026-11-14 (development branch, not a release)
+- Owner-requested Auto update rate is 60 Hz (manual 10/20/30/60 kept); `VisualPolicy.rate` centralizes it.
+- Main window: centered AnchorPoint, inset-aware viewport bounds, session-local center; reopening recenters; drag ignores the window's own UIScale. Fresh-config appearance defaults: 75% opacity, 85% scale, Midnight/Indigo/Gotham, White text at 140%. Explicit saved values win.
+- Visuals: persisted White tracer color; skeleton thickness setting with a black outline under a white core; owner-requested **Through Walls** toggle (default on; disabling restores line-of-sight-only overlays, Occluded highlights). Uses client-replicated characters only; dead/invisible-headed/distant/filtered players stay excluded. Visibility checks run at the update rate while projection follows each rendered frame; overlay roots are non-interactive (DisplayOrder 1000).
+- Minimized status bar: drag gestures never restore the menu on release (travel-based suppression).
+- M1 HUD: compact, size-responsive text and a cooldown bar from observed deadlines (clock interpretation unverified; no attack or cooldown remote is called).
+- Verification at the paused checkpoint: 167 unit / 543 smoke, both artifacts compile. Live/Studio evidence and its limits are in docs/PAUSED_HANDOFF_2026_11_14.md and reports/evidence/live-3.3/.
 
 # Changelog
 

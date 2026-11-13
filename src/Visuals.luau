@@ -1,4 +1,4 @@
--- Native GUI overlays, strictly clear-line players only. Highlight is always Occluded.
+-- Native replicated-character overlays; optional line-of-sight filtering.
 local Scope=require("Scope")
 local Game=require("Game")
 local Policy=require("VisualPolicy")
@@ -59,8 +59,8 @@ return function(hub,parent,getPrefs,playerSource)
    local r=records[player];r.root.Parent=gui;r.highlight.Parent=gui;return r
   end
   local owned=Scope.new("visual-player")
-  local r={scope=owned,lines={},bones={},boneCache={}}
-  r.root=owned:add(Ui.new("Frame",{Name="ErviPlayerOverlay",Size=UDim2.fromScale(1,1),ClipsDescendants=true,BackgroundTransparency=1,Visible=false,Parent=gui}))
+  local r={scope=owned,lines={},bones={},boneOutlines={},boneCache={},visibleParts={}}
+  r.root=owned:add(Ui.new("Frame",{Name="ErviPlayerOverlay",Size=UDim2.fromScale(1,1),ClipsDescendants=true,Active=false,Interactable=false,BackgroundTransparency=1,Visible=false,Parent=gui}))
   for _=1,8 do table.insert(r.lines,line(r.root)) end
   r.tracer=line(r.root);r.health=line(r.root)
   r.name=Ui.text(r.root,"",{size=UDim2.fromOffset(500,30),align=Enum.TextXAlignment.Center})
@@ -71,50 +71,16 @@ return function(hub,parent,getPrefs,playerSource)
   r.highlight=owned:add(Ui.new("Highlight",{Name="ErviVisibleHighlight",DepthMode=Enum.HighlightDepthMode.Occluded,Enabled=false,Parent=gui}))
   records[player]=r;return r
  end
- local function update()
-  local p=getPrefs();local cam=workspace.CurrentCamera
-  if not cam then return end
-  tick+=1;visuals.projections=0;visuals.rays=0
-  if lastCharacter~=Game.player.Character then
-   lastCharacter=Game.player.Character
-   params.FilterDescendantsInstances=lastCharacter and {lastCharacter} or {}
-  end
-  table.clear(candidates)
-  for player,candidate in pairs(tracked) do
-   if player~=Game.player then
-    local char=candidate.char
-    if char and candidate.dirty then
-     candidate.hum=char:FindFirstChildOfClass("Humanoid");candidate.root=char:FindFirstChild("HumanoidRootPart");candidate.head=char:FindFirstChild("Head")
-     candidate.links=Rig.build(char);candidate.dirty=false
-    end
-    local h,root,head=candidate.hum,candidate.root,candidate.head
-    if h and h.Health>0 and h.MaxHealth>0 and root and head and head.Transparency<1 and head.LocalTransparencyModifier<1 then
-     local distance=(root.Position-cam.CFrame.Position).Magnitude
-     local sameTeam=not Game.player.Neutral and not player.Neutral and Game.player.Team~=nil and player.Team==Game.player.Team
-     if distance<=p.maxDistance and (not p.teamCheck or not sameTeam or p.showTeammates) then
-      local point,on,depth=project(cam,head.Position)
-      candidate.player,candidate.char,candidate.hum,candidate.root,candidate.head=player,char,h,root,head
-      candidate.distance,candidate.sameTeam,candidate.friend=distance,sameTeam,friends[player]==true
-      candidate.point,candidate.on,candidate.depth,candidate.alive=point,on,depth,true
-      table.insert(candidates,candidate)
-     end
-    end
-   end
-  end
-  table.sort(candidates,function(a,b) if a.on~=b.on then return a.on end;return a.distance<b.distance end)
-  table.clear(kept);local drawn=0
-  for rank,c in ipairs(candidates) do
-   if drawn>=p.maxTargets then break end
-   c.clearLine=clearLine(cam,c.head.Position,c.char,params)
-   if Policy.eligible(p,c) and (c.on or p.offscreenArrows) then
-    local r=record(c.player);kept[c.player]=true;drawn+=1
-    local redraw,bones=Policy.budget(p,drawn,tick)
-    if r.character~=c.char then redraw=true;r.character=c.char end
-    if redraw or not r.root.Visible then
+ local function draw(c,r,p,cam,bones,sample)
+  if sample then table.clear(r.visibleParts) end
+  if not c.char.Parent or not c.head.Parent or not c.root.Parent or c.hum.Health<=0 or c.head.Transparency>=1 or c.head.LocalTransparencyModifier>=1 then r.root.Visible=false;r.highlight.Enabled=false;return end
+  c.point,c.on,c.depth=project(cam,c.head.Position)
+  if not c.on and not p.offscreenArrows then r.root.Visible=false;r.highlight.Enabled=false;return end
      r.root.Visible=true
      local tint=color(Policy.color(p,c));r.highlight.Enabled=false
      for _,l in ipairs(r.lines) do l.Visible=false end
      for _,l in ipairs(r.bones) do l.Visible=false end
+     for _,l in ipairs(r.boneOutlines) do l.Visible=false end
      r.tracer.Visible=false;r.health.Visible=false;r.dot.Visible=false;r.name.Visible=false;r.distance.Visible=false;r.arrow.Visible=false
      if not c.on then
       local vp=cam.ViewportSize;local dx,dy=c.point.X-vp.X/2,c.point.Y-vp.Y/2
@@ -161,27 +127,37 @@ return function(hub,parent,getPrefs,playerSource)
       r.dot.Position=UDim2.fromOffset(top.X,top.Y+p.verticalOffset);r.dot.BackgroundColor3=tint;r.dot.Visible=p.headDot
       if p.tracers then
        local vp=cam.ViewportSize;local origin=p.tracerOrigin=="Top" and 0 or p.tracerOrigin=="Middle" and vp.Y/2 or vp.Y
-       segment(r.tracer,Vector2.new(vp.X/2,origin),Vector2.new(bottom.X,bottom.Y+p.verticalOffset),tint)
+       segment(r.tracer,Vector2.new(vp.X/2,origin),Vector2.new(bottom.X,bottom.Y+p.verticalOffset),color(p.tracerColor))
       end
       if p.skeleton and bones then
        local links=c.links or {}
-       while #r.bones<#links*2 do table.insert(r.bones,line(r.root)) end
+       while #r.bones<#links*2 do
+        local outline=line(r.root);outline.Name="SkeletonOutline";outline.ZIndex=1
+        local core=line(r.root);core.Name="SkeletonCore";core.ZIndex=2
+        table.insert(r.boneOutlines,outline);table.insert(r.bones,core)
+       end
        local cache=r.boneCache;table.clear(cache)
        local function point(part)
         if cache[part]~=nil then return cache[part] end
-        if not part.Parent or part.Transparency>=1 or part.LocalTransparencyModifier>=1 or not clearLine(cam,part.Position,c.char,params) then cache[part]=false;return false end
+        if not part.Parent or part.Transparency>=1 or part.LocalTransparencyModifier>=1 or not (sample and (p.throughWalls or clearLine(cam,part.Position,c.char,params)) or not sample and r.visibleParts[part]) then cache[part]=false;return false end
+        if sample then r.visibleParts[part]=true end
         local v,_,z=project(cam,part.Position);local value={v.X,v.Y+p.verticalOffset,z};cache[part]=value;return value
        end
        local function bone(index,a,b)
         if not a or not b then return end
         local clippedA,clippedB=Geometry.clip(a,b,cam.ViewportSize.X,cam.ViewportSize.Y)
-        if clippedA then segment(r.bones[index],Vector2.new(clippedA[1],clippedA[2]),Vector2.new(clippedB[1],clippedB[2]),Color3.new(1,1,1),1.5) end
+        if clippedA then
+         local from,to=Vector2.new(clippedA[1],clippedA[2]),Vector2.new(clippedB[1],clippedB[2])
+         segment(r.boneOutlines[index],from,to,Color3.new(0,0,0),p.skeletonThickness+2)
+         segment(r.bones[index],from,to,Color3.new(1,1,1),p.skeletonThickness)
+        end
        end
        for i,link in ipairs(links) do
         local a,b=point(link.a),point(link.b)
         if link.joint and link.joint.Parent and link.joint.Enabled then
          local world=link.b.CFrame:PointToWorldSpace(link.joint.C1.Position)
-         if a and b and clearLine(cam,world,c.char,params) then
+         if a and b and (sample and (p.throughWalls or clearLine(cam,world,c.char,params)) or not sample and r.visibleParts[link.joint]) then
+          if sample then r.visibleParts[link.joint]=true end
           local v,_,z=project(cam,world);local joint={v.X,v.Y+p.verticalOffset,z}
           bone(i*2-1,a,joint);bone(i*2,joint,b)
          end
@@ -189,10 +165,61 @@ return function(hub,parent,getPrefs,playerSource)
        end
       end
       if p.chams and (not p.chamsEnemies or not c.sameTeam) then
+       r.highlight.DepthMode=p.throughWalls and Enum.HighlightDepthMode.AlwaysOnTop or Enum.HighlightDepthMode.Occluded
        r.highlight.Adornee=c.char;local chamsTint=Policy.chamsColor(p,c)=="#FFFFFF" and Color3.new(1,1,1) or tint;r.highlight.FillColor=chamsTint;r.highlight.OutlineColor=chamsTint
        r.highlight.FillTransparency=p.chamsFill;r.highlight.OutlineTransparency=p.chamsOutline;r.highlight.Enabled=true
       end
      end
+ end
+ local function present()
+  local cam=workspace.CurrentCamera;if not cam then return end
+  local p=getPrefs()
+  for _,r in pairs(records) do
+   if r.root.Parent and r.candidate then draw(r.candidate,r,p,cam,r.drawBones,false) end
+  end
+ end
+ local function update()
+  local p=getPrefs();local cam=workspace.CurrentCamera
+  if not cam then return end
+  tick+=1;visuals.projections=0;visuals.rays=0
+  if lastCharacter~=Game.player.Character then
+   lastCharacter=Game.player.Character
+   params.FilterDescendantsInstances=lastCharacter and {lastCharacter} or {}
+  end
+  table.clear(candidates)
+  for player,candidate in pairs(tracked) do
+   if player~=Game.player then
+    local char=candidate.char
+    if char and candidate.dirty then
+     candidate.hum=char:FindFirstChildOfClass("Humanoid");candidate.root=char:FindFirstChild("HumanoidRootPart");candidate.head=char:FindFirstChild("Head")
+     candidate.links=Rig.build(char);candidate.dirty=false
+    end
+    local h,root,head=candidate.hum,candidate.root,candidate.head
+    if h and h.Health>0 and h.MaxHealth>0 and root and head and head.Transparency<1 and head.LocalTransparencyModifier<1 then
+     local distance=(root.Position-cam.CFrame.Position).Magnitude
+     local sameTeam=not Game.player.Neutral and not player.Neutral and Game.player.Team~=nil and player.Team==Game.player.Team
+     if distance<=p.maxDistance and (not p.teamCheck or not sameTeam or p.showTeammates) then
+      local point,on,depth=project(cam,head.Position)
+      candidate.player,candidate.char,candidate.hum,candidate.root,candidate.head=player,char,h,root,head
+      candidate.distance,candidate.sameTeam,candidate.friend=distance,sameTeam,friends[player]==true
+      candidate.point,candidate.on,candidate.depth,candidate.alive=point,on,depth,true
+      table.insert(candidates,candidate)
+     end
+    end
+   end
+  end
+  table.sort(candidates,function(a,b) if a.on~=b.on then return a.on end;return a.distance<b.distance end)
+  table.clear(kept);local drawn=0
+  for rank,c in ipairs(candidates) do
+   if drawn>=p.maxTargets then break end
+   c.clearLine=p.throughWalls or clearLine(cam,c.head.Position,c.char,params)
+   if Policy.eligible(p,c) and (c.on or p.offscreenArrows) then
+    local r=record(c.player);kept[c.player]=true;drawn+=1
+    local redraw,bones=Policy.budget(p,drawn,tick)
+    if r.character~=c.char then redraw=true;r.character=c.char end
+    if redraw or not r.root.Visible then
+     r.candidate=c;r.drawBones=bones
+     draw(c,r,p,cam,bones,true)
     end
    end
   end
@@ -213,7 +240,7 @@ return function(hub,parent,getPrefs,playerSource)
   if visuals.active or hub.closed then return end
   local supported=pcall(function() assert(RaycastParams.new());assert(type(workspace.Raycast)=="function") end)
   if not supported then p.espEnabled=false;visuals.status="Unsupported: native raycast API unavailable";return end
-  scope=Scope.new("visible-overlays");gui=scope:add(Ui.new("ScreenGui",{Name="Ervi_VisibleOverlays",IgnoreGuiInset=true,ResetOnSpawn=false,DisplayOrder=351,Parent=parent}))
+  scope=Scope.new("visible-overlays");gui=scope:add(Ui.new("ScreenGui",{Name="Ervi_VisibleOverlays",IgnoreGuiInset=true,ResetOnSpawn=false,DisplayOrder=1000,Parent=parent}))
   -- Friend checks are cached and performed once per player, only when explicitly requested.
   local function friend(player)
    if player==Game.player or not getPrefs().markFriends or friends[player]~=nil then return end
@@ -247,13 +274,21 @@ return function(hub,parent,getPrefs,playerSource)
   Run:BindToRenderStep(renderName,Enum.RenderPriority.Camera.Value+1,function(dt)
    elapsed+=dt
    local cam=workspace.CurrentCamera
-   local rate=getPrefs().updateRate=="Auto" and 30 or tonumber(getPrefs().updateRate)
-   if elapsed<1/rate then return end;elapsed=math.min(elapsed-1/rate,1/rate)
+   local rate=Policy.rate(getPrefs().updateRate)
+   if elapsed<1/rate then
+    local started=os.clock();local before=visuals.projections;local ok,err=pcall(present)
+    visuals.presentationFrames=(visuals.presentationFrames or 0)+1
+    visuals.presentationMs=(visuals.presentationMs or 0)+(os.clock()-started)*1000
+    visuals.presentationProjections=visuals.projections-before
+    if not ok then visuals.stop();getPrefs().espEnabled=false;visuals.status="Rendering disabled: "..tostring(err) end
+    return
+   end;elapsed=elapsed%(1/rate)
    if friendMode~=getPrefs().markFriends then
     friendMode=getPrefs().markFriends
     if friendMode then for player in pairs(tracked) do friend(player) end end
    end
    local started=os.clock();local ok,err=pcall(update)
+   visuals.presentationFrames=(visuals.presentationFrames or 0)+1
    local ms=(os.clock()-started)*1000;visuals.updates=(visuals.updates or 0)+1;visuals.totalMs=(visuals.totalMs or 0)+ms;visuals.maxMs=math.max(visuals.maxMs or 0,ms)
    visuals.effectiveRate=rate
    if not ok then visuals.stop();getPrefs().espEnabled=false;visuals.status="Rendering disabled: "..tostring(err) end
