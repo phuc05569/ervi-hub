@@ -292,6 +292,7 @@ return function(API)
 	end
 
 	local DEFAULTS = { Transparency=0, LocalTransparencyModifier=0, Anchored = false, Visible = true, Text = "", Enabled = true, Health = 100, MaxHealth = 100, TextSize = 14, WalkSpeed=16, DisplayName="", Neutral=true }
+    DEFAULTS.AbsolutePosition=Vector2.new(0,0);DEFAULTS.AbsoluteSize=Vector2.new(100,30)
 	local new
 	local METHODS = {}
 	local Proxy = {}
@@ -634,9 +635,12 @@ return function(API)
 		return 1000 + ctl.clock
 	end
 	function METHODS.JSONDecode(_, s)
+        -- Structured API boundary: keep producer data for assertions; native JSON
+        -- serialization is verified in Studio/live integration, not reimplemented.
         if s==ctl.httpBody and ctl.serverList then return ctl.serverList end
 		error("MOCK JSONDecode: not JSON: " .. tostring(s))
 	end
+	function METHODS.JSONEncode(_, value) ctl.jsonEncoded=value;return "MOCK_JSON_ENCODED" end
 	function METHODS.InvokeServer(self)
 		ctl.invokes += 1
 		local r = table.remove(ctl.rollScript, 1)

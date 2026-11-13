@@ -7,6 +7,7 @@ local makePlayer=require("PlayerTools")
 local makeActions=require("RuntimeActions")
 local makeVisuals=require("Visuals")
 local makeClickTP=require("ClickTP")
+local makeDiagnostics=require("Diagnostics")
 local makePreview=require("VisualPreview")
 local Logo=require("Logo")
 return function(ctx)
@@ -16,6 +17,7 @@ return function(ctx)
  local actions=makeActions(hub,ctx.prefs)
  local visuals=makeVisuals(hub,ctx.parent,ctx.prefs)
  local clickTP=makeClickTP(hub,ctx.parent,ctx.prefs)
+ local diagnostics=makeDiagnostics(ctx,{visuals=visuals,clickTP=clickTP,player=playerTools,world=world})
  local pages=ctx.pages
  local new={}
  for _,tab in ipairs({{"visuals","Visuals","Visible player overlays and preview"},{"player","Player","Local speed and movement panel"},{"world","World","Lighting and camera"}}) do
@@ -192,15 +194,20 @@ return function(ctx)
  Ui.button(hub,diagnostic,"Copy Logs",{order=2,width=160},function() Game.copy(table.concat(ctx.logs(),"\n")) end)
  Ui.button(hub,diagnostic,"Copy Boot Log",{order=3,width=160},function() Game.copy(ctx.bootLog()) end)
  Ui.button(hub,diagnostic,"Clear diagnostic output",{order=4,width=220},function() table.clear(ctx.logs()) end)
+ local liveDiagnostic=Ui.card(pages.utility.page,"Live diagnostics",90,"Bounded UI and feature state; no remote code is executed.")
+ Ui.button(hub,liveDiagnostic,"Export diagnostics",{order=1,width=220},diagnostics.export).Name="ExportDiagnostics"
+ local diagnosticStatus=Ui.text(liveDiagnostic,"Diagnostics ready",{order=2,textSize=Theme.size.small})
+ ctx.onRefresh("utility","live diagnostic status",function() Ui.set(diagnosticStatus,"Text",diagnostics.status) end)
  local function keyHandler(input)
   local p=ctx.prefs();local name=input.KeyCode.Name
   if p.panicKey~="NONE" and name==p.panicKey then ctx.stop();return true end
   if p.walkKey~="NONE" and name==p.walkKey then changed("walkEnabled",not p.walkEnabled);return true end
   if p.espKey~="NONE" and name==p.espKey then changed("espEnabled",not p.espEnabled);return true end
+  if p.diagnosticKey~="NONE" and name==p.diagnosticKey then diagnostics.export();return true end
   if clickTP.keyDown(input) then return true end
   return false
  end
  table.insert(ctx.syncs,apply)
  apply();previewLayout()
- return {apply=apply,keyHandler=keyHandler,actions=actions,world=world,visuals=visuals,player=playerTools,clickTP=clickTP}
+ return {apply=apply,keyHandler=keyHandler,actions=actions,world=world,visuals=visuals,player=playerTools,clickTP=clickTP,diagnostics=diagnostics}
 end

@@ -222,6 +222,7 @@ local function titleButton(text, x, danger)
 end
 local closeBtn = titleButton("×", -10, true)
 local minBtn = titleButton("–", -46)
+closeBtn.Name="CloseButton";minBtn.Name="MinimizeButton"
 local onWindowDragged
 Ui.drag(hub, titleBar, window,function() if onWindowDragged then onWindowDragged(true) end end,function() if onWindowDragged then onWindowDragged(false) end end)
 
@@ -1502,7 +1503,7 @@ bootStep("Existing feature pages and configurations initialized")
 
 -- ===================================================================== expansion
 keyConflict=function(value,except)
- for _,key in ipairs({"toggleKey","safeZoneKey","walkKey","espKey","panicKey","clickTPKey"}) do if key~=except and prefs[key]==value then return true end end
+ for _,key in ipairs({"toggleKey","safeZoneKey","walkKey","espKey","panicKey","clickTPKey","diagnosticKey"}) do if key~=except and prefs[key]==value then return true end end
  return false
 end
 local function headerRefresh() if searchInput then searchInput.PlaceholderText=prefs.searchKey=="NONE" and "Search settings" or ("Search settings · Ctrl+"..prefs.searchKey) end end
@@ -1582,6 +1583,7 @@ local function searchResults()
  searchPanel.Visible=searchInput.Text~=""
  for i,entry in ipairs(resultEntries) do
   local button=Ui.button(resultsScope,resultList,entry.title.." · "..pages[entry.page].label,{size=UDim2.new(1,0,0,30),order=i,textSize=12},function() openResult(i) end)
+  resultsScope:add(button)
   table.insert(resultButtons,button);Ui.select(button,i==1)
  end
  if #resultEntries==0 and searchInput.Text~="" then resultsScope:add(Ui.text(resultList,"No matching registered setting",{textSize=12})) end

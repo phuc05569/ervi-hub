@@ -24,6 +24,7 @@ add("reduceAnimations","settings","Motion","Reduce Animations","bool",false,nil,
 add("animationSpeed","settings","Motion","Animation Speed","number",1,{0.5,2,0.1},"Controls transition speed; features always respond immediately.")
 add("searchKey","settings","Interface","Search shortcut key","key","K",nil,"Hold Ctrl + this key to focus global search.")
 add("panicKey","settings","Interface","Panic key","key","End",nil,"Unload and restore owned state; ignored while typing.")
+add("diagnosticKey","utility","Diagnostics","Diagnostic export key","key","NONE",nil,"Export bounded live UI state on demand; ignored while typing.")
 add("language","settings","Interface","Language","choice","EN",{"EN","RU"},"English/Russian interface labels. Player names, game values and diagnostic evidence remain verbatim.")
 add("fpsCap","utility","Rendering","FPS Cap","number",0,{0,999,1},"0 leaves the existing cap unchanged. Positive values require both getfpscap and setfpscap, so the previous value can be restored.")
 add("espEnabled","visuals","General","Enabled","bool",false,nil,"Visible players only; hidden players are not rendered.")

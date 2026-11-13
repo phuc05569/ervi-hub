@@ -81,6 +81,25 @@ return function(API, makeEngine, hubFn, loaderFn, schema)
 	check(type(stop) == "function" and env._G.RNG_HUB_STOP == stop, "global stop registered")
 	noErrors("boot")
 
+    local exportButton=find(hubGui(),"TextButton","Export diagnostics")
+    check(exportButton~=nil,"Diagnostics: export is integrated into the existing hub")
+    if exportButton then
+        click(nav("Utility"))
+        click(exportButton)
+        ctl.run(0.2)
+        local exported=ctl.files["Ervi_Hub_diagnostics.json"]
+        local errorText=""
+        for _,n in ipairs(hubGui():GetDescendants()) do if n.ClassName=="TextLabel" and n.Text:find("Diagnostic export failed",1,true) then errorText=n.Text end end
+        check(type(exported)=="string" and ctl.jsonEncoded and type(ctl.jsonEncoded.build)=="string" and #ctl.jsonEncoded.controls<=300,"Diagnostics: user action exports bounded runtime data",errorText)
+    end
+    local liveSearch=hubGui():FindFirstChild("SettingsSearch",true)
+    liveSearch.Text="status";liveSearch.Text="status bar opacity";liveSearch.Text="zzzz-no-matching-control-zzzz"
+    local liveResults=hubGui():FindFirstChild("ErviSearch",true):FindFirstChildOfClass("ScrollingFrame")
+    local staleSearchRows=0
+    for _,n in ipairs(liveResults:GetChildren()) do if n.ClassName=="TextButton" then staleSearchRows+=1 end end
+    check(staleSearchRows==0,"Search: changing the query destroys obsolete result rows",staleSearchRows)
+    liveSearch.Text=""
+
 	-- 2. every tab renders and refreshes
 	for _, tab in ipairs({ "Home", "Auto Roll", "Combat", "Styles", "Diagnostics", "Session", "Utility", "Settings" }) do
 		click(nav(tab))

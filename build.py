@@ -10,9 +10,12 @@ import pathlib
 import sys
 
 ROOT = pathlib.Path(__file__).parent
-VERSION = "3.2.0"
+VERSION = "3.3.0"
 APP_MODULES = ["ClickTarget", "ClickTP", "LogoGeometry", "VisualTextStyle", "SliderValue", "Motion", "Logo", "StatusBar", "BootLog", "FeatureSchema", "Locale", "Registry", "PropertyOverrides", "VisualPolicy", "World", "PlayerTools", "RuntimeActions", "Visuals", "VisualPreview", "Expansion", "Scope", "Rarity", "AutoRoll", "Settings", "WindowGeometry", "FloatingWindow", "SafeZoneState", "PositionHold", "SafeZone", "TargetState", "Targets", "M1State", "M1", "Theme", "Ui", "Game", "RollAdapter", "RollObserver", "Session", "Prompts", "App"]
+APP_MODULES.insert(0, "Diagnostics")
+APP_MODULES.insert(0, "JsonText")
 PURE_MODULES = ["ClickTarget", "LogoGeometry", "VisualTextStyle", "SliderValue", "Motion", "BootLog", "FeatureSchema", "Locale", "Registry", "PropertyOverrides", "VisualPolicy", "Scope", "Rarity", "AutoRoll", "Settings", "M1State", "Loader", "WindowGeometry", "SafeZoneState", "TargetState", "PositionHold"]
+PURE_MODULES.insert(0, "JsonText")
 
 
 def read(path):
