@@ -1,12 +1,14 @@
--- A local targeting preview. No authorized movement adapter exists for this game.
+-- Held targeting with one native move and bounded position observation.
 local Scope=require("Scope")
 local Game=require("Game")
 local Target=require("ClickTarget")
 local Motion=require("Motion")
+local makeTransport=require("MovementTransport")
 local Input=game:GetService("UserInputService")
 local Run=game:GetService("RunService")
 return function(hub,parent,getPrefs,authority,moving)
  local feature={active=false,held=false,status="Off · targeting preview only",selected=nil,teleportAvailable=authority and authority.available==true}
+ local transport=makeTransport(hub,authority)
  local scope,marker,lastCharacter,target,motion,boundKey
  local function hide()
   feature.held=false;target=nil
@@ -26,7 +28,7 @@ return function(hub,parent,getPrefs,authority,moving)
   return false
  end
  function feature.stop()
-  feature.active=false;hide();feature.selected=nil;feature.resultStatus=nil
+  transport.cancel("Click TP disabled");feature.active=false;hide();feature.selected=nil;feature.resultStatus=nil
   if scope then scope:close();scope=nil end
   marker=nil;lastCharacter=nil;boundKey=nil;feature.status="Off · targeting preview only"
  end
@@ -46,9 +48,8 @@ return function(hub,parent,getPrefs,authority,moving)
   scope:add(motion)
   local params=RaycastParams.new();params.FilterType=Enum.RaycastFilterType.Exclude;params.IgnoreWater=true
   local elapsed=0
-  scope:connect(Run.Heartbeat,function(dt)
+  local function aim()
    if not feature.held then return end
-   elapsed+=dt;if elapsed<1/30 then return end;elapsed=0
    if not Game.alive() or Input:GetFocusedTextBox() or (moving and moving()) then hide();return end
    local cam=workspace.CurrentCamera;if not cam then hide();return end
    local mouse=Input:GetMouseLocation()
@@ -75,30 +76,26 @@ return function(hub,parent,getPrefs,authority,moving)
    motion.configure(p.reduceAnimations,p.animationSpeed)
    if not marker.Parent then marker.CFrame=destination else motion.to(marker,{CFrame=destination},0.05) end
    marker.Parent=workspace
-   feature.status=feature.teleportAvailable and (feature.resultStatus or "Owned Studio server ready · click to request teleport") or feature.selected and ("Selected preview (%.1f, %.1f, %.1f) · no server teleport"):format(feature.selected.X,feature.selected.Y,feature.selected.Z) or "Preview active · server teleport unavailable"
-  end)
+   feature.status=transport.busy and transport.status or feature.resultStatus or "Hold modifier + left click"
+  end
+  scope:connect(Run.Heartbeat,function(dt) elapsed+=dt;if elapsed>=1/30 then elapsed=0;aim() end end)
   scope:connect(Input.InputBegan,function(input,processed)
-   if processed or input.UserInputType~=Enum.UserInputType.MouseButton1 or not feature.held or not target or Input:GetFocusedTextBox() then return end
-   if overGui(Input:GetMouseLocation()) then return end
+   if processed or input.UserInputType~=Enum.UserInputType.MouseButton1 or not feature.held or Input:GetFocusedTextBox() then return end
+   aim() -- click uses a fresh ray, never a stale preview destination
+   if not target or overGui(Input:GetMouseLocation()) then return end
    feature.selected=target
-   if feature.teleportAvailable then
-    if moving and moving() then feature.status="Stop flight and noclip first";return end
-    if authority.busy then feature.status="Server request pending";return end
-    local selected=target;local owner=scope
-    feature.resultStatus="Waiting for owned Studio server";feature.status=feature.resultStatus
-    authority.request("teleport",{position=selected,range=getPrefs().clickTPRange},function(result)
-     if not feature.active or scope~=owner then return end
-     feature.resultStatus=result.ok and "Teleport confirmed by owned Studio server" or tostring(result.message or "Server rejected teleport");feature.status=feature.resultStatus
-    end)
-    return
-   end
-   feature.status=("Selected preview (%.1f, %.1f, %.1f); no server teleport performed"):format(target.X,target.Y,target.Z)
+   if moving and moving() then feature.status="Stop flight and noclip first";return end
+   local owner=scope
+   local ok,reason=transport.move(target+Vector3.new(0,3,0),getPrefs().clickTPRange+3,function(status)
+    if feature.active and scope==owner then feature.resultStatus=status;feature.status=status end
+   end)
+   feature.resultStatus=ok and transport.status or reason;feature.status=feature.resultStatus
   end)
   scope:connect(Input.InputEnded,function(input) if input.KeyCode.Name==getPrefs().clickTPKey then hide() end end)
   scope:connect(Input.WindowFocusReleased,hide)
   scope:connect(Game.player.CharacterRemoving,function() hide();feature.selected=nil;feature.resultStatus=nil end)
   scope:connect(Game.player.CharacterAdded,function() hide();feature.selected=nil;feature.resultStatus=nil end)
-  feature.active=true;feature.status=feature.teleportAvailable and "Owned Studio server ready · hold to aim" or "Preview ready · bind and hold a key; server teleport unavailable"
+  feature.active=true;feature.status="Hold modifier + left click; server acceptance unverified"
  end
  function feature.keyDown(input)
   if not feature.active or getPrefs().clickTPKey=="NONE" or input.KeyCode.Name~=getPrefs().clickTPKey or not Game.alive() then return false end

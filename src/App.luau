@@ -561,7 +561,7 @@ end
 
 -- ===================================================================== features
 local m1 = makeM1(hub, playerGui, function() return prefs end, savePrefs)
-local safeZone = makeSafeZone(hub)
+local safeZone = makeSafeZone(hub,function() return prefs end,savePrefs)
 local targets = makeTargets(hub, function() return prefs end, safeZone)
 local observer = makeObserver(hub, log)
 local autoRoll = AutoRoll.new(makeAdapter(), { resumeAfterDeath = prefs.resumeAfterDeath })

@@ -6,12 +6,14 @@
 -- Every value is validated on load; unknown keys and bad values fall back to defaults.
 -- A 2.1.x file (plain key=value lines, no sections) is read into the "Default" config.
 local Schema = require("FeatureSchema")
+local Positions=require("PositionData")
 local Settings = {}
 
 Settings.FILE = "RNG_Hub_settings.txt"
 Settings.MIN_OPACITY = 0
 Settings.DEFAULT_NAME = "Default"
 Settings.DEFAULTS = {
+ safeZoneLocations="", savedPositions="",
 	toggleKey = "RightShift",
 	opacity = 0.75, -- on the slider's 5% grid
 	scale = 0.85,
@@ -41,7 +43,7 @@ Settings.DEFAULTS = {
 	targetEnabled = false, targetHp = 30,
 	resumeAfterDeath = false, autoM1Requested = false,
 }
-local KEYS = { "toggleKey", "opacity", "scale", "theme", "accent", "font", "textColor", "textScale", "outline", "textAlpha", "bgColor", "antiAfk", "reconnect", "autoExec", "instantPrompts", "winW", "winH", "winX", "winY", "statusX", "statusY", "movementX", "movementY", "movementW", "movementH", "communityLink", "m1Enabled", "m1X", "m1Y", "m1W", "m1H", "safeZoneKey", "targetEnabled", "targetHp", "resumeAfterDeath", "autoM1Requested" }
+local KEYS = { "safeZoneLocations", "savedPositions", "toggleKey", "opacity", "scale", "theme", "accent", "font", "textColor", "textScale", "outline", "textAlpha", "bgColor", "antiAfk", "reconnect", "autoExec", "instantPrompts", "winW", "winH", "winX", "winY", "statusX", "statusY", "movementX", "movementY", "movementW", "movementH", "communityLink", "m1Enabled", "m1X", "m1Y", "m1W", "m1H", "safeZoneKey", "targetEnabled", "targetHp", "resumeAfterDeath", "autoM1Requested" }
 local BOOLS = { antiAfk = true, reconnect = true, autoExec = true, instantPrompts = true, m1Enabled = true, targetEnabled = true, resumeAfterDeath = true, autoM1Requested = true }
 local NUMBERS = { opacity = { 0, 1 }, scale = { 0.5, 1.5 }, textScale = { 0.8, 1.4 }, textAlpha = { 0, 0.6 }, winW = { 520, 1100 }, winH = { 360, 820 }, winX={0,1},winY={0,1},statusX={0,1},statusY={0,1},movementX={0,1},movementY={0,1},movementW={260,800},movementH={160,600}, m1X = {0,1}, m1Y = {0,1}, m1W = {260,800}, m1H = {160,600}, targetHp = {1,100} }
 
@@ -94,6 +96,8 @@ local function setField(cfg, key, value, validate)
 		if OUTLINE[value] then
 			cfg[key] = value
 		end
+	elseif key=="safeZoneLocations" or key=="savedPositions" then
+  if #value<=8192 then cfg[key]=Positions.encode(Positions.decode(value)) or "" end
 	elseif #value<=300 and not value:find("[%c]") and (not validate[key] or validate[key](value)) then
 		cfg[key] = value
 	end

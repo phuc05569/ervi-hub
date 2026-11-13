@@ -22,6 +22,7 @@ return function(ctx)
  local authority=makeAuthority(hub)
  local flight=makeFlight(hub,ctx.prefs,ctx.save,authority)
  local clickTP=makeClickTP(hub,ctx.parent,ctx.prefs,authority,function() return flight.active end)
+ require("LocationControls")(ctx)
  local pages=ctx.pages
  local new={}
  for _,tab in ipairs({{"visuals","Visuals","Visible player overlays and preview"},{"player","Player","Local speed and movement panel"},{"world","World","Lighting and camera"}}) do
@@ -37,7 +38,7 @@ return function(ctx)
   Ui.configureMotion(ctx.prefs())
   ctx.headerRefresh()
   if ctx.statusBarRefresh then ctx.statusBarRefresh() end
-  world.apply();world.setBlur(ctx.prefs().backgroundBlur and ctx.isOpen());playerTools.apply();actions.applyFPS();visuals.apply();flight.apply();clickTP.apply();tracker.apply()
+  ctx.safe.checkEmergency();world.apply();world.setBlur(ctx.prefs().backgroundBlur and ctx.isOpen());playerTools.apply();actions.applyFPS();visuals.apply();flight.apply();clickTP.apply();tracker.apply()
   for _,fn in ipairs(refreshControls) do fn(true) end
  end
  local function changed(key,value)

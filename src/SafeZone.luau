@@ -4,11 +4,37 @@ local State=require("SafeZoneState")
 local Game=require("Game")
 local Scope=require("Scope")
 local Hold=require("PositionHold")
-return function(hub)
+local Positions=require("PositionData")
+local Emergency=require("EmergencyState")
+local makeTransport=require("MovementTransport")
+return function(hub,getPrefs,save)
  local feature={enabled=false,status="Off",onChanged=nil,transitioning=false}
  local context
+ local transport=makeTransport(hub,nil);feature.transport=transport;feature.zone="A"
+ local emergency=Emergency.new();feature.emergency=emergency
+ local healthScope
+ getPrefs=getPrefs or function() return {} end;save=save or function() end
  local function root() local char=Game.player.Character;return char and char:FindFirstChild("HumanoidRootPart") end
- function feature.saved() return State.preset(game.PlaceId) end
+ function feature.saved(zone)
+  zone=zone or feature.zone
+  local point=Positions.decode(getPrefs().safeZoneLocations or "")[zone]
+  if point then return point.place==game.PlaceId and {place=point.place,components={point.x,point.y,point.z}} or nil end
+  return zone=="A" and State.preset(game.PlaceId) or nil
+ end
+ function feature.saveLocation(zone,point)
+  if zone~="A" and zone~="B" then return false end
+  local all=Positions.decode(getPrefs().safeZoneLocations or "")
+  all[zone]=point;local encoded=Positions.encode(all)
+  if not encoded then return false end
+  if feature.enabled and feature.zone==zone then feature.setEnabled(false,true) end
+  getPrefs().safeZoneLocations=encoded;save();return true
+ end
+ function feature.select(zone,on)
+  if zone~="A" and zone~="B" then return end
+  if feature.enabled then feature.setEnabled(false,true) end
+  feature.zone=zone
+  if on then feature.setEnabled(true) end
+ end
  function feature.describe()
   local part=root();local ok,cf=pcall(function() return {part.CFrame:GetComponents()} end)
   return State.describe(feature.saved(),ok and cf or nil)
@@ -21,6 +47,24 @@ return function(hub)
  function feature.setEnabled(on,skipReturn)
   if feature.transitioning or (hub.closed and on) or on==feature.enabled then return end
   feature.transitioning=true
+  if feature.zone=="B" then
+   if not on then
+    transport.cancel("Zone B off · remaining at current position");feature.enabled=false;feature.status=transport.status
+   else
+    local destination=feature.saved("B")
+    if not destination then feature.status="Zone B destination missing for this place"
+    else
+     local c=destination.components
+     local accepted,reason=transport.move(Vector3.new(c[1],c[2],c[3]),nil,function(status)
+      feature.status="Zone B: "..status.." · protection unverified"
+      if not status:find("observed",1,true) or status:find("not observed",1,true) then feature.enabled=false end
+      if feature.onChanged then feature.onChanged(feature.enabled) end
+     end)
+     feature.enabled=accepted;feature.status=accepted and "Zone B move requested · no protection claim" or reason
+    end
+   end
+   feature.transitioning=false;if feature.onChanged then feature.onChanged(feature.enabled) end;return
+  end
   if not on then
    feature.enabled=false
    local previous=context;context=nil
@@ -73,6 +117,32 @@ return function(hub)
   feature.transitioning=false
   if feature.onChanged then feature.onChanged(feature.enabled) end
  end
+ function feature.checkEmergency()
+  local p=getPrefs();local h=Game.humanoid()
+  if emergency:evaluate(p.emergencyEnabled,feature.saved("B")~=nil,h and h.Health,h and h.MaxHealth,p.emergencyHp or 30) then
+   if feature.enabled and feature.zone=="B" then emergency.status="Already at selected Zone B";return end
+   feature.select("B",true);emergency.status=feature.status
+  end
+ end
+ local function bindHealth(char)
+  if healthScope then healthScope:close() end
+  healthScope=Scope.new("emergency-health");emergency:reset()
+  local watched
+  local function watch(h)
+   if not h:IsA("Humanoid") or watched==h then return end
+   watched=h
+   healthScope:connect(h.HealthChanged,feature.checkEmergency)
+   healthScope:connect(h:GetPropertyChangedSignal("MaxHealth"),feature.checkEmergency)
+   feature.checkEmergency()
+  end
+  if char then
+   local h=char:FindFirstChildOfClass("Humanoid");if h then watch(h) end
+   healthScope:connect(char.ChildAdded,watch)
+  end
+ end
+ bindHealth(Game.player.Character)
+ hub:connect(Game.player.CharacterAdded,bindHealth)
+ hub:add(function() if healthScope then healthScope:close() end end)
  hub:connect(Game.player.CharacterRemoving,function() feature.setEnabled(false,true) end)
  hub:add(function() feature.setEnabled(false) end)
  function feature.keyAction() feature.setEnabled(not feature.enabled) end

@@ -645,6 +645,11 @@ return function(API)
         if ctl.rejectPivot then error("Engine rejected local move") end
         self:FindFirstChild("HumanoidRootPart").CFrame=cf
     end
+    function METHODS.MoveTo(self,position)
+        ctl.moveToCalls=(ctl.moveToCalls or 0)+1
+        local r=self:FindFirstChild("HumanoidRootPart")
+        self:PivotTo(self:GetPivot()+(position-r.Position))
+    end
 	function METHODS.GetServerTimeNow()
 		return 1000 + ctl.clock
 	end
