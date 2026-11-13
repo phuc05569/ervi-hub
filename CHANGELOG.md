@@ -1,4 +1,4 @@
-## 3.4.0 interface redesign — 2026-11-14 (development branch, not a release)
+## 3.4.0 interface redesign — released 2026-11-14 (tag v3.4.0, see docs/RELEASE_3_4_0.md)
 - Liquid-glass-inspired look: specular gradient rims re-derived on every theme change, soft luminance gradients, 16/14/12/8 px radii, glass nav pill, title chips, search, cards, dropdowns, notifications, tooltips and profile card. No backdrop blur is claimed (Roblox UI has none).
 - Exact Ervi logo as an antialiased PNG rendered from `LogoGeometry`; Lucide (ISC) icon atlas with a distinct icon per section. Both PNGs are embedded in the bundle, written to the executor workspace at start and used via `getcustomasset` only after `ContentProvider:PreloadAsync` reports Success; otherwise the native logo/icons are used.
 - Motion: named easings on the existing Motion owner; 240 ms open / 160 ms close, gliding nav pill, page slide, spring toggles, notification slide-in/out; reduced-motion and speed preferences respected.
