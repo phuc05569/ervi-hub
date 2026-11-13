@@ -15,3 +15,19 @@ One five-second Studio comparison: overlays ON 299 frames, mean 16.7045ms, p95 1
 Movement/Click TP/Tracker retain prior implementation and historical evidence. No new server movement or wall visibility bypass added. Target-game teleports, flight, noclip and protection remain unsupported. No new physical SendInput or full target-game regression completed. Smoothing, variable refresh benchmarks, full layering/hit-test proof, authorized movement regression and complete release verification remain outstanding. Do not tag this as a completed release.
 
 Final bundle SHA256 3b549053c5bd767b0c50d82e99b7c16310c9a4eb6979fb193ba4e44fdb595a89.
+
+## Published checkpoint and deployment
+
+Artifact commit: 0642e36288817b78e45290f252e315610dddf744, pushed and confirmed by git ls-remote on dev/ervi-hub-3.1-handoff. All five originally local commits remain ancestors. Stable main untouched.
+
+Verified raw URL: https://raw.githubusercontent.com/phuc05569/ervi-hub/0642e36288817b78e45290f252e315610dddf744/build/Ervi_Hub.luau
+Raw response SHA256 matches the final bundle and both deployed files: 3b549053c5bd767b0c50d82e99b7c16310c9a4eb6979fb193ba4e44fdb595a89.
+
+Exact checkpoint loader:
+```lua
+loadstring(game:HttpGet("https://raw.githubusercontent.com/phuc05569/ervi-hub/0642e36288817b78e45290f252e315610dddf744/build/Ervi_Hub.luau"))()
+```
+
+Deployment: C:/Users/ASUS/AppData/Local/Potassium/scripts/Ervi_Hub.luau and workspace/Ervi_Hub.luau. Previous files backed up to C:/Users/ASUS/AppData/Local/Potassium/backups/ervi-33-20261114-012053. Existing RNG_Hub_settings.txt was never written. No autoexec changes. Native Studio temporary QA closed with camera/UI restoration; client fixture removed. No place saved or published.
+
+The installed development checkpoint has NOT been executed through the live Potassium UI in this continuation. Native Studio screenshot and input tools were used; no OS-level SendInput tests are claimed. These explicit release gaps supersede historical completion checkboxes.
