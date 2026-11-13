@@ -13,7 +13,6 @@ local Rarity = require("Rarity")
 local AutoRoll = require("AutoRoll")
 local makeAdapter = require("RollAdapter")
 local makeSafeZone = require("SafeZone")
-local SafeZoneState = require("SafeZoneState")
 local makeTargets = require("Targets")
 local makeM1 = require("M1")
 local makeObserver = require("RollObserver")
@@ -96,8 +95,7 @@ local function inList(list)
 end
 local validators = {
 	toggleKey = isKey,
-	safeKey = isKey,
-	safeZone = function(value) return value == "" or SafeZoneState.decode(value) ~= nil end,
+	safeZoneKey = function(value) return value == "NONE" or isKey(value) end,
 	theme = inList(Theme.PRESETS),
 	accent = function(name)
 		return name == "" or Theme.hex(name) ~= nil or Theme.find(Theme.ACCENTS, name) ~= nil
@@ -315,7 +313,7 @@ hub:connect(UserInputService.InputBegan, function(input, processed)
 	if processed or UserInputService:GetFocusedTextBox() then
 		return -- typing in chat or a text box
 	end
-	if input.KeyCode.Name == prefs.safeKey and onSafeKey then
+	if input.KeyCode.Name == prefs.safeZoneKey and onSafeKey then
 		onSafeKey()
 	elseif input.KeyCode == toggleKey then
 		window.Visible = not window.Visible
@@ -374,7 +372,7 @@ end
 
 -- ===================================================================== features
 local m1 = makeM1(hub, playerGui, function() return prefs end, savePrefs)
-local safeZone = makeSafeZone(function() return prefs end, savePrefs)
+local safeZone = makeSafeZone(hub)
 local targets = makeTargets(hub, function() return prefs end, safeZone)
 local observer = makeObserver(hub, log)
 local autoRoll = AutoRoll.new(makeAdapter(), { resumeAfterDeath = prefs.resumeAfterDeath })
@@ -639,7 +637,7 @@ end
 
 -- ===================================================================== Combat
 do
-    local card=Ui.card(pages.roll.page,"Respawn recovery",10,"Pauses while dead, then waits for normal arena and roll readiness. No automatic safe-zone movement is available.")
+    local card=Ui.card(pages.roll.page,"Respawn recovery",10,"Pauses while dead, then waits for normal arena and roll readiness. Safe Zone movement remains a separate manual toggle.")
     local toggle=Ui.toggle(hub,card,"Resume Auto Roll After Death",nil,prefs.resumeAfterDeath,function(on)
         prefs.resumeAfterDeath=on; autoRoll.opts.resumeAfterDeath=on; savePrefs()
     end,1)
@@ -694,24 +692,23 @@ end
 -- ===================================================================== Safe Zone
 local safePage = addPage("safe", "Safe Zone")
 do
-    local card=Ui.card(safePage,"Saved safe-zone reference",1,"Saves your character's position and orientation in this place. This does not create a server safe zone.")
-    local coords=Ui.text(card,"",{order=1,textSize=Theme.size.small})
-    Ui.button(hub,card,"Set Current Position as Safe Zone",{order=2,width=300},function() safeZone.capture() end)
-    Ui.button(hub,card,"Clear Safe Zone",{order=3,width=150},safeZone.clear)
-    local status=Ui.text(card,"",{order=4,textSize=Theme.size.small,color=Theme.muted})
-    local bind=Ui.text(card,"",{order=5,textSize=Theme.size.small})
-    Ui.text(card,"Return / floating: unavailable. No supported movement mechanic is established; normal movement and physics remain under the game's control.",{order=6,textSize=Theme.size.small,color=Theme.warn})
-    onSafeKey=function() safeZone.keyAction(); window.Visible=true; selectPage("safe") end
+    local card=Ui.card(safePage,"Fixed Safe Zone",1,"Destination: X 278.78 · Y -16.30 · Z 7.82. Turning ON makes one local move; OFF restores normal menu state without moving you.")
+    local toggle=Ui.toggle(hub,card,"Enable Safe Zone", "One move per activation. No floating, repeated movement or automatic respawn movement.",false,safeZone.setEnabled,1)
+    safeZone.onChanged=function(on) toggle.set(on,true) end
+    local coords=Ui.text(card,"",{order=2,textSize=Theme.size.small})
+    local status=Ui.text(card,"",{order=3,textSize=Theme.size.small,color=Theme.muted})
+    local bind=Ui.text(card,"",{order=4,textSize=Theme.size.small})
+    onSafeKey=safeZone.keyAction
     onRefresh("safe","safe zone",function()
         Ui.set(coords,"Text",safeZone.describe())
         Ui.set(status,"Text",safeZone.status)
-        Ui.set(bind,"Text",prefs.safeKey .. " opens this reference and refreshes the distance; it does not move you. Rebind in Settings.")
+        Ui.set(bind,"Text","Key: " .. prefs.safeZoneKey .. " · toggles Safe Zone ON/OFF. Assign a key in Settings; Backspace clears it.")
     end)
 end
 
 -- Manual-combat alternative while no authorized movement/attack API is known.
 do
-    local card=Ui.card(combat,"Auto Kill · manual combat",3,"Selects an eligible low-health player. Approach, attack and return manually. Movement, floating and automated M1 are unavailable.")
+    local card=Ui.card(combat,"Auto Kill · manual combat",3,"Selects an eligible low-health player. Approach and attack manually. Safe Zone offers one local return attempt; floating and Auto M1 remain unavailable.")
     local enabled=Ui.toggle(hub,card,"Enable target selection",nil,prefs.targetEnabled,function(on)
         prefs.targetEnabled=on; targets.refresh(); savePrefs()
     end,1)
@@ -973,7 +970,7 @@ do
 		keyBtn.Text = "Press a key… (Esc = cancel)"
 		onKeyCaptured = function(kc)
 			Ui.select(keyBtn, false)
-			if kc ~= Enum.KeyCode.Escape and isKey(kc.Name) and kc.Name ~= prefs.safeKey then
+			if kc ~= Enum.KeyCode.Escape and isKey(kc.Name) and kc.Name ~= prefs.safeZoneKey then
 				toggleKey = kc
 				prefs.toggleKey = kc.Name
 				savePrefs()
@@ -985,17 +982,21 @@ do
 	Ui.text(c0, "Ignored while you type in chat or a text box. Minimize with – in the title bar.", { textSize = Theme.size.small, color = Theme.faint, order = 2 })
 
     local safeRow=Ui.row(c0,7,32)
-    Ui.text(safeRow,"Safe Zone reference key",{size=UDim2.new(0,170,1,0),font=Theme.fontMedium})
+    Ui.text(safeRow,"Safe Zone toggle key",{size=UDim2.new(0,170,1,0),font=Theme.fontMedium})
     local safeBtn
-    safeBtn=Ui.button(hub,safeRow,prefs.safeKey,{width=150,order=1},function()
+    safeBtn=Ui.button(hub,safeRow,prefs.safeZoneKey,{width=150,order=1},function()
         if onKeyCaptured then return end
-        safeBtn.Text="Press a key… (Esc = cancel)"
+        safeBtn.Text="Key / Backspace = NONE"
         onKeyCaptured=function(kc)
-            if kc~=Enum.KeyCode.Escape and isKey(kc.Name) and kc.Name~=prefs.toggleKey then prefs.safeKey=kc.Name; savePrefs() end
-            safeBtn.Text=prefs.safeKey
+            if kc==Enum.KeyCode.Backspace then
+                prefs.safeZoneKey="NONE"; savePrefs()
+            elseif kc~=Enum.KeyCode.Escape and isKey(kc.Name) and kc.Name~=prefs.toggleKey then
+                prefs.safeZoneKey=kc.Name; savePrefs()
+            end
+            safeBtn.Text=prefs.safeZoneKey
         end
     end)
-    table.insert(syncs,function() safeBtn.Text=prefs.safeKey end)
+    table.insert(syncs,function() safeBtn.Text=prefs.safeZoneKey end)
 	local opacity = Ui.slider(hub, c0, "Menu opacity", {
 		min = Settings.MIN_OPACITY,
 		max = 1,

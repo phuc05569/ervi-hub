@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.6.1 (2026-11-13), build 2.6.1+e630a2ff0ebf, NOT LIVE TESTED
+- Owner's screenshot coordinates are now the fixed Safe Zone: X 278.78, Y -16.30, Z 7.82. Removed setup/capture/replace/clear controls.
+- Enable Safe Zone performs one local PivotTo translation, preserving facing direction. OFF does not move. No holding, retries, server-correction counteraction or automatic respawn movement; wrong-place/dead/missing-character/error paths fail visibly.
+- New Safe Zone toggle key defaults to NONE. Old reference bindings are ignored for this changed action. Rebind in Settings; Backspace unbinds; typing/conflict guards and config persistence remain.
+- Manual target selection now uses the fixed place-scoped destination without setup.
+- Tests: 101 unit / 256 smoke checks; both artifacts compile. Live server acceptance remains unverified.
+
 ## 2.6.0 (2026-11-13), build 2.6.0+d4bd70143994, NOT LIVE TESTED
 - Removed the standalone Cyborg module/HUD/menu controls. Only the M1 HUD remains; it has no Close button and is controlled from Combat.
 - Shared FloatingWindow + WindowGeometry provide themed title dragging, corner resizing, viewport bounds, scrolling content and persisted layout. Added the permanent floating-window contract to AGENTS.md.

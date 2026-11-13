@@ -523,8 +523,22 @@ return function(API)
 	end
 	function ctl.cframe(...)
 		local values=table.pack(...)
-		return {GetComponents=function() return table.unpack(values,1,values.n) end}
+		return setmetatable({GetComponents=function() return table.unpack(values,1,values.n) end}, {
+            __add=function(_,delta)
+                local copy=table.clone(values)
+                copy[1]+=delta.X; copy[2]+=delta.Y; copy[3]+=delta.Z
+                return ctl.cframe(table.unpack(copy,1,copy.n))
+            end,
+        })
 	end
+	function METHODS.GetPivot(self)
+        return self:FindFirstChild("HumanoidRootPart").CFrame
+    end
+    function METHODS.PivotTo(self,cf)
+        ctl.pivotCalls=(ctl.pivotCalls or 0)+1
+        if ctl.rejectPivot then error("Engine rejected local move") end
+        self:FindFirstChild("HumanoidRootPart").CFrame=cf
+    end
 	function METHODS.GetServerTimeNow()
 		return 1000 + ctl.clock
 	end
@@ -697,6 +711,7 @@ return function(API)
 		Vector2 = Vector2,
 		ColorSequence = ColorSequence,
 		ColorSequenceKeypoint = ColorSequenceKeypoint,
+        Vector3 = {new=function(x,y,z) return {X=x,Y=y,Z=z} end},
 		queue_on_teleport = function(code)
 			table.insert(ctl.queued, code)
 		end,

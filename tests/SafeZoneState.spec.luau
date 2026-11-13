@@ -1,6 +1,9 @@
 local Safe=require("SafeZoneState")
 local cf={10,20,30,0,0,1,0,1,0,-1,0,0}
 return {
+ {"preset exactly matches owner coordinates and is place scoped",function(_,eq)
+  local p=Safe.preset(119338513416973); eq(p.components[1],278.78); eq(p.components[2],-16.3); eq(p.components[3],7.82); eq(Safe.preset(1),nil)
+ end},
  {"position orientation and place survive serialization",function(_,eq)
   local s=Safe.decode(Safe.encode(119338513416973,cf),119338513416973)
   for i,v in ipairs(cf) do eq(s.components[i],v) end

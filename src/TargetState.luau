@@ -12,7 +12,7 @@ function Target:update(enabled,alive,hasSafe,threshold,candidates)
  self.id,self.name,self.hp=nil,nil,nil
  if not enabled then self.state="Disabled"; return end
  if not alive then self.state="Waiting for your character"; return end
- if not hasSafe then self.state="Set a safe-zone reference first"; return end
+ if not hasSafe then self.state="Safe Zone unavailable in this place"; return end
  local selected
  for _,c in ipairs(candidates) do
   local hp=Target.percent(c.health,c.maxHealth)

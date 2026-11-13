@@ -1,5 +1,5 @@
 {
- "build": "2.6.0+d4bd70143994",
+ "build": "2.6.1+e630a2ff0ebf",
  "modules": {
   "Build": {
    "file": "(generated)",
@@ -39,72 +39,72 @@
   "SafeZoneState": {
    "file": "src/SafeZoneState.luau",
    "bundleStart": 751,
-   "bundleEnd": 798
+   "bundleEnd": 804
   },
   "SafeZone": {
    "file": "src/SafeZone.luau",
-   "bundleStart": 801,
-   "bundleEnd": 826
+   "bundleStart": 807,
+   "bundleEnd": 851
   },
   "TargetState": {
    "file": "src/TargetState.luau",
-   "bundleStart": 829,
-   "bundleEnd": 858
+   "bundleStart": 854,
+   "bundleEnd": 883
   },
   "Targets": {
    "file": "src/Targets.luau",
-   "bundleStart": 861,
-   "bundleEnd": 888
+   "bundleStart": 886,
+   "bundleEnd": 913
   },
   "M1State": {
    "file": "src/M1State.luau",
-   "bundleStart": 891,
-   "bundleEnd": 935
+   "bundleStart": 916,
+   "bundleEnd": 960
   },
   "M1": {
    "file": "src/M1.luau",
-   "bundleStart": 938,
-   "bundleEnd": 1047
+   "bundleStart": 963,
+   "bundleEnd": 1072
   },
   "Theme": {
    "file": "src/Theme.luau",
-   "bundleStart": 1050,
-   "bundleEnd": 1214
+   "bundleStart": 1075,
+   "bundleEnd": 1239
   },
   "Ui": {
    "file": "src/Ui.luau",
-   "bundleStart": 1217,
-   "bundleEnd": 1903
+   "bundleStart": 1242,
+   "bundleEnd": 1928
   },
   "Game": {
    "file": "src/Game.luau",
-   "bundleStart": 1906,
-   "bundleEnd": 2081
+   "bundleStart": 1931,
+   "bundleEnd": 2106
   },
   "RollAdapter": {
    "file": "src/RollAdapter.luau",
-   "bundleStart": 2084,
-   "bundleEnd": 2128
+   "bundleStart": 2109,
+   "bundleEnd": 2153
   },
   "RollObserver": {
    "file": "src/RollObserver.luau",
-   "bundleStart": 2131,
-   "bundleEnd": 2331
+   "bundleStart": 2156,
+   "bundleEnd": 2356
   },
   "Session": {
    "file": "src/Session.luau",
-   "bundleStart": 2334,
-   "bundleEnd": 2538
+   "bundleStart": 2359,
+   "bundleEnd": 2563
   },
   "Prompts": {
    "file": "src/Prompts.luau",
-   "bundleStart": 2541,
-   "bundleEnd": 2593
+   "bundleStart": 2566,
+   "bundleEnd": 2618
   },
   "App": {
    "file": "src/App.luau",
-   "bundleStart": 2596,
-   "bundleEnd": 3943
+   "bundleStart": 2621,
+   "bundleEnd": 3969
   }
  }
 }

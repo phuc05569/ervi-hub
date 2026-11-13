@@ -1,5 +1,11 @@
--- Serializable position/orientation reference only. Never changes character physics.
+-- Fixed destination and coordinate formatting; legacy CFrame serialization utilities.
 local SafeZone = {}
+SafeZone.PLACE_ID = 119338513416973
+function SafeZone.preset(place)
+ if place ~= SafeZone.PLACE_ID then return nil end
+ -- Screenshot supplies XYZ only; live movement preserves the character's orientation.
+ return {place=place,components={278.78,-16.30,7.82}}
+end
 local function finite(n) return type(n)=="number" and n==n and math.abs(n)<math.huge end
 function SafeZone.encode(place, components)
  if not finite(place) or place<=0 or place%1~=0 or #components~=12 then return nil end

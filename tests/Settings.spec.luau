@@ -21,23 +21,28 @@ local V = {
 }
 
 return {
+    { "new teleport action is unbound and ignores old reference settings", function(_,eq)
+        eq(Settings.defaults().safeZoneKey,"NONE")
+        local c=Settings.parse("[A]\nsafeKey=F6\nsafeZone=legacy\n",V).configs.A
+        eq(c.safeZoneKey,"NONE"); eq(c.safeZone,nil)
+    end },
     { "HUD geometry safe reference and workflow preferences persist", function(check,eq)
         local store=Settings.newStore(); local cfg=Settings.defaults()
         cfg.m1Enabled=true; cfg.m1X=0.123456; cfg.m1Y=0.789123; cfg.m1W=450; cfg.m1H=260
-        cfg.safeKey="F8"; cfg.safeZone="1,1,2,3,1,0,0,0,1,0,0,0,1"
+        cfg.safeZoneKey="F8"
         cfg.targetEnabled=true; cfg.targetHp=25; cfg.resumeAfterDeath=true; cfg.autoM1Requested=true
         Settings.put(store,"A",cfg)
         local r=Settings.parse(Settings.serialize(store),V).configs.A
         check(r.m1Enabled and r.targetEnabled and r.resumeAfterDeath and r.autoM1Requested)
-        eq(r.m1X,cfg.m1X); eq(r.m1Y,cfg.m1Y); eq(r.m1W,450); eq(r.m1H,260); eq(r.safeZone,cfg.safeZone); eq(r.safeKey,"F8"); eq(r.targetHp,25)
+        eq(r.m1X,cfg.m1X); eq(r.m1Y,cfg.m1Y); eq(r.m1W,450); eq(r.m1H,260); eq(r.safeZoneKey,"F8"); eq(r.targetHp,25)
     end },
     { "zero opacity is valid and new dimensions clamp", function(_,eq)
         local c=Settings.parse("[A]\nopacity=0\nm1W=0\nm1H=10000\nm1X=-5\nm1Y=3\ntargetHp=1000\n",V).configs.A
         eq(c.opacity,0); eq(c.m1W,260); eq(c.m1H,600); eq(c.m1X,0); eq(c.m1Y,1); eq(c.targetHp,100)
     end },
     { "persisted key conflicts are repaired", function(check,eq)
-        local c=Settings.parse("[A]\ntoggleKey=F6\nsafeKey=F6\n",{}).configs.A
-        eq(c.toggleKey,"F6"); eq(c.safeKey,"F7"); check(c.toggleKey~=c.safeKey)
+        local c=Settings.parse("[A]\ntoggleKey=F6\nsafeZoneKey=F6\n",{}).configs.A
+        eq(c.toggleKey,"F6"); eq(c.safeZoneKey,"NONE"); check(c.toggleKey~=c.safeZoneKey)
     end },
     { "infinite settings cannot break HUD geometry", function(_,eq)
         local c=Settings.parse("[A]\nm1W=1e999\nm1X=-1e999\n",V).configs.A

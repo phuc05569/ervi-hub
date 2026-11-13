@@ -30,11 +30,11 @@ Settings.DEFAULTS = {
 	winH = 450,
 	m1Enabled = false,
 	m1X = 0.5, m1Y = 0.55, m1W = 330, m1H = 180,
-	safeKey = "F6", safeZone = "",
+	safeZoneKey = "NONE",
 	targetEnabled = false, targetHp = 30,
 	resumeAfterDeath = false, autoM1Requested = false,
 }
-local KEYS = { "toggleKey", "opacity", "scale", "theme", "accent", "font", "textColor", "textScale", "outline", "textAlpha", "bgColor", "antiAfk", "reconnect", "autoExec", "instantPrompts", "winW", "winH", "m1Enabled", "m1X", "m1Y", "m1W", "m1H", "safeKey", "safeZone", "targetEnabled", "targetHp", "resumeAfterDeath", "autoM1Requested" }
+local KEYS = { "toggleKey", "opacity", "scale", "theme", "accent", "font", "textColor", "textScale", "outline", "textAlpha", "bgColor", "antiAfk", "reconnect", "autoExec", "instantPrompts", "winW", "winH", "m1Enabled", "m1X", "m1Y", "m1W", "m1H", "safeZoneKey", "targetEnabled", "targetHp", "resumeAfterDeath", "autoM1Requested" }
 local BOOLS = { antiAfk = true, reconnect = true, autoExec = true, instantPrompts = true, m1Enabled = true, targetEnabled = true, resumeAfterDeath = true, autoM1Requested = true }
 local NUMBERS = { opacity = { 0, 1 }, scale = { 0.5, 1.5 }, textScale = { 0.8, 1.4 }, textAlpha = { 0, 0.6 }, winW = { 520, 1100 }, winH = { 360, 820 }, m1X = {0,1}, m1Y = {0,1}, m1W = {260,800}, m1H = {160,600}, targetHp = {1,100} }
 local OUTLINE = { auto = true, on = true, off = true }
@@ -135,7 +135,7 @@ function Settings.parse(text, validate)
 		end
 	end
 	for _, cfg in pairs(store.configs) do
-		if cfg.safeKey == cfg.toggleKey then cfg.safeKey = cfg.toggleKey == "F6" and "F7" or "F6" end
+		if cfg.safeZoneKey == cfg.toggleKey then cfg.safeZoneKey = "NONE" end
 	end
 	if store.autoload and not store.configs[store.autoload] then
 		store.autoload = nil
