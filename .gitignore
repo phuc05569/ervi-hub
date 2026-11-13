@@ -1,0 +1,7 @@
+# downloaded tools, local backups and generated files
+tools/
+backups/
+build/*
+!build/Ervi_Hub.luau
+!build/Ervi_Hub.luau.map.json
+__pycache__/

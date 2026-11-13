@@ -1,0 +1,1258 @@
+-- Ervi Hub (RNG RollAttacks) entry point.
+-- Lifecycle: one hub Scope owns every GUI, connection and thread; features own child scopes.
+-- The window X calls stopHub(), which nothing else can disconnect (fixes the old diagnostic X bug).
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local Build = require("Build")
+local Scope = require("Scope")
+local Theme = require("Theme")
+local Ui = require("Ui")
+local Game = require("Game")
+local Rarity = require("Rarity")
+local AutoRoll = require("AutoRoll")
+local makeAdapter = require("RollAdapter")
+local makeCyborg = require("Cyborg")
+local makeObserver = require("RollObserver")
+local Settings = require("Settings")
+local makeSession = require("Session")
+local makePrompts = require("Prompts")
+
+local HUB_NAME = "RNG_RollAttacks_Hub"
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- Stop previous runs: this hub, baseline v1 and older diagnostics.
+for _, key in ipairs({ "RNG_HUB_STOP", "RNG_CYBORG_V6_STOP", "RNG_DIAG_V5_STOP" }) do
+	local stop = _G[key]
+	if type(stop) == "function" then
+		pcall(stop)
+	end
+end
+for _, name in ipairs({ HUB_NAME, "RNG_Cyborg_M1_V6", "RNG_AttackDiagnostic_V5", "RNG_Hub_CombatHUD" }) do
+	local old = playerGui:FindFirstChild(name)
+	if old then
+		old:Destroy()
+	end
+end
+
+local hub = Scope.new("hub")
+local stopped = false
+local onStop = {} -- feature cleanups, registered as features are created
+
+-- Registered before anything can yield (e.g. requiring game data), so a second Run always
+-- finds and stops this one, even mid-load. A run stopped mid-load disposes whatever it adds later.
+local function stopHub()
+	if stopped then
+		return
+	end
+	stopped = true
+	for i = #onStop, 1, -1 do
+		pcall(onStop[i])
+	end
+	hub:close()
+	if _G.RNG_HUB_STOP == stopHub then
+		_G.RNG_HUB_STOP = nil
+	end
+	print("[Ervi Hub] Fully stopped and cleaned.")
+end
+_G.RNG_HUB_STOP = stopHub
+
+local logs = {}
+
+local function log(feature, msg, isError)
+	table.insert(logs, 1, ("%s %s: %s"):format(os.date("%H:%M:%S"), feature, msg))
+	if #logs > 60 then
+		table.remove(logs)
+	end
+	(isError and warn or print)(("[Ervi Hub] %s: %s"):format(feature, msg))
+end
+
+local function safe(feature, fn)
+	return function(...)
+		local ok, err = xpcall(fn, debug.traceback, ...)
+		if not ok then
+			log(feature, tostring(err), true)
+		end
+	end
+end
+
+local function isKey(name)
+	if name == "Unknown" or name == "Escape" then
+		return false
+	end
+	local ok, kc = pcall(function()
+		return Enum.KeyCode[name]
+	end)
+	return ok and kc ~= nil
+end
+local function inList(list)
+	return function(name)
+		return Theme.find(list, name) ~= nil
+	end
+end
+local validators = {
+	toggleKey = isKey,
+	theme = inList(Theme.PRESETS),
+	accent = function(name)
+		return name == "" or Theme.hex(name) ~= nil or Theme.find(Theme.ACCENTS, name) ~= nil
+	end,
+	font = inList(Theme.FONTS),
+	textColor = function(name)
+		return Theme.hex(name) ~= nil or Theme.find(Theme.TEXT_COLORS, name) ~= nil
+	end,
+	bgColor = function(name)
+		return name == "" or Theme.hex(name) ~= nil
+	end,
+}
+
+-- Configs: the active config auto-saves every change; the autoload config (if set) is active at start.
+local store = Settings.load(validators)
+local activeName = store.autoload or Settings.DEFAULT_NAME
+if not store.configs[activeName] then
+	Settings.put(store, activeName, Settings.defaults())
+end
+local prefs = store.configs[activeName]
+local syncs = {} -- each re-reads `prefs` into its control (after loading a config, a reset or a look change)
+Ui.applyLook(prefs)
+Ui.setOpacity(prefs.opacity, Settings.MIN_OPACITY)
+local function savePrefs()
+	local ok, err = Settings.save(store)
+	if not ok and Settings.canPersist() then
+		log("Settings", "could not save: " .. tostring(err), true)
+	end
+end
+
+local metrics = { fps = 0, ping = 0 }
+do
+	local frames, since = 0, os.clock()
+	hub:connect(RunService.Heartbeat, function()
+		frames += 1
+		local now = os.clock()
+		if now - since >= 1 then
+			metrics.fps = math.floor(frames / (now - since) + 0.5)
+			frames, since = 0, now
+			local ok, p = pcall(player.GetNetworkPing, player)
+			metrics.ping = ok and math.floor(p * 1000 + 0.5) or 0
+		end
+	end)
+end
+
+-- ===================================================================== window
+local gui = hub:add(Ui.new("ScreenGui", {
+	Name = HUB_NAME,
+	ResetOnSpawn = false,
+	ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+	DisplayOrder = 350,
+	Parent = playerGui,
+}))
+Ui.root(gui)
+local W, H, TH, SW = prefs.winW, prefs.winH, Theme.titleH, Theme.sidebarW -- W/H change with the resize grip
+local HOME = UDim2.new(0.5, -W / 2, 0.5, -H / 2)
+local window = Ui.new("Frame", {
+	Size = UDim2.fromOffset(W, H),
+	Position = HOME,
+	BackgroundColor3 = Theme.bg,
+	Parent = gui,
+})
+Ui.surface(window)
+Ui.corner(window, 12)
+Ui.stroke(window, Theme.stroke, 0.1)
+local uiScale = Ui.new("UIScale", { Parent = window })
+
+local titleBar = Ui.new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, TH), Active = true, Parent = window })
+local dot = Ui.new("Frame", { Size = UDim2.fromOffset(8, 8), Position = UDim2.new(0, 16, 0.5, -4), BackgroundColor3 = Theme.accent, Parent = titleBar })
+Ui.corner(dot, 4)
+-- Brand title: silver serif with a dark outline; keeps its font and colors whatever look is chosen.
+local title = Ui.text(titleBar, "Ervi Hub", { size = UDim2.new(0, 110, 1, 0), font = Theme.brandFont, textSize = 19, color = Color3.new(1, 1, 1) })
+title.Position = UDim2.fromOffset(30, 0)
+title:SetAttribute("FixedTextColor", true)
+Ui.new("UIGradient", { Color = ColorSequence.new(Color3.fromRGB(252, 252, 254), Color3.fromRGB(166, 168, 176)), Rotation = 90, Parent = title })
+Ui.new("UIStroke", { Color = Color3.fromRGB(40, 40, 46), Thickness = 1.2, Parent = title }):SetAttribute("FixedBackground", true)
+local subtitle = Ui.text(titleBar, ("v%s  ·  build %s"):format(Build.version, Build.id:sub(-12)), { size = UDim2.new(0, 260, 1, 0), textSize = Theme.size.tiny, color = Theme.faint, font = Theme.mono })
+subtitle.Position = UDim2.fromOffset(146, 0)
+
+local function titleButton(text, x, danger)
+	local b = Ui.new("TextButton", {
+		AutoButtonColor = false,
+		AnchorPoint = Vector2.new(1, 0.5),
+		Position = UDim2.new(1, x, 0.5, 0),
+		Size = UDim2.fromOffset(30, 26),
+		BackgroundColor3 = Theme.surface2,
+		Text = text,
+		TextColor3 = Theme.muted,
+		TextSize = 18,
+		Font = Theme.fontBold,
+		Parent = titleBar,
+	})
+	Ui.corner(b)
+	hub:connect(b.MouseEnter, function()
+		b.BackgroundColor3 = danger and Theme.bad or Theme.hover
+		b.TextColor3 = Theme.text
+	end)
+	hub:connect(b.MouseLeave, function()
+		b.BackgroundColor3 = Theme.surface2
+		b.TextColor3 = Theme.muted
+	end)
+	return b
+end
+local closeBtn = titleButton("×", -10, true)
+local minBtn = titleButton("–", -46)
+Ui.drag(hub, titleBar, window)
+
+local body = Ui.new("Frame", { BackgroundTransparency = 1, Position = UDim2.fromOffset(0, TH), Size = UDim2.new(1, 0, 1, -TH), Parent = window })
+local sidebar = Ui.new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(0, SW, 1, 0), Parent = body })
+Ui.pad(sidebar, 4, 10, 10, 10)
+Ui.list(sidebar, 4)
+local content = Ui.new("Frame", {
+	BackgroundColor3 = Theme.surface,
+	Position = UDim2.fromOffset(SW, 0),
+	Size = UDim2.new(1, -SW - 10, 1, -10),
+	ClipsDescendants = true,
+	Parent = body,
+})
+Ui.surface(content)
+Ui.corner(content, Theme.radius)
+
+local userScale = prefs.scale
+local function applyScale()
+	local cam = workspace.CurrentCamera
+	local vp = cam and cam.ViewportSize or Vector2.new(1280, 720)
+	local fit = math.min((vp.X - 24) / W, (vp.Y - 24) / H)
+	uiScale.Scale = math.max(0.5, math.min(userScale, fit))
+end
+applyScale()
+if workspace.CurrentCamera then
+	hub:connect(workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"), applyScale)
+end
+
+local minimized = false
+local grip
+local function setMinimized(on)
+	minimized = on
+	body.Visible = not on
+	window.Size = UDim2.fromOffset(W, on and TH or H)
+	minBtn.Text = on and "+" or "–"
+	if grip then
+		grip.Visible = not on
+	end
+end
+
+-- Resize grip in the bottom-right corner: drag to resize; the size is saved in the active config.
+local MIN_W, MIN_H, MAX_W, MAX_H = 520, 360, 1100, 820
+grip = Ui.new("TextButton", {
+	AutoButtonColor = false,
+	BackgroundTransparency = 1,
+	Text = "",
+	AnchorPoint = Vector2.new(1, 1),
+	Position = UDim2.new(1, -3, 1, -3),
+	Size = UDim2.fromOffset(18, 18),
+	ZIndex = 5,
+	Parent = window,
+})
+grip:SetAttribute("ResizeGrip", true)
+for i = 0, 2 do
+	for j = 0, 2 - i do
+		Ui.new("Frame", { Size = UDim2.fromOffset(2, 2), Position = UDim2.fromOffset(15 - 5 * i, 15 - 5 * j), BackgroundColor3 = Theme.faint, BorderSizePixel = 0, ZIndex = 5, Parent = grip })
+	end
+end
+local function setWindowSize(w, h)
+	W = math.clamp(math.floor(w), MIN_W, MAX_W)
+	H = math.clamp(math.floor(h), MIN_H, MAX_H)
+	if not minimized then
+		window.Size = UDim2.fromOffset(W, H)
+	end
+end
+do
+	local resizing, startPos, startW, startH
+	local function isPress(t)
+		return t == Enum.UserInputType.MouseButton1 or t == Enum.UserInputType.Touch
+	end
+	hub:connect(grip.InputBegan, function(input)
+		if isPress(input.UserInputType) then
+			resizing, startPos, startW, startH = true, input.Position, W, H
+		end
+	end)
+	hub:connect(UserInputService.InputChanged, function(input)
+		local t = input.UserInputType
+		if resizing and (t == Enum.UserInputType.MouseMovement or t == Enum.UserInputType.Touch) then
+			local s = uiScale.Scale -- mouse moves in screen pixels; the window is scaled
+			setWindowSize(startW + (input.Position.X - startPos.X) / s, startH + (input.Position.Y - startPos.Y) / s)
+		end
+	end)
+	hub:connect(UserInputService.InputEnded, function(input)
+		if resizing and isPress(input.UserInputType) then
+			resizing = false
+			prefs.winW, prefs.winH = W, H
+			savePrefs()
+			applyScale()
+		end
+	end)
+end
+hub:connect(minBtn.Activated, function()
+	setMinimized(not minimized)
+end)
+-- Toggle key. While `onKeyCaptured` is set, the next keyboard key is captured instead (Esc cancels).
+local toggleKey = Enum.KeyCode[prefs.toggleKey]
+local onKeyCaptured
+hub:connect(UserInputService.InputBegan, function(input, processed)
+	if input.UserInputType ~= Enum.UserInputType.Keyboard then
+		return
+	end
+	if onKeyCaptured then
+		local done = onKeyCaptured
+		onKeyCaptured = nil
+		done(input.KeyCode)
+		return
+	end
+	if processed or UserInputService:GetFocusedTextBox() then
+		return -- typing in chat or a text box
+	end
+	if input.KeyCode == toggleKey then
+		window.Visible = not window.Visible
+	end
+end)
+
+-- ===================================================================== tabs
+local pages, order, refreshers = {}, 0, {}
+local function selectPage(id)
+	for key, p in pairs(pages) do
+		local on = key == id
+		p.page.Visible = on
+		p.ind.Visible = on
+		p.btn.BackgroundTransparency = on and 0 or 1
+		p.lbl.TextColor3 = on and Theme.text or Theme.muted
+		if on and p.onShow then
+			p.onShow()
+		end
+	end
+end
+
+local function addPage(id, label)
+	order += 1
+	local btn = Ui.new("TextButton", {
+		AutoButtonColor = false,
+		BackgroundColor3 = Theme.surface2,
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, 0, 0, 32),
+		Text = "",
+		LayoutOrder = order,
+		Parent = sidebar,
+	})
+	Ui.corner(btn)
+	local ind = Ui.new("Frame", { BackgroundColor3 = Theme.accent, Size = UDim2.fromOffset(3, 16), Position = UDim2.new(0, 0, 0.5, -8), Visible = false, Parent = btn })
+	Ui.corner(ind, 2)
+	local lbl = Ui.text(btn, label, { size = UDim2.new(1, -16, 1, 0), font = Theme.fontMedium, color = Theme.muted })
+	lbl.Position = UDim2.fromOffset(14, 0)
+	local page = Ui.scroll(content, { Visible = false })
+	Ui.pad(page, 14, 16, 14, 14)
+	Ui.list(page, 10)
+	pages[id] = { page = page, btn = btn, ind = ind, lbl = lbl }
+	hub:connect(btn.Activated, function()
+		selectPage(id)
+	end)
+	return page, pages[id]
+end
+
+-- fn runs at 10 Hz while its page is visible; a refresher that errors is disabled after logging once.
+local function onRefresh(id, name, fn)
+	table.insert(refreshers, { id = id, name = name, fn = fn })
+end
+
+local function badge(ok, okText, badText)
+	return ok and okText or badText, ok and Theme.good or Theme.bad
+end
+
+-- ===================================================================== features
+local cyborg = makeCyborg(hub, playerGui, metrics, log)
+local observer = makeObserver(hub, log)
+local autoRoll = AutoRoll.new(makeAdapter())
+table.insert(onStop, function()
+	autoRoll:dispose()
+end)
+table.insert(onStop, function()
+	observer.stop("hub closed")
+end)
+local session = makeSession(hub, log)
+table.insert(onStop, session.stop)
+session.setAntiAfk(prefs.antiAfk)
+session.setReconnect(prefs.reconnect)
+session.setAutoExec(prefs.autoExec)
+local prompts = makePrompts(hub, log)
+table.insert(onStop, function()
+	prompts.set(false) -- restores the original hold times
+end)
+prompts.set(prefs.instantPrompts)
+local runEndedAt
+
+-- ===================================================================== Dashboard
+local dash = addPage("dash", "Dashboard")
+do
+	local c1 = Ui.card(dash, "Your style", 1)
+	local sStyle, sOdds, sTier, sCd = Ui.kv(c1, "Equipped", 1), Ui.kv(c1, "Odds", 2), Ui.kv(c1, "Rarity", 3), Ui.kv(c1, "M1 cooldown (game config)", 4)
+
+	local c2 = Ui.card(dash, "Rolling", 2)
+	local setPill = Ui.pill(c2, 1)
+	local sNext, sLuck, sAuto = Ui.kv(c2, "Status", 2), Ui.kv(c2, "Luck attributes", 3), Ui.kv(c2, "Auto Roll", 4)
+
+	local c3 = Ui.card(dash, "Hub health", 3)
+	local hData, hRemote, hUi, hVer, hCyb = Ui.kv(c3, "Style data (AttackData)", 1), Ui.kv(c3, "Roll request (RollAttack)", 2), Ui.kv(c3, "Game roll UI (MainUI)", 3), Ui.kv(c3, "Place version", 4), Ui.kv(c3, "Cyborg tracker", 5)
+
+	local c4 = Ui.card(dash, "Performance", 4)
+	local pFps, pPing = Ui.kv(c4, "FPS", 1), Ui.kv(c4, "Ping", 2)
+
+	local c5 = Ui.card(dash, "Recent log", 5)
+	local logText = Ui.text(c5, "", { textSize = Theme.size.tiny, font = Theme.mono, color = Theme.muted, order = 1 })
+
+	onRefresh("dash", "dashboard", function()
+		local eq = Game.equipped()
+		local style = eq and Game.style(eq.name)
+		sStyle(eq and eq.name or "none", eq and Game.tierColor(eq.name, eq.chance) or Theme.muted)
+		sOdds(eq and eq.chance and ("1 in %d"):format(eq.chance) or "-")
+		sTier(eq and Game.tierOf(eq.name, eq.chance) or "-")
+		sCd(style and style.Cooldown and ("%ss"):format(tostring(style.Cooldown)) or "-")
+
+		local ok, why = Game.rollStatus()
+		setPill(ok and "Ready to roll" or "Not ready", ok and "good" or "warn")
+		sNext(why, ok and Theme.good or Theme.text)
+		sLuck(("Luck %s · Trait %s"):format(tostring(Game.attr("Luck") or "-"), tostring(Game.attr("TraitLuck") or "-")))
+		sAuto(autoRoll.state, autoRoll:isRunning() and Theme.info or Theme.muted)
+
+		local ad, adErr = Game.attackData()
+		hData(badge(ad ~= nil, ("%d styles"):format(#Game.styles()), "missing: " .. tostring(adErr)))
+		hRemote(badge(Game.rollRemote() ~= nil, "found", "missing"))
+		hUi(badge(Game.mainUI() ~= nil, "found", "missing"))
+		local same = game.PlaceVersion == Game.KNOWN_PLACE_VERSION
+		hVer(("%d (data from %d)"):format(game.PlaceVersion, Game.KNOWN_PLACE_VERSION), same and Theme.good or Theme.warn)
+		hCyb(cyborg.enabled and "on" or "off", cyborg.enabled and Theme.good or Theme.muted)
+		pFps(tostring(metrics.fps), metrics.fps >= 50 and Theme.good or metrics.fps >= 30 and Theme.warn or Theme.bad)
+		pPing(("%d ms"):format(metrics.ping))
+		Ui.set(logText, "Text", #logs > 0 and table.concat(logs, "\n", 1, math.min(6, #logs)) or "No events yet.")
+	end)
+end
+
+-- ===================================================================== Auto Roll
+local rollPage = addPage("roll", "Auto Roll")
+do
+	local target = { mode = "chance", min = 500 }
+	local styleNames = {}
+
+	local cT = Ui.card(rollPage, "Target", 1, "Auto Roll stops before any further roll as soon as a result meets this target.")
+	local modeRow = Ui.row(cT, 1)
+	local chanceBox = Ui.new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, LayoutOrder = 2, Parent = cT })
+	Ui.list(chanceBox, 6)
+	local styleBox = Ui.new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, LayoutOrder = 3, Visible = false, Parent = cT })
+	Ui.list(styleBox, 6)
+	local summary = Ui.text(cT, "", { textSize = Theme.size.small, color = Theme.info, order = 4 })
+
+	local modeChance, modeStyle
+	local presetButtons = {}
+	local function refreshTarget()
+		Ui.select(modeChance, target.mode == "chance")
+		Ui.select(modeStyle, target.mode == "style")
+		chanceBox.Visible = target.mode == "chance"
+		styleBox.Visible = target.mode == "style"
+		for n, b in pairs(presetButtons) do
+			Ui.select(b, target.mode == "chance" and target.min == n)
+		end
+		local t = target.mode == "chance" and target or { mode = "style", names = styleNames }
+		if not Rarity.validTarget(t) then
+			summary.Text = "Pick a target."
+			return
+		end
+		local released, hits = 0, 0
+		for _, s in ipairs(Game.styles()) do
+			if not s.Unreleased then
+				released += 1
+				if Rarity.qualifies(t, s.Name, s.Chance) then
+					hits += 1
+				end
+			end
+		end
+		summary.Text = ("Target: %s.  %s"):format(
+			Rarity.describe(t),
+			released > 0 and ("%d of %d released styles qualify."):format(hits, released) or "(style data unavailable - result odds come from the server reply)"
+		)
+	end
+
+	modeChance = Ui.button(hub, modeRow, "Odds threshold", { width = 140 }, function()
+		target = { mode = "chance", min = target.min or 500 }
+		refreshTarget()
+	end)
+	modeStyle = Ui.button(hub, modeRow, "Exact style", { width = 140 }, function()
+		target = { mode = "style", names = styleNames, min = target.min }
+		refreshTarget()
+	end)
+
+	Ui.text(chanceBox, "Stop on any style whose odds are 1 in N or rarer (game Chance >= N).", { textSize = Theme.size.small, color = Theme.muted, order = 1 })
+	local presetRow = Ui.row(chanceBox, 2)
+	for i, n in ipairs({ 100, 195, 500, 1000, 2500, 5000 }) do
+		presetButtons[n] = Ui.button(hub, presetRow, "1/" .. n, { width = 66, order = i }, function()
+			target = { mode = "chance", min = n }
+			refreshTarget()
+		end)
+	end
+	local customRow = Ui.row(chanceBox, 3)
+	Ui.text(customRow, "Custom N:", { size = UDim2.new(0, 70, 1, 0), textSize = Theme.size.small, color = Theme.muted })
+	Ui.input(hub, customRow, "e.g. 750", { width = 110, order = 1 }, function(text)
+		local n = tonumber(text)
+		if n and n >= 1 then
+			target = { mode = "chance", min = math.floor(n) }
+		end
+		refreshTarget()
+	end)
+
+	Ui.text(styleBox, "Stop only on these exact style names (comma separated, case-sensitive).", { textSize = Theme.size.small, color = Theme.muted, order = 1 })
+	local styleCheck = Ui.text(styleBox, "", { textSize = Theme.size.small, color = Theme.warn, order = 3 })
+	Ui.input(hub, styleBox, "e.g. Cyborg, Knockback Stick", { size = UDim2.new(1, 0, 0, Theme.rowH), order = 2 }, function(text)
+		styleNames = {}
+		local unknown = {}
+		for raw in text:gmatch("[^,]+") do
+			local name = raw:match("^%s*(.-)%s*$")
+			if name ~= "" then
+				styleNames[name] = true
+				if #Game.styles() > 0 and not Game.style(name) then
+					table.insert(unknown, name)
+				end
+			end
+		end
+		target = { mode = "style", names = styleNames }
+		styleCheck.Text = #unknown > 0 and ("Not in the game's style list: " .. table.concat(unknown, ", ")) or ""
+		refreshTarget()
+	end)
+
+	-- Run card
+	local cR = Ui.card(rollPage, "Run", 2)
+	local runRow = Ui.row(cR, 1, 32)
+	local setStartEnabled, setStopEnabled, setContEnabled
+	local setState = Ui.pill(cR, 2)
+	local reason = Ui.text(cR, "", { textSize = Theme.size.small, order = 3 })
+	local kRun, kSent, kGot, kLast, kReady = Ui.kv(cR, "Running for", 4), Ui.kv(cR, "Rolls sent", 5), Ui.kv(cR, "Results received", 6), Ui.kv(cR, "Last result", 7), Ui.kv(cR, "Readiness", 8)
+
+	local function currentTarget()
+		if target.mode == "style" then
+			return { mode = "style", names = styleNames }
+		end
+		return target
+	end
+	local function startWith(opts)
+		local ok, err = autoRoll:start(currentTarget(), opts)
+		if not ok then
+			reason.Text = err
+		end
+	end
+	setStartEnabled = select(2, Ui.button(hub, runRow, "Start", { variant = "primary", width = 100 }, safe("AutoRoll", function()
+		startWith(nil)
+	end)))
+	setStopEnabled = select(2, Ui.button(hub, runRow, "Stop", { variant = "danger", width = 100, order = 1 }, function()
+		autoRoll:stop("Stopped by user")
+	end))
+	setContEnabled = select(2, Ui.button(hub, runRow, "Continue", { width = 120, order = 2 }, safe("AutoRoll", function()
+		startWith({ acceptRare = true, keepStats = true })
+	end)))
+
+	local KIND = { Found = "good", Paused = "warn", Idle = "idle", Error = "bad" }
+	local function syncRun()
+		local running = autoRoll:isRunning()
+		setState(autoRoll.state, KIND[autoRoll.state] or "info")
+		reason.Text = autoRoll.reason
+		setStartEnabled(not running)
+		setStopEnabled(running)
+		setContEnabled(autoRoll.state == "Paused")
+		if not running and autoRoll.stats.startedAt and not runEndedAt then
+			runEndedAt = os.clock()
+		elseif running then
+			runEndedAt = nil
+		end
+	end
+	local loggedState
+	autoRoll:onChange(function()
+		syncRun()
+		if autoRoll.state ~= loggedState then -- reason changes every tick while waiting; log states only
+			loggedState = autoRoll.state
+			log("AutoRoll", autoRoll.state .. " - " .. autoRoll.reason)
+		end
+	end)
+
+	-- Options card
+	local cO = Ui.card(rollPage, "Safety options", 3)
+	Ui.toggle(hub, cO, "Pause on rare results below target", "Like the game's own \"You will lose X\" warning (rarer than 1/125): keeps the result and waits for Continue.", true, function(v)
+		autoRoll.opts.pauseOnRare = v
+	end, 1)
+	Ui.toggle(hub, cO, "Stop on uncertainty", "Pause if the server's roll cooldown does not restart after a result.", true, function(v)
+		autoRoll.opts.requireCooldownAdvance = v
+	end, 2)
+	local capRow = Ui.row(cO, 3)
+	Ui.text(capRow, "Roll cap per run:", { size = UDim2.new(0, 120, 1, 0), textSize = Theme.size.small, color = Theme.muted })
+	Ui.input(hub, capRow, "250", { width = 80, text = "250", order = 1 }, function(text, _)
+		local n = tonumber(text)
+		if n and n >= 1 then
+			autoRoll.opts.maxRolls = math.floor(n)
+		end
+	end)
+
+	local cH = Ui.card(rollPage, "Recent results", 4)
+	local histText = Ui.text(cH, "No rolls yet.", { textSize = Theme.size.small, font = Theme.mono, color = Theme.muted, order = 1 })
+
+	local cN = Ui.card(rollPage, "How it works", 5)
+	Ui.text(cN, table.concat({
+		"• Sends the same no-argument roll request the game's own Roll button sends, only when the game itself would allow a roll (alive, in the arena, cooldown finished, no roll animation or confirm open).",
+		"• One request at a time, never retried. Timeouts, empty results or uncertain cooldowns pause instead of rolling again.",
+		"• A qualifying result is kept: zero further rolls. Your current style is checked before the first roll.",
+		"• The game's roll animation does not play for hub rolls; the result shows here and on the Roll button.",
+		"• Status: NOT LIVE TESTED in the game yet. Logic is mock-tested offline.",
+	}, "\n"), { textSize = Theme.size.small, color = Theme.muted, order = 1 })
+
+	onRefresh("roll", "autoroll", function()
+		syncRun()
+		local s = autoRoll.stats
+		local endT = autoRoll:isRunning() and os.clock() or runEndedAt
+		kRun(s.startedAt and endT and ("%ds"):format(math.floor(endT - s.startedAt)) or "-")
+		kSent(tostring(s.attempted))
+		kGot(tostring(s.confirmed))
+		local last = autoRoll.last
+		kLast(last and ("%s · 1/%s · %s"):format(last.name, tostring(last.chance or "?"), last.tier) or "-", last and Game.tierColor(last.name, last.chance) or nil)
+		local _, why = Game.rollStatus()
+		kReady(why)
+		local lines = {}
+		for i = 1, math.min(8, #autoRoll.history) do
+			local h = autoRoll.history[i]
+			table.insert(lines, ("#%-4d %-18s 1/%-6s %s"):format(h.n, h.name, tostring(h.chance or "?"), h.tier))
+		end
+		Ui.set(histText, "Text", #lines > 0 and table.concat(lines, "\n") or "No rolls yet.")
+	end)
+	pages.roll.onShow = refreshTarget
+	refreshTarget()
+	syncRun()
+end
+
+-- ===================================================================== Combat
+local combat = addPage("combat", "Combat")
+do
+	local c1 = Ui.card(combat, "Cyborg M1 tracker (V6)", 1, "Detects your own Beam effect under HumanoidRootPart.SmearFX and estimates a 6.07 s cooldown from it. Effect proxy - user-verified in baseline v1.")
+	local tg = Ui.toggle(hub, c1, "Show Cyborg M1 overlay", "Floating timer; drag it by its title. Also shows FPS and ping.", false, function(v)
+		cyborg.setEnabled(v)
+	end, 1)
+	cyborg.onChanged = function(on)
+		tg.set(on, true)
+	end
+	local kCount, kInt, kCfg = Ui.kv(c1, "Detected attacks", 2), Ui.kv(c1, "Last interval", 3), Ui.kv(c1, "Cooldown: game config vs observed", 4)
+
+	local c2 = Ui.card(combat, "Equipped style (game config)", 2, "CONFIGURED values from the game's AttackData. Real server timing may differ.")
+	local kKind, kDmg, kCd, kRange, kHp = Ui.kv(c2, "Kind", 1), Ui.kv(c2, "Damage", 2), Ui.kv(c2, "M1 cooldown", 3), Ui.kv(c2, "Range", 4), Ui.kv(c2, "Health / Speed", 5)
+	local desc = Ui.text(c2, "", { textSize = Theme.size.small, color = Theme.muted, order = 6 })
+
+	onRefresh("combat", "combat", function()
+		kCount(tostring(cyborg.count))
+		kInt(cyborg.lastInterval and ("%.3fs"):format(cyborg.lastInterval) or "-")
+		local cyb = Game.style("Cyborg")
+		kCfg(("%ss vs %.2fs"):format(tostring(cyb and cyb.Cooldown or "?"), cyborg.COOLDOWN))
+		local eq = Game.equipped()
+		local s = eq and Game.style(eq.name)
+		local function f(v, unit)
+			return v ~= nil and (tostring(v) .. (unit or "")) or "-"
+		end
+		kKind(f(s and s.Kind))
+		kDmg(f(s and s.Damage))
+		kCd(f(s and s.Cooldown, "s"))
+		kRange(f(s and s.Range))
+		kHp(s and ("%s / %s"):format(f(s.Health), f(s.Speed)) or "-")
+		Ui.set(desc, "Text", s and s.Description or (eq and "No game data for this style." or "No style equipped."))
+	end)
+end
+
+-- ===================================================================== Styles
+local stylesPage, stylesEntry = addPage("styles", "Styles")
+do
+	local controls = Ui.row(stylesPage, 1, 32)
+	local query, ownedOnly, showUnreleased = "", false, false
+	local rows = {}
+	local countText = Ui.text(stylesPage, "", { textSize = Theme.size.small, color = Theme.muted, order = 2 })
+	local listCard = Ui.card(stylesPage, nil, 3)
+	local built = false
+
+	local function apply()
+		local owned = Game.owned()
+		local shown = 0
+		for _, r in ipairs(rows) do
+			local s = r.style
+			local isOwned = owned ~= nil and owned[s.Name] == true
+			r.own.Text = isOwned and "owned" or ""
+			local vis = (showUnreleased or not s.Unreleased)
+				and (not ownedOnly or isOwned)
+				and (query == "" or s.Name:lower():find(query, 1, true) ~= nil)
+			r.frame.Visible = vis
+			if vis then
+				shown += 1
+			end
+		end
+		countText.Text = ("%d of %d styles shown%s"):format(shown, #rows, Game.owned() == nil and " · owned list unavailable" or "")
+	end
+
+	local function build()
+		if built then
+			return
+		end
+		built = true
+		local list = table.clone(Game.styles())
+		if #list == 0 then
+			local _, err = Game.attackData()
+			Ui.text(listCard, "Style data unavailable: " .. tostring(err), { color = Theme.warn })
+			return
+		end
+		table.sort(list, function(a, b)
+			return (a.Chance or 0) < (b.Chance or 0)
+		end)
+		for i, s in ipairs(list) do
+			local f = Ui.new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 24), LayoutOrder = i, Parent = listCard })
+			local name = Ui.text(f, s.Name .. (s.Unreleased and "  (unreleased)" or ""), { size = UDim2.new(0.38, 0, 1, 0), font = Theme.fontMedium, textSize = Theme.size.small, color = Game.tierColor(s.Name, s.Chance) or Theme.text })
+			name.TextTruncate = Enum.TextTruncate.AtEnd
+			name.TextWrapped = false
+			local function col(text, x, w, color)
+				local l = Ui.text(f, text, { size = UDim2.new(w, 0, 1, 0), textSize = Theme.size.small, font = Theme.mono, color = color or Theme.muted })
+				l.Position = UDim2.fromScale(x, 0)
+				l.TextWrapped = false
+				return l
+			end
+			col("1/" .. tostring(s.Chance), 0.38, 0.16, Theme.text)
+			col(Game.tierOf(s.Name, s.Chance), 0.54, 0.18)
+			col(s.Cooldown and ("cd %ss"):format(tostring(s.Cooldown)) or "", 0.72, 0.14)
+			local own = col("", 0.86, 0.14, Theme.good)
+			table.insert(rows, { frame = f, style = s, own = own })
+		end
+		apply()
+	end
+
+	Ui.input(hub, controls, "Search styles", { width = 170 }, function(text)
+		query = text:lower()
+		apply()
+	end)
+	local ownBtn, unrelBtn
+	ownBtn = Ui.button(hub, controls, "Owned only", { width = 110, order = 1 }, function()
+		ownedOnly = not ownedOnly
+		ownBtn.BackgroundColor3 = ownedOnly and Theme.accent or Theme.raised
+		apply()
+	end)
+	unrelBtn = Ui.button(hub, controls, "Unreleased", { width = 100, order = 2 }, function()
+		showUnreleased = not showUnreleased
+		unrelBtn.BackgroundColor3 = showUnreleased and Theme.accent or Theme.raised
+		apply()
+	end)
+	stylesEntry.onShow = build
+end
+
+-- ===================================================================== Diagnostics
+local diag = addPage("diag", "Diagnostics")
+do
+	local c1 = Ui.card(diag, "Roll observer (read-only)", 1, "1) Press Start capture.  2) Roll MANUALLY 3 times with the game's Roll button, waiting for each result.  3) Press Copy report and paste it into the chat. Records only roll attributes and roll UI text; max 90 s.")
+	local row = Ui.row(c1, 1, 32)
+	local setPill = Ui.pill(c1, 2)
+	local kEv, kLeft = Ui.kv(c1, "Events captured", 3), Ui.kv(c1, "Time left", 4)
+	local preview = Ui.input(hub, c1, "Report appears here. If Copy fails: click inside, Ctrl+A, Ctrl+C.", {
+		size = UDim2.new(1, 0, 0, 140),
+		multiline = true,
+		font = Theme.mono,
+		textSize = Theme.size.tiny,
+		order = 5,
+	})
+
+	local function copyText(text, what)
+		preview.Text = text
+		local ok, err = Game.copy(text)
+		log("Diagnostics", ok and (what .. " copied to clipboard") or (what .. " shown below - copy it manually (" .. tostring(err) .. ")"), not ok)
+	end
+	Ui.button(hub, row, "Start capture", { variant = "primary", width = 120 }, safe("Diagnostics", function()
+		observer.start(90)
+	end))
+	Ui.button(hub, row, "Stop", { width = 80, order = 1 }, function()
+		observer.stop("stopped by user")
+	end)
+	Ui.button(hub, row, "Copy report", { width = 110, order = 2 }, safe("Diagnostics", function()
+		copyText(observer.report(), "report")
+	end))
+
+	local c2 = Ui.card(diag, "Environment snapshot", 2, "Place version, capability checks, roll-related attributes. No capture needed.")
+	Ui.button(hub, c2, "Copy snapshot", { width = 130, order = 1 }, safe("Diagnostics", function()
+		copyText(observer.snapshot(), "snapshot")
+	end))
+
+	local c3 = Ui.card(diag, "Hub log", 3)
+	local logText = Ui.text(c3, "", { textSize = Theme.size.tiny, font = Theme.mono, color = Theme.muted, order = 1 })
+	Ui.button(hub, c3, "Copy log", { width = 100, order = 2 }, function()
+		copyText(table.concat(logs, "\n"), "log")
+	end)
+
+	onRefresh("diag", "diagnostics", function()
+		setPill(observer.running and "Capturing" or "Idle", observer.running and "info" or "idle")
+		kEv(tostring(#observer.events))
+		kLeft(observer.running and ("%ds"):format(math.max(0, math.ceil(observer.endsAt - os.clock()))) or "-")
+		Ui.set(logText, "Text", #logs > 0 and table.concat(logs, "\n", 1, math.min(15, #logs)) or "No events yet.")
+	end)
+end
+
+-- ===================================================================== Session
+local sessionPage = addPage("session", "Session")
+do
+	local function statusLine(card, order)
+		return Ui.text(card, "", { textSize = Theme.size.small, color = Theme.muted, order = order })
+	end
+	local c1 = Ui.card(sessionPage, "Anti-AFK", 1, "Roblox disconnects you after about 20 minutes idle. When Roblox reports you idle (about every 2 minutes) this sends one harmless right-click so you stay connected - the widely used method. Needs executor permission for VirtualUser.")
+	local tAfk = Ui.toggle(hub, c1, "Anti-AFK", nil, prefs.antiAfk, function(v)
+		prefs.antiAfk = v
+		session.setAntiAfk(v)
+		savePrefs()
+	end, 1)
+	local afkLine = statusLine(c1, 2)
+
+	local c2 = Ui.card(sessionPage, "Auto-reconnect", 2, "If Roblox shows a disconnect error, rejoin this game automatically (5 tries, 10 s apart). Only after connection and server errors - never after a kick, ban or security disconnect.")
+	local tRc = Ui.toggle(hub, c2, "Auto-reconnect", nil, prefs.reconnect, function(v)
+		prefs.reconnect = v
+		session.setReconnect(v)
+		savePrefs()
+	end, 1)
+	local rcLine = statusLine(c2, 2)
+
+	local c3 = Ui.card(sessionPage, "Auto-execute", 3, "Runs Ervi Hub again by itself after teleports and rejoins (including auto-reconnect), using the executor's queue_on_teleport and Ervi_Hub.luau from its workspace folder. Nothing is added to Potassium's autoexec folder, so after starting Roblox fresh you still press Run once.")
+	local tAe = Ui.toggle(hub, c3, "Auto-execute after teleport / rejoin", nil, prefs.autoExec, function(v)
+		prefs.autoExec = v
+		session.setAutoExec(v)
+		savePrefs()
+	end, 1)
+	local aeLine = statusLine(c3, 2)
+
+	table.insert(syncs, function()
+		tAfk.set(prefs.antiAfk, true)
+		tRc.set(prefs.reconnect, true)
+		tAe.set(prefs.autoExec, true)
+		session.setAntiAfk(prefs.antiAfk)
+		session.setReconnect(prefs.reconnect)
+		if prefs.autoExec ~= session.autoExec then
+			session.setAutoExec(prefs.autoExec)
+		end
+	end)
+	onRefresh("session", "session", function()
+		local afk = "Off"
+		if session.antiAfk then
+			afk = ("On · idle pulses sent: %d"):format(session.afkPulses)
+			if session.lastAfk then
+				afk ..= (" · last %ds ago"):format(math.floor(os.clock() - session.lastAfk))
+			end
+		end
+		Ui.set(afkLine, "Text", afk)
+		Ui.set(rcLine, "Text", "Status: " .. session.reconnectStatus)
+		Ui.set(aeLine, "Text", "Status: " .. session.autoExecStatus)
+	end)
+end
+
+-- ===================================================================== Utility
+local utilPage = addPage("utility", "Utility")
+do
+	local c1 = Ui.card(utilPage, "Instant proximity prompts", 1, "Interaction prompts (hold E) trigger instantly: when a prompt appears its hold time is set to 0. Turning this off, or closing the hub, restores every prompt's original hold time. A prompt already on screen when you turn this on switches when you start holding it.")
+	local toggle = Ui.toggle(hub, c1, "Instant prompts", nil, prefs.instantPrompts, function(v)
+		prefs.instantPrompts = v
+		prompts.set(v)
+		savePrefs()
+	end, 1)
+	local line = Ui.text(c1, "", { textSize = Theme.size.small, color = Theme.muted, order = 2 })
+	table.insert(syncs, function()
+		toggle.set(prefs.instantPrompts, true)
+		prompts.set(prefs.instantPrompts)
+	end)
+	onRefresh("utility", "utility", function()
+		Ui.set(line, "Text", prompts.enabled and ("On · prompts made instant this session: %d"):format(prompts.changed) or "Off")
+	end)
+end
+
+-- ===================================================================== Settings
+local settings = addPage("settings", "Settings")
+do
+	local function syncAll()
+		for _, fn in ipairs(syncs) do
+			fn()
+		end
+	end
+	local function applyPrefs()
+		toggleKey = Enum.KeyCode[prefs.toggleKey]
+		Ui.applyLook(prefs)
+		Ui.setOpacity(prefs.opacity, Settings.MIN_OPACITY)
+		userScale = prefs.scale
+		setWindowSize(prefs.winW, prefs.winH)
+		applyScale()
+		syncAll()
+	end
+
+	local c0 = Ui.card(settings, "Controls", 0)
+
+	-- Toggle key: click the button, then press any key (Esc cancels).
+	local keyRow = Ui.row(c0, 1, 32)
+	Ui.text(keyRow, "Show / hide menu key", { size = UDim2.new(0, 170, 1, 0), font = Theme.fontMedium })
+	local keyBtn
+	keyBtn = Ui.button(hub, keyRow, toggleKey.Name, { width = 150, order = 1 }, function()
+		if onKeyCaptured then
+			return
+		end
+		Ui.select(keyBtn, true)
+		keyBtn.Text = "Press a key… (Esc = cancel)"
+		onKeyCaptured = function(kc)
+			Ui.select(keyBtn, false)
+			if kc ~= Enum.KeyCode.Escape and isKey(kc.Name) then
+				toggleKey = kc
+				prefs.toggleKey = kc.Name
+				savePrefs()
+				log("Settings", "menu key set to " .. kc.Name)
+			end
+			keyBtn.Text = toggleKey.Name
+		end
+	end)
+	Ui.text(c0, "Ignored while you type in chat or a text box. Minimize with – in the title bar.", { textSize = Theme.size.small, color = Theme.faint, order = 2 })
+
+	local opacity = Ui.slider(hub, c0, "Menu opacity", {
+		min = Settings.MIN_OPACITY,
+		max = 1,
+		step = 0.05,
+		value = prefs.opacity,
+		order = 3,
+		format = function(v)
+			return ("%d%%"):format(math.floor(v * 100 + 0.5))
+		end,
+	}, function(v)
+		prefs.opacity = Ui.setOpacity(v, Settings.MIN_OPACITY)
+		savePrefs()
+	end)
+
+	table.insert(syncs, function()
+		keyBtn.Text = toggleKey.Name
+		opacity.set(prefs.opacity, true)
+	end)
+
+	Ui.text(c0, "Window size (scales everything, text included)", { font = Theme.fontMedium, order = 4 })
+	local scaleRow = Ui.row(c0, 5)
+	local scaleButtons = {}
+	for i, pct in ipairs({ 80, 90, 100, 110, 125 }) do
+		scaleButtons[pct / 100] = Ui.button(hub, scaleRow, pct .. "%", { width = 60, order = i }, function()
+			prefs.scale = pct / 100
+			userScale = prefs.scale
+			applyScale()
+			savePrefs()
+			syncAll()
+		end)
+	end
+	table.insert(syncs, function()
+		for s, b in pairs(scaleButtons) do
+			Ui.select(b, math.abs(prefs.scale - s) < 0.001)
+		end
+	end)
+	local resetRow = Ui.row(c0, 7)
+	Ui.button(hub, resetRow, "Reset this config", { width = 150 }, function()
+		for k, v in pairs(Settings.DEFAULTS) do
+			prefs[k] = v
+		end
+		applyPrefs()
+		savePrefs()
+	end)
+	Ui.button(hub, resetRow, "Reset position", { width = 130, order = 1 }, function()
+		window.Position = HOME
+		setMinimized(false)
+	end)
+
+	-- ---------------------------------------------------------------- Appearance
+	local cA = Ui.card(settings, "Appearance", 1, "Changes apply instantly and save to the active config.")
+	local function setLook(key, value)
+		prefs[key] = value
+		Ui.applyLook(prefs)
+		savePrefs()
+		syncAll()
+	end
+	local function pct(v)
+		return ("%d%%"):format(math.floor(v * 100 + 0.5))
+	end
+
+	-- Color circle panel, shared by every "Custom" color button; opens right under the grid that asked.
+	local pickPanel = Ui.new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, Visible = false, Parent = cA })
+	Ui.list(pickPanel, 8)
+	local pickTitle = Ui.text(pickPanel, "", { font = Theme.fontMedium, order = 1 })
+	local pickKey, preview, hexBox, brightness
+	local function showPicked(c)
+		preview.BackgroundColor3 = c
+		hexBox.Text = "#" .. c:ToHex():upper()
+	end
+	local wheel = Ui.colorWheel(hub, pickPanel, 150, 2, function(c)
+		showPicked(c)
+	end)
+	brightness = Ui.slider(hub, pickPanel, "Brightness", { min = 0, max = 1, step = 0.05, value = 1, order = 3, format = pct }, function(v)
+		wheel.setValue(v)
+		showPicked(wheel.get())
+	end)
+	local pickRow = Ui.row(pickPanel, 4, 32)
+	preview = Ui.new("Frame", { Size = UDim2.fromOffset(44, 28), BackgroundColor3 = Color3.new(1, 1, 1), Parent = pickRow })
+	preview:SetAttribute("FixedBackground", true)
+	Ui.corner(preview)
+	local function loadColor(c)
+		wheel.set(c)
+		local _, _, v = c:ToHSV()
+		brightness.set(v, true)
+		showPicked(wheel.get())
+	end
+	hexBox = Ui.input(hub, pickRow, "#RRGGBB", { width = 100, order = 1 }, function(text)
+		local digits = text:gsub("[#%s]", "")
+		local c = Theme.hex("#" .. digits)
+		if c then
+			loadColor(c)
+		end
+	end)
+	Ui.button(hub, pickRow, "Apply", { variant = "primary", width = 80, order = 2 }, function()
+		pickPanel.Visible = false
+		setLook(pickKey, "#" .. wheel.get():ToHex():upper())
+	end)
+	Ui.button(hub, pickRow, "Cancel", { width = 80, order = 3 }, function()
+		pickPanel.Visible = false
+	end)
+	local CURRENT = { accent = "accent", textColor = "text", bgColor = "bg" }
+	local function openPicker(key, title, order)
+		pickKey = key
+		pickTitle.Text = title .. ": drag on the circle or type a hex code"
+		pickPanel.LayoutOrder = order + 2
+		loadColor(Theme[CURRENT[key]])
+		pickPanel.Visible = true
+	end
+
+	-- Option grid. select(button, on) shows the current choice (default: accent highlight).
+	-- An item with custom = true opens the color circle instead of applying a value.
+	local function picker(title, order, cellW, items, key, decorate, select)
+		Ui.text(cA, title, { font = Theme.fontMedium, order = order })
+		local grid = Ui.grid(cA, cellW, 28, order + 1)
+		local buttons = {}
+		for i, item in ipairs(items) do
+			local b = Ui.button(hub, grid, item.label, { order = i, textSize = Theme.size.small }, function()
+				if item.custom then
+					openPicker(key, title, order)
+				else
+					setLook(key, item.value)
+				end
+			end)
+			if decorate then
+				decorate(b, item)
+			end
+			buttons[item.custom and "#custom" or item.value] = b
+		end
+		table.insert(syncs, function()
+			for value, b in pairs(buttons) do
+				local on = (value == "#custom" and Theme.hex(prefs[key]) ~= nil) or prefs[key] == value
+				local mark = select or Ui.select
+				mark(b, on)
+			end
+		end)
+	end
+	local CUSTOM = { label = "Custom", custom = true }
+	local function items(list, extra)
+		local out = extra or {}
+		for _, it in ipairs(list) do
+			table.insert(out, { label = it.name, value = it.name, item = it })
+		end
+		return out
+	end
+
+	picker("Design", 10, 66, items(Theme.PRESETS), "theme")
+
+	-- Accent swatches: fixed background color, a check mark shows the current one.
+	local accentItems = items(Theme.ACCENTS, { { label = "Auto", value = "" } })
+	table.insert(accentItems, CUSTOM)
+	picker("Accent color", 20, 52, accentItems, "accent", function(b, it)
+		if it.item then
+			b.Text = ""
+			b.BackgroundColor3 = it.item.color
+			b:SetAttribute("FixedBackground", true)
+			b:SetAttribute("Swatch", true)
+		end
+	end, function(b, on)
+		if b:GetAttribute("Swatch") then
+			b.Text = on and "✓" or ""
+			b.TextColor3 = Theme.onAccent
+		else
+			Ui.select(b, on)
+		end
+	end)
+
+	picker("Font", 30, 100, items(Theme.FONTS), "font", function(b, it)
+		b.Font = it.item.regular -- preview in its own font
+		b:SetAttribute("FontRole", nil)
+	end)
+
+	local textItems = items(Theme.TEXT_COLORS)
+	table.insert(textItems, CUSTOM)
+	picker("Text color", 40, 66, textItems, "textColor", function(b, it)
+		if it.item and it.item.color then
+			b.TextColor3 = it.item.color
+			b:SetAttribute("FixedTextColor", true)
+		end
+	end)
+
+	picker("Background", 45, 80, { { label = "Design", value = "" }, CUSTOM }, "bgColor")
+
+	local textSize = Ui.slider(hub, cA, "Text size", { min = 0.8, max = 1.4, step = 0.05, value = prefs.textScale, order = 50, format = pct }, function(v)
+		setLook("textScale", v)
+	end)
+	picker("Text outline", 60, 66, {
+		{ label = "Auto", value = "auto" },
+		{ label = "On", value = "on" },
+		{ label = "Off", value = "off" },
+	}, "outline")
+	Ui.text(cA, "Auto outlines text only when menu opacity is below 60%.", { textSize = Theme.size.small, color = Theme.faint, order = 62 })
+	local textAlpha = Ui.slider(hub, cA, "Text transparency", { min = 0, max = 0.6, step = 0.05, value = prefs.textAlpha, order = 70, format = pct }, function(v)
+		setLook("textAlpha", v)
+	end)
+	table.insert(syncs, function()
+		textSize.set(prefs.textScale, true)
+		textAlpha.set(prefs.textAlpha, true)
+	end)
+	Ui.button(hub, cA, "Reset appearance", { width = 150, order = 80 }, function()
+		for _, k in ipairs({ "theme", "accent", "font", "textColor", "textScale", "outline", "textAlpha", "bgColor" }) do
+			prefs[k] = Settings.DEFAULTS[k]
+		end
+		Ui.applyLook(prefs)
+		savePrefs()
+		syncAll()
+	end)
+
+	-- ---------------------------------------------------------------- Configs
+	local cC = Ui.card(settings, "Configs", 2, "The active config saves every change automatically. Save a copy under a new name, load another one, or mark one to auto-load when the hub starts.")
+	local kActive, kAuto = Ui.kv(cC, "Active config", 1), Ui.kv(cC, "Auto-loads on start", 2)
+	local nameRow = Ui.row(cC, 3, 32)
+	local saveBtn
+	local pendingOverwrite
+	local nameBox = Ui.input(hub, nameRow, "New config name", { width = 180 }, function()
+		pendingOverwrite = nil
+		saveBtn.Text = "Save as"
+	end)
+	local status = Ui.text(cC, "", { textSize = Theme.size.small, color = Theme.muted, order = 4 })
+	Ui.text(cC, Settings.canPersist() and ("Stored in your executor workspace as %s."):format(Settings.FILE) or "This executor has no file access, so configs last until you close the hub.", {
+		textSize = Theme.size.small,
+		color = Settings.canPersist() and Theme.good or Theme.warn,
+		order = 5,
+	})
+	local listFrame = Ui.new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, LayoutOrder = 6, Parent = cC })
+	Ui.list(listFrame, 6)
+
+	local listScope
+	local rebuildList
+	local function loadConfig(name)
+		activeName = name
+		prefs = store.configs[name]
+		applyPrefs()
+		rebuildList()
+		status.Text = ("Loaded '%s'."):format(name)
+		log("Settings", "loaded config " .. name)
+	end
+	rebuildList = function()
+		if listScope then
+			listScope:close()
+		end
+		listScope = hub:child("config-list")
+		for i, name in ipairs(store.order) do
+			local isActive = name == activeName
+			local row = listScope:add(Ui.row(listFrame, i, 30))
+			local label = Ui.text(row, name .. (isActive and "  (active)" or ""), { size = UDim2.new(0, 110, 1, 0), font = isActive and Theme.fontBold or Theme.font })
+			label.TextTruncate = Enum.TextTruncate.AtEnd
+			local _, setLoad = Ui.button(listScope, row, "Load", { width = 56, order = 1 }, function()
+				loadConfig(name)
+			end)
+			setLoad(not isActive)
+			-- Overwrite: replace this saved config with the current settings (asks once).
+			local owArmed = false
+			local ow, setOw
+			ow, setOw = Ui.button(listScope, row, "Overwrite", { width = 84, order = 2 }, function()
+				if not owArmed then
+					owArmed = true
+					ow.Text = "Sure?"
+					return
+				end
+				Settings.put(store, name, table.clone(prefs))
+				savePrefs()
+				status.Text = ("Overwrote '%s' with the current settings."):format(name)
+				rebuildList()
+			end)
+			setOw(not isActive) -- the active config already saves every change
+			local auto = Ui.button(listScope, row, store.autoload == name and "Auto ✓" or "Auto", { width = 64, order = 3 }, function()
+				store.autoload = store.autoload ~= name and name or nil
+				savePrefs()
+				rebuildList()
+			end)
+			Ui.select(auto, store.autoload == name)
+			local armed = false
+			local del
+			local setDel
+			del, setDel = Ui.button(listScope, row, "Delete", { variant = "danger", width = 64, order = 4 }, function()
+				if not armed then
+					armed = true
+					del.Text = "Sure?"
+					return
+				end
+				Settings.delete(store, name)
+				savePrefs()
+				status.Text = ("Deleted '%s'."):format(name)
+				rebuildList()
+			end)
+			setDel(not isActive)
+		end
+		kActive(activeName)
+		kAuto(store.autoload or ("none (starts with %s)"):format(Settings.DEFAULT_NAME))
+	end
+	saveBtn = Ui.button(hub, nameRow, "Save as", { variant = "primary", width = 110, order = 1 }, function()
+		local name = Settings.cleanName(nameBox.Text)
+		if not name then
+			status.Text = "Name: 1–24 letters, digits, spaces, _ or -."
+			return
+		end
+		if store.configs[name] and pendingOverwrite ~= name then
+			pendingOverwrite = name
+			saveBtn.Text = "Overwrite?"
+			status.Text = ("'%s' already exists. Press Overwrite? to replace it with the current settings."):format(name)
+			return
+		end
+		pendingOverwrite = nil
+		saveBtn.Text = "Save as"
+		Settings.put(store, name, table.clone(prefs))
+		activeName = name
+		prefs = store.configs[name]
+		savePrefs()
+		rebuildList()
+		status.Text = ("Saved '%s' - it is now the active config."):format(name)
+	end)
+	rebuildList()
+	syncAll()
+
+	local c2 = Ui.card(settings, "Emergency off", 3, "Stops Auto Roll, the roll observer and the Cyborg overlay, and removes every hub GUI. Same as the × button. From the console: _G.RNG_HUB_STOP()")
+	Ui.button(hub, c2, "Unload hub", { variant = "danger", width = 130, order = 1 }, function()
+		stopHub()
+	end)
+
+	local c3 = Ui.card(settings, "About", 4)
+	Ui.text(c3, ("Build %s\nBaseline: Modular Hub v1 (Cyborg V6). Style data checked against place version %d."):format(Build.id, Game.KNOWN_PLACE_VERSION), { textSize = Theme.size.small, color = Theme.muted, order = 1 })
+end
+
+-- ===================================================================== lifecycle
+hub:connect(closeBtn.Activated, stopHub)
+
+hub:add(task.spawn(function()
+	while not stopped do
+		task.wait(0.1)
+		if window.Visible and not minimized then
+			for _, r in ipairs(refreshers) do
+				if not r.dead and pages[r.id].page.Visible then
+					local ok, err = pcall(r.fn)
+					if not ok then
+						r.dead = true
+						log(r.name, "refresh disabled after error: " .. tostring(err), true)
+					end
+				end
+			end
+		end
+	end
+end))
+
+if stopped then
+	return stopHub -- a newer run replaced this one while it was loading
+end
+selectPage("dash")
+log("Hub", ("loaded build %s (place version %d)"):format(Build.id, game.PlaceVersion))
+return stopHub

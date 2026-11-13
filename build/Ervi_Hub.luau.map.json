@@ -1,0 +1,75 @@
+{
+ "build": "2.4.0+1276e5c68ba3",
+ "modules": {
+  "Build": {
+   "file": "(generated)",
+   "bundleStart": 15,
+   "bundleEnd": 15
+  },
+  "Scope": {
+   "file": "src/Scope.luau",
+   "bundleStart": 18,
+   "bundleEnd": 89
+  },
+  "Rarity": {
+   "file": "src/Rarity.luau",
+   "bundleStart": 92,
+   "bundleEnd": 161
+  },
+  "AutoRoll": {
+   "file": "src/AutoRoll.luau",
+   "bundleStart": 164,
+   "bundleEnd": 453
+  },
+  "Settings": {
+   "file": "src/Settings.luau",
+   "bundleStart": 456,
+   "bundleEnd": 633
+  },
+  "Theme": {
+   "file": "src/Theme.luau",
+   "bundleStart": 636,
+   "bundleEnd": 800
+  },
+  "Ui": {
+   "file": "src/Ui.luau",
+   "bundleStart": 803,
+   "bundleEnd": 1489
+  },
+  "Game": {
+   "file": "src/Game.luau",
+   "bundleStart": 1492,
+   "bundleEnd": 1667
+  },
+  "RollAdapter": {
+   "file": "src/RollAdapter.luau",
+   "bundleStart": 1670,
+   "bundleEnd": 1713
+  },
+  "Cyborg": {
+   "file": "src/Cyborg.luau",
+   "bundleStart": 1716,
+   "bundleEnd": 1915
+  },
+  "RollObserver": {
+   "file": "src/RollObserver.luau",
+   "bundleStart": 1918,
+   "bundleEnd": 2118
+  },
+  "Session": {
+   "file": "src/Session.luau",
+   "bundleStart": 2121,
+   "bundleEnd": 2325
+  },
+  "Prompts": {
+   "file": "src/Prompts.luau",
+   "bundleStart": 2328,
+   "bundleEnd": 2380
+  },
+  "App": {
+   "file": "src/App.luau",
+   "bundleStart": 2383,
+   "bundleEnd": 3640
+  }
+ }
+}
