@@ -291,7 +291,7 @@ return function(API)
 		return false
 	end
 
-	local DEFAULTS = { Transparency=0, LocalTransparencyModifier=0, Anchored = false, Visible = true, Text = "", Enabled = true, Health = 100, MaxHealth = 100, TextSize = 14, WalkSpeed=16, DisplayName="", Neutral=true }
+	local DEFAULTS = { Transparency=0, LocalTransparencyModifier=0, Anchored = false, Visible = true, Text = "", Enabled = true, Health = 100, MaxHealth = 100, TextSize = 14, WalkSpeed=16, UserId=0, DisplayName="", Neutral=true }
     DEFAULTS.TextBounds=Vector2.new(0,0)
     DEFAULTS.AbsolutePosition=Vector2.new(0,0);DEFAULTS.AbsoluteSize=Vector2.new(100,30)
 	local new
@@ -373,7 +373,7 @@ return function(API)
 			return signalOf(d, key)
 		end
 		if member(d.class, "props", key) ~= nil then
-            if key=="Position" and d.props.CFrame and isA(d.class,"BasePart") then return d.props.CFrame.Position end
+            if key=="Position" and isA(d.class,"BasePart") then return d.props.CFrame and d.props.CFrame.Position or Vector3.new(0,0,0) end
 			local v = d.props[key]
 			if v == nil then
 				v = DEFAULTS[key]

@@ -10,6 +10,7 @@ local makeClickTP=require("ClickTP")
 local makeDiagnostics=require("Diagnostics")
 local makeAuthority=require("MovementAuthority")
 local makeFlight=require("Flight")
+local makeTracker=require("PlayerTracker")
 local makePreview=require("VisualPreview")
 local Logo=require("Logo")
 return function(ctx)
@@ -26,7 +27,8 @@ return function(ctx)
  for _,tab in ipairs({{"visuals","Visuals","Visible player overlays and preview"},{"player","Player","Local speed and movement panel"},{"world","World","Lighting and camera"}}) do
   new[tab[1]]=ctx.addPage(tab[1],tab[2],tab[3])
  end
- local diagnostics=makeDiagnostics(ctx,{visuals=visuals,clickTP=clickTP,player=playerTools,world=world,flight=flight})
+ local tracker=makeTracker(hub,new.player,ctx.prefs)
+ local diagnostics=makeDiagnostics(ctx,{visuals=visuals,clickTP=clickTP,player=playerTools,world=world,flight=flight,tracker=tracker})
  local refreshControls={}
  local pageRefresh={}
  local function apply()
@@ -35,7 +37,7 @@ return function(ctx)
   Ui.configureMotion(ctx.prefs())
   ctx.headerRefresh()
   if ctx.statusBarRefresh then ctx.statusBarRefresh() end
-  world.apply();world.setBlur(ctx.prefs().backgroundBlur and ctx.isOpen());playerTools.apply();actions.applyFPS();visuals.apply();flight.apply();clickTP.apply()
+  world.apply();world.setBlur(ctx.prefs().backgroundBlur and ctx.isOpen());playerTools.apply();actions.applyFPS();visuals.apply();flight.apply();clickTP.apply();tracker.apply()
   for _,fn in ipairs(refreshControls) do fn(true) end
  end
  local function changed(key,value)
@@ -218,5 +220,5 @@ return function(ctx)
  end
  table.insert(ctx.syncs,apply)
  apply();previewLayout()
- return {apply=apply,keyHandler=keyHandler,actions=actions,world=world,visuals=visuals,player=playerTools,clickTP=clickTP,diagnostics=diagnostics,flight=flight,authority=authority}
+ return {apply=apply,keyHandler=keyHandler,actions=actions,world=world,visuals=visuals,player=playerTools,clickTP=clickTP,diagnostics=diagnostics,flight=flight,authority=authority,tracker=tracker}
 end

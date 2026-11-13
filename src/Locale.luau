@@ -1,6 +1,7 @@
 -- Interface labels only. Player names, API errors and diagnostic evidence stay verbatim.
 local RU={
  ["Flight"]="Полёт",["Smooth Fly"]="Плавный полёт",["Fly key"]="Клавиша полёта",["Flight Speed"]="Скорость полёта",["Noclip"]="Без столкновений",["Noclip key"]="Клавиша столкновений",
+ ["Tracker"]="Игроки",["Player Tracker"]="Список игроков",["Player Tracker Enabled"]="Включить список игроков",["Player Sort"]="Сортировка игроков",["Name"]="Имя",["Filter players"]="Поиск игроков",["Player teleport unavailable"]="Телепорт к игроку недоступен",["No player selected"]="Игрок не выбран",
  ["Target Distance Limit"]="Дальность точки",["Measure render cadence (5s)"]="Измерить кадры (5 с)",["Status Bar"]="Строка состояния",["Status Bar Opacity"]="Непрозрачность строки состояния",["Exact N"]="Точное N",
  ["Live diagnostics"]="Диагностика интерфейса",["Export diagnostics"]="Экспорт диагностики",["Diagnostic export key"]="Клавиша экспорта диагностики",
  ["Click TP"]="Выбор точки",["Click TP preview"]="Предпросмотр точки",["Click TP hold key"]="Клавиша выбора точки",["Target Circle Size"]="Размер круга",["Target Circle Opacity"]="Непрозрачность круга",["Target Circle Color"]="Цвет круга",

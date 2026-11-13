@@ -944,6 +944,32 @@ return function(API, makeEngine, hubFn, loaderFn, schema)
     check(not flyRow:GetAttribute("Value") and not noclipRow:GetAttribute("Value"),"Movement: disabled controls cannot create fake active state")
     press("L");press("N");ctl.run(0.1)
     check(not flyRow:GetAttribute("Value") and not noclipRow:GetAttribute("Value"),"Movement: unsupported keys never modify physics")
+    -- A correctly initialized PlayerAdded fixture verifies cached tracker rows.
+    local trackedPlayer=ctl.new("Player");trackedPlayer.Name="TrackerSample";ctl.set(trackedPlayer,"UserId",901);trackedPlayer.DisplayName="Tracker Display"
+    local trackedCharacter=ctl.new("Model",env.workspace)
+    local trackedHumanoid=ctl.new("Humanoid",trackedCharacter);trackedHumanoid.Health=75
+    local trackedRoot=ctl.new("Part",trackedCharacter);trackedRoot.Name="HumanoidRootPart";trackedRoot.CFrame=env.CFrame.new(10,0,0)
+    ctl.set(trackedPlayer,"Character",trackedCharacter);trackedPlayer.Parent=env.game:GetService("Players")
+    click(nav("Player"));ctl.run(0.3)
+    local trackerRow=hubGui():FindFirstChild("TrackerRow_901",true)
+    check(trackerRow and find(trackerRow,"TextLabel","Tracker Display  @TrackerSample")~=nil,"Tracker: joining player creates named cached row")
+    local visibilityWrites=0
+    local visibilityConnection=trackerRow:GetPropertyChangedSignal("Visible"):Connect(function() visibilityWrites+=1 end)
+    ctl.run(1);visibilityConnection:Disconnect()
+    check(visibilityWrites==0,"Tracker: ordinary refresh never hides unchanged rows or cancels a pressed button")
+    local trackerHealth=trackerRow and trackerRow:FindFirstChild("TrackerHealth")
+    check(trackerHealth and near(trackerHealth.Size.X.Scale,0.75),"Tracker: health fraction is accurate")
+    click(trackerRow);ctl.run(0.3)
+    check(find(hubGui(),"TextLabel","Selected: Tracker Display (@TrackerSample)")~=nil,"Tracker: row selection updates embedded details")
+    trackedHumanoid.Health=0;ctl.run(0.3)
+    check(trackerRow==hubGui():FindFirstChild("TrackerRow_901",true) and trackerHealth.Size.X.Scale==0,"Tracker: health/death updates reuse the existing row")
+    local filter=hubGui():FindFirstChild("TrackerFilter",true);filter.Text="no-such-player";ctl.run(0.1)
+    check(not trackerRow.Visible,"Tracker: name filter hides unmatched rows")
+    filter.Text="tracker";ctl.run(0.1);check(trackerRow.Visible,"Tracker: case-insensitive filter restores row")
+    local playerTeleport=hubGui():FindFirstChild("TrackerTeleport",true)
+    check(playerTeleport:GetAttribute("Disabled"),"Tracker: unsupported player teleport is disabled")
+    trackedPlayer:Destroy();ctl.run(0.3)
+    check(hubGui():FindFirstChild("TrackerRow_901",true)==nil,"Tracker: player removal destroys its cached row")
     -- Slider input and shared visual preferences: real mounted controls, mock engine.
     click(nav("Player"))
     local speedRow=find(hubGui(),"TextLabel","Walk Speed").Parent

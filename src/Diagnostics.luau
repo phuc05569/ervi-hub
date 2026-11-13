@@ -27,6 +27,7 @@ return function(ctx,features)
  function api.snapshot()
   local cam=workspace.CurrentCamera;local p=ctx.prefs()
   local result={build=ctx.build.id,placeId=game.PlaceId,universeId=game.GameId,controls={},settings={},features={},guis={},guiCounts={},metrics={fps=ctx.metrics.fps,ping=ctx.metrics.ping}}
+  result.menuOpen=game:GetService("GuiService").MenuIsOpen
   result.viewport=cam and {w=cam.ViewportSize.X,h=cam.ViewportSize.Y} or nil
   local mouse=game:GetService("UserInputService"):GetMouseLocation()
   local inset=game:GetService("GuiService"):GetGuiInset()
