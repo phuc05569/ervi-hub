@@ -1,3 +1,5 @@
+> **Current 3.1 handoff:** See [LOCAL_CODEX_HANDOFF](docs/LOCAL_CODEX_HANDOFF.md). Build **3.1.0+a7c09a9da20a**, 131 unit tests / 441 smoke checks passing. The material below records 3.0 and is historical: 3.1 removes Freecam/Friends/Sounds/Triggerbot, reorganizes navigation, defaults speed to Multiply, adds the logo/status pill, fixes search/key capture, and returns Safe Zone to its activation origin on explicit OFF.
+
 # Ervi Hub — handoff for Codex (2026-11-13)
 
 Client-side GUI hub for the Roblox game **RNG RollAttacks** (place `119338513416973`, universe `10768634654`), run by the owner through the **Potassium** executor on Windows 11. The owner is a beginner at scripting. Keep the steps you ask them to do short and exact (for example "paste X, press Run, roll 3 times, press Copy report").

@@ -10,8 +10,8 @@ import pathlib
 import sys
 
 ROOT = pathlib.Path(__file__).parent
-VERSION = "3.0.0"
-APP_MODULES = ["BootLog", "FeatureSchema", "Locale", "Registry", "PropertyOverrides", "VisualPolicy", "World", "PlayerTools", "RuntimeActions", "Visuals", "VisualPreview", "Expansion", "Scope", "Rarity", "AutoRoll", "Settings", "WindowGeometry", "FloatingWindow", "SafeZoneState", "PositionHold", "SafeZone", "TargetState", "Targets", "M1State", "M1", "Theme", "Ui", "Game", "RollAdapter", "RollObserver", "Session", "Prompts", "App"]
+VERSION = "3.1.0"
+APP_MODULES = ["Logo", "StatusBar", "BootLog", "FeatureSchema", "Locale", "Registry", "PropertyOverrides", "VisualPolicy", "World", "PlayerTools", "RuntimeActions", "Visuals", "VisualPreview", "Expansion", "Scope", "Rarity", "AutoRoll", "Settings", "WindowGeometry", "FloatingWindow", "SafeZoneState", "PositionHold", "SafeZone", "TargetState", "Targets", "M1State", "M1", "Theme", "Ui", "Game", "RollAdapter", "RollObserver", "Session", "Prompts", "App"]
 PURE_MODULES = ["BootLog", "FeatureSchema", "Locale", "Registry", "PropertyOverrides", "VisualPolicy", "Scope", "Rarity", "AutoRoll", "Settings", "M1State", "Loader", "WindowGeometry", "SafeZoneState", "TargetState", "PositionHold"]
 
 

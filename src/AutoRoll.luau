@@ -20,12 +20,12 @@ AutoRoll.__index = AutoRoll
 local RUNNING = { Checking = true, WaitingReady = true, WaitingRespawn = true, Requesting = true, Confirming = true }
 
 AutoRoll.DEFAULTS = {
-	maxRolls = 250,
+	maxRolls = math.huge,
 	requestTimeout = 12,
 	readyTimeout = 180,
 	acceptTimeout = 3,
 	lateWatch = 60,
-	pauseOnRare = true,
+	pauseOnRare = false,
 	rareAbove = Rarity.GAME_CONFIRM_ABOVE,
 	requireCooldownAdvance = true,
 	poll = 0.1,

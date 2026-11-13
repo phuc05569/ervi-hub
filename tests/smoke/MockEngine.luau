@@ -598,6 +598,7 @@ return function(API)
     end
     function METHODS.PivotTo(self,cf)
         ctl.pivotCalls=(ctl.pivotCalls or 0)+1
+        ctl.pivotAnchorHistory=ctl.pivotAnchorHistory or {};table.insert(ctl.pivotAnchorHistory,self:FindFirstChild("HumanoidRootPart").Anchored)
         if ctl.rejectPivot then error("Engine rejected local move") end
         self:FindFirstChild("HumanoidRootPart").CFrame=cf
     end

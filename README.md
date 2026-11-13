@@ -1,3 +1,5 @@
+> **Current 3.1 handoff:** See [LOCAL_CODEX_HANDOFF](docs/LOCAL_CODEX_HANDOFF.md). Build **3.1.0+a7c09a9da20a**, 131 unit tests / 441 smoke checks passing. The material below records 3.0 and is historical: 3.1 removes Freecam/Friends/Sounds/Triggerbot, reorganizes navigation, defaults speed to Multiply, adds the logo/status pill, fixes search/key capture, and returns Safe Zone to its activation origin on explicit OFF.
+
 # Ervi Hub — RNG RollAttacks
 
 Current build: **3.0.0+e31b35baa4a4**. Bundle SHA-256: `f89dc4a883316313cc21499fa844c1be7b9bfc7d339cf0a737cef1e0c9a0f3b1`.

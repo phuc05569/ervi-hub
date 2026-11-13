@@ -7,11 +7,9 @@ local function add(key,page,section,title,kind,default,options,description)
 end
 add("movementPanel","player","Movement","Movement Panel","bool",false)
 add("movementSize","player","Movement","Panel Size","number",1,{0.8,1.5,0.05},"Scales the saved panel dimensions; the corner grip still resizes it.")
-for _,d in ipairs({{"walkEnabled","WalkSpeed","bool",false},{"walkKey","WalkSpeed key","key","NONE"},{"speedMode","Speed Mode","choice","Set",{"Set","Multiply"}},{"walkSpeed","Walk Speed","number",16,{0,100,1}},{"speedMultiplier","Speed Multiplier","number",1.5,{0.25,4,0.05}}}) do add(d[1],"player","Speed",d[2],d[3],d[4],d[5],"Local Humanoid speed; no CFrame fallback or correction-fighting loop.") end
+for _,d in ipairs({{"walkEnabled","WalkSpeed","bool",false},{"walkKey","WalkSpeed key","key","NONE"},{"speedMode","Speed Mode","choice","Multiply",{"Set","Multiply"}},{"walkSpeed","Walk Speed","number",16,{0,100,1}},{"speedMultiplier","Speed Multiplier","number",1.5,{0.25,4,0.05}}}) do add(d[1],"player","Speed",d[2],d[3],d[4],d[5],"Local Humanoid speed; no CFrame fallback or correction-fighting loop.") end
 for _,d in ipairs({{"fullbright","Fullbright"},{"noFog","No Fog"},{"noShadows","No Shadows"},{"customTime","Custom Time"}}) do add(d[1],"world","Lighting",d[2],"bool",false) end
 add("timeOfDay","world","Lighting","Time of Day","number",12,{0,24,0.25})
-add("freecam","world","Camera","Freecam","bool",false,nil,"Local camera only. Hold right mouse; WASD + Q/E. Restores camera and input on disable.")
-add("freecamSpeed","world","Camera","Freecam Speed","number",1,{0.25,10,0.25})
 add("backgroundBlur","settings","Interface","Background Blur","bool",false)
 add("searchKey","settings","Interface","Search shortcut key","key","K",nil,"Hold Ctrl + this key to focus global search.")
 add("panicKey","settings","Interface","Panic key","key","End",nil,"Unload and restore owned state; ignored while typing.")

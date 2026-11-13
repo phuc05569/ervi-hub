@@ -1,3 +1,5 @@
+> **Current 3.1 handoff:** See [LOCAL_CODEX_HANDOFF](../docs/LOCAL_CODEX_HANDOFF.md). Build **3.1.0+a7c09a9da20a**, 131 unit tests / 441 smoke checks passing. The material below records 3.0 and is historical: 3.1 removes Freecam/Friends/Sounds/Triggerbot, reorganizes navigation, defaults speed to Multiply, adds the logo/status pill, fixes search/key capture, and returns Safe Zone to its activation origin on explicit OFF.
+
 # Screenshot feature inventory — Ervi Hub 3.0.0
 
 The three pasted request files are byte-identical (SHA-256 `0365ad7d3b47afa65b08f98081d46383683ccd0e63f35e0ff59f47dd413023b3`). The message displays **16** reference images, despite the pasted request saying 14. The labels below follow their displayed order. Screenshot text is reference material; the pasted master task supplies the instructions. No third-party code, artwork, invitation or brand was imported.

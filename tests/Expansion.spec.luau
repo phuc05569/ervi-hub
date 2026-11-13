@@ -6,6 +6,15 @@ local Schema=require("FeatureSchema")
 local Locale=require("Locale")
 local Boot=require("BootLog")
 return {
+ {"new speed defaults to Multiply and explicit saved mode is retained",function(_,eq)
+  eq(Settings.defaults().speedMode,"Multiply")
+  eq(Settings.parse("[A]\nspeedMode=Set\n",{}).configs.A.speedMode,"Set")
+  eq(Settings.parse("[A]\nfreecam=true\nfreecamSpeed=8\n",{}).configs.A.freecam,nil)
+ end},
+ {"status bar position precision persists",function(_,eq)
+  local s=Settings.newStore();local p=Settings.defaults();p.statusX=0.123456;p.statusY=0.654321;Settings.put(s,"A",p)
+  local r=Settings.parse(Settings.serialize(s),{}).configs.A;eq(r.statusX,p.statusX);eq(r.statusY,p.statusY)
+ end},
  {"normalized native property writes retain restoration and guard self events",function(check,eq)
   local value=1;local o=Overrides.new()
   local object=setmetatable({}, {__index=function() return value end,__newindex=function(_,_,v)

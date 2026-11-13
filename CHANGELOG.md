@@ -1,5 +1,14 @@
 # Changelog
 
+## 3.1.0 development handoff (2026-11-13), NOT LIVE TESTED
+- Build 3.1.0+a7c09a9da20a; source and WIP preserved on dedicated development branch.
+- Transparent owner-logo assets and native mark; independent draggable minimized status pill with real feature chips/FPS/ping/roll state and click-to-restore.
+- Auto Roll/Styles first, Settings last; removed Friends/Sounds/Triggerbot/Freecam. Multiply default preserves saved Set.
+- Safe Zone key controls in its own tab and Settings; typing/conflict guards; explicit OFF returns to per-activation origin before releasing hold. Corrections/death release without return.
+- Search reveals target ancestors and waits for layout before scrolling/highlighting. Removed optional Auto Roll safety UI/rare pause/default roll cap while retaining request protocol guarantees.
+- 131 unit tests and 441 smoke checks pass; both artifacts compile and rebuild deterministically. CFrame Speed/Fly and live Windows/Roblox verification remain unfinished.
+
+
 ## 3.0.0 (2026-11-13), build 3.0.0+e31b35baa4a4, NOT LIVE TESTED
 - Original Bloom/rose interface foundation: 12 main navigation tabs, retained Ervi tools, profile footer, tab header, native logo/gradient, scrolling/responsive controls and persisted/clamped main geometry.
 - Shared feature schema, native control registry, bilingual settings search, Ctrl+K/keyboard navigation and highlighting. EN/RU interface labels and optional lightweight native tween transitions.

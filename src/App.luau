@@ -21,6 +21,8 @@ local Settings = require("Settings")
 local makeSession = require("Session")
 local makePrompts = require("Prompts")
 local makeExpansion = require("Expansion")
+local Logo=require("Logo")
+local makeStatusBar=require("StatusBar")
 
 local HUB_NAME = "RNG_RollAttacks_Hub"
 local player = Players.LocalPlayer
@@ -33,7 +35,7 @@ for _, key in ipairs({ "RNG_HUB_STOP", "RNG_CYBORG_V6_STOP", "RNG_DIAG_V5_STOP" 
 		pcall(stop)
 	end
 end
-for _, name in ipairs({ HUB_NAME, "RNG_Cyborg_M1_V6", "RNG_AttackDiagnostic_V5", "RNG_Hub_CombatHUD", "RNG_Hub_M1HUD" }) do
+for _, name in ipairs({ HUB_NAME, "RNG_Cyborg_M1_V6", "RNG_AttackDiagnostic_V5", "RNG_Hub_CombatHUD", "RNG_Hub_M1HUD", "Ervi_MinimizedStatus", "Ervi_MovementPanel", "Ervi_VisibleOverlays" }) do
 	local old = playerGui:FindFirstChild(name)
 	if old then
 		old:Destroy()
@@ -178,9 +180,7 @@ Ui.new("UIGradient",{Color=ColorSequence.new(Color3.new(1,1,1),Color3.new(0.8,0.
 local uiScale = Ui.new("UIScale", { Parent = window })
 
 local titleBar = Ui.new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, TH), Active = true, Parent = window })
-local dot = Ui.new("Frame", { Name="ErviMark", Size = UDim2.fromOffset(24, 24), Position = UDim2.new(0, 10, 0.5, -12), BackgroundColor3 = Theme.accent, Parent = titleBar })
-Ui.corner(dot, 7)
-Ui.text(dot,"✦",{size=UDim2.fromScale(1,1),align=Enum.TextXAlignment.Center,textSize=20,color=Theme.onAccent})
+local officialLogo=Logo.create(titleBar,UDim2.fromOffset(24,26));officialLogo.Position=UDim2.fromOffset(10,12)
 -- Brand title: silver serif with a dark outline; keeps its font and colors whatever look is chosen.
 local title = Ui.text(titleBar, "Ervi Hub", { size = UDim2.new(0, 110, 1, 0), font = Theme.brandFont, textSize = 19, color = Color3.new(1, 1, 1) })
 title.Position = UDim2.fromOffset(40, 0)
@@ -285,15 +285,15 @@ hub:add(function() if viewportScope then viewportScope:close() end end)
 bindViewport()
 
 local minimized = false
+local statusBar
 local grip
 local function setMinimized(on)
-	minimized = on
-	body.Visible = not on
-	window.Size = UDim2.fromOffset(W, on and TH or H)
-	minBtn.Text = on and "+" or "–"
-	if grip then
-		grip.Visible = not on
-	end
+ minimized=on
+ body.Visible=not on
+ window.Size=UDim2.fromOffset(W,H)
+ window.Visible=not on
+ if grip then grip.Visible=not on end
+ if statusBar then statusBar.show(on) end
 end
 
 -- Resize grip in the bottom-right corner: drag to resize; the size is saved in the active config.
@@ -359,30 +359,25 @@ hub:connect(UserInputService.InputBegan, function(input, processed)
 	if input.UserInputType ~= Enum.UserInputType.Keyboard then
 		return
 	end
-	if onSearchInput and onSearchInput(input,processed) then return end
-	if processed or UserInputService:GetFocusedTextBox() then return end
-	if onKeyCaptured then
-		local done = onKeyCaptured
-		onKeyCaptured = nil
-		done(input.KeyCode)
-		return
-	end
-	if processed or UserInputService:GetFocusedTextBox() then
-		return -- typing in chat or a text box
-	end
-	if expansionKeys and expansionKeys(input) then return end
-	if input.KeyCode.Name == prefs.safeZoneKey and onSafeKey then
-		onSafeKey()
-	elseif input.KeyCode == toggleKey then
-		window.Visible = not window.Visible
-	end
+	if UserInputService:GetFocusedTextBox() then
+  if onSearchInput then onSearchInput(input,processed) end
+  return
+ end
+ if onKeyCaptured then
+  local done=onKeyCaptured;onKeyCaptured=nil;done(input.KeyCode);return
+ end
+ if onSearchInput and onSearchInput(input,processed) then return end
+ if prefs.safeZoneKey~="NONE" and input.KeyCode.Name==prefs.safeZoneKey and onSafeKey then onSafeKey();return end
+ if processed then return end
+ if expansionKeys and expansionKeys(input) then return end
+ if input.KeyCode==toggleKey then setMinimized(window.Visible) end
 end)
 
 bootStep("Main window and input handlers initialized")
 
 -- ===================================================================== tabs
 local pages, order, refreshers = {}, 0, {}
-local NAV={dash=1,combat=2,trigger=3,sounds=4,friends=5,visuals=6,player=7,world=8,safe=9,utility=10,config=11,settings=12,roll=20,styles=21,diag=22,session=23}
+local NAV={roll=10,styles=20,dash=30,combat=40,visuals=50,player=60,world=70,safe=80,teleports=90,utility=100,config=110,settings=1000,diag=900,session=910}
 local ICON={dash="⌂",combat="◇",trigger="⊕",sounds="♪",friends="♧",visuals="◉",player="♙",world="☼",safe="↗",utility="ϟ",config="▣",settings="☷"}
 local function selectPage(id)
 	for key, p in pairs(pages) do
@@ -424,6 +419,7 @@ local function addPage(id, label, description)
 	Ui.pad(page, 14, 16, 14, 14)
 	Ui.list(page, 10)
 	pages[id] = { page = page, btn = btn, ind = ind, lbl = lbl, label=label, description=description or "Ervi Hub · "..label }
+    if id=="diag" or id=="session" then btn.Visible=false end
 	hub:connect(btn.Activated, function()
 		selectPage(id)
 	end)
@@ -654,23 +650,6 @@ do
 		end
 	end)
 
-	-- Options card
-	local cO = Ui.card(rollPage, "Safety options", 3)
-	Ui.toggle(hub, cO, "Pause on rare results below target", "Like the game's own \"You will lose X\" warning (rarer than 1/125): keeps the result and waits for Continue.", true, function(v)
-		autoRoll.opts.pauseOnRare = v
-	end, 1)
-	Ui.toggle(hub, cO, "Stop on uncertainty", "Pause if the server's roll cooldown does not restart after a result.", true, function(v)
-		autoRoll.opts.requireCooldownAdvance = v
-	end, 2)
-	local capRow = Ui.row(cO, 3)
-	Ui.text(capRow, "Roll cap per run:", { size = UDim2.new(0, 120, 1, 0), textSize = Theme.size.small, color = Theme.muted })
-	Ui.input(hub, capRow, "250", { width = 80, text = "250", order = 1 }, function(text, _)
-		local n = tonumber(text)
-		if n and n >= 1 then
-			autoRoll.opts.maxRolls = math.floor(n)
-		end
-	end)
-
 	local cH = Ui.card(rollPage, "Recent results", 4)
 	local histText = Ui.text(cH, "No rolls yet.", { textSize = Theme.size.small, font = Theme.mono, color = Theme.muted, order = 1 })
 
@@ -760,15 +739,46 @@ do
 	end)
 end
 
+local safeKeyButtons={}
+local function syncSafeKeys()
+ for _,button in ipairs(safeKeyButtons) do if button.Parent then Ui.set(button,"Text",prefs.safeZoneKey) end end
+end
+local function addSafeKeyControl(parent,order)
+ local row=Ui.new("Frame",{BackgroundTransparency=1,Size=UDim2.new(1,0,0,0),AutomaticSize=Enum.AutomaticSize.Y,LayoutOrder=order or 5,Parent=parent})
+ Ui.list(row,4)
+ Ui.text(row,"Safe Zone toggle key",{font=Theme.fontMedium,order=0})
+ local button
+ button=Ui.button(hub,row,prefs.safeZoneKey,{size=UDim2.new(1,0,0,32),order=1},function()
+  if onKeyCaptured then return end
+  local focused=UserInputService:GetFocusedTextBox();if focused then focused:ReleaseFocus() end
+  button.Text="Press a key · Backspace = NONE · Esc = cancel"
+  onKeyCaptured=function(kc)
+   if kc==Enum.KeyCode.Backspace then prefs.safeZoneKey="NONE";savePrefs()
+   elseif kc~=Enum.KeyCode.Escape and isKey(kc.Name) then
+    if keyConflict and keyConflict(kc.Name,"safeZoneKey") then safeZone.status="Key conflict: choose a different key"
+    else prefs.safeZoneKey=kc.Name;savePrefs() end
+   end
+   syncSafeKeys()
+  end
+ end)
+ button:SetAttribute("SettingKey","safeZoneKey");table.insert(safeKeyButtons,button)
+ Ui.register(button,"Safe Zone toggle key","Bind, clear, or change Safe Zone key; works with main GUI hidden")
+ Ui.text(row,"NONE = unbound. Backspace clears; Esc cancels. Ignored while typing.",{textSize=Theme.size.tiny,color=Theme.muted,order=2})
+ return button
+end
+ table.insert(syncs,syncSafeKeys)
+
 -- ===================================================================== Safe Zone
-local safePage = addPage("safe", "Teleports", "Safe Zone and session travel")
+local safePage = addPage("safe", "Safe Zone", "Destination, return origin and keybind")
+local teleportsPage=addPage("teleports","Teleports","Server travel")
 do
-    local card=Ui.card(safePage,"Fixed Safe Zone",1,"Destination: X 278.78 · Y -16.30 · Z 7.82. ON moves you here and holds you against gravity. OFF releases normal movement.")
-    local toggle=Ui.toggle(hub,card,"Enable Safe Zone", "Hold at the destination while ON. Death/unload releases it; server corrections are not retried.",false,safeZone.setEnabled,1)
+    local card=Ui.card(safePage,"Fixed Safe Zone",1,"Destination: X 278.78 · Y -16.30 · Z 7.82. ON records your origin and holds you here. OFF returns you to that origin before releasing movement.")
+    local toggle=Ui.toggle(hub,card,"Enable Safe Zone", "OFF returns once to your activation origin. Death and server corrections release without a return or retry.",false,safeZone.setEnabled,1)
     safeZone.onChanged=function(on) toggle.set(on,true) end
     local coords=Ui.text(card,"",{order=2,textSize=Theme.size.small})
     local status=Ui.text(card,"",{order=3,textSize=Theme.size.small,color=Theme.muted})
     local bind=Ui.text(card,"",{order=4,textSize=Theme.size.small})
+    addSafeKeyControl(card,5)
     onSafeKey=safeZone.keyAction
     onRefresh("safe","safe zone",function()
         Ui.set(coords,"Text",safeZone.describe())
@@ -993,6 +1003,11 @@ end
 -- ===================================================================== Utility
 local utilPage = addPage("utility", "Utility")
 do
+ local links=Ui.card(utilPage,"Diagnostics and session tools",0)
+ Ui.button(hub,links,"Open Diagnostics",{order=1,width=220},function() selectPage("diag") end)
+ Ui.button(hub,links,"Session management",{order=2,width=220},function() selectPage("session") end)
+end
+do
 	local c1 = Ui.card(utilPage, "Instant proximity prompts", 1, "Interaction prompts (hold E) trigger instantly: when a prompt appears its hold time is set to 0. Turning this off, or closing the hub, restores every prompt's original hold time. A prompt already on screen when you turn this on switches when you start holding it.")
 	local toggle = Ui.toggle(hub, c1, "Instant prompts", nil, prefs.instantPrompts, function(v)
 		prefs.instantPrompts = v
@@ -1055,22 +1070,8 @@ do
 	end)
 	Ui.text(c0, "Ignored while you type in chat or a text box. Minimize with – in the title bar.", { textSize = Theme.size.small, color = Theme.faint, order = 2 })
 
-    local safeRow=Ui.row(c0,7,32)
-    Ui.text(safeRow,"Safe Zone toggle key",{size=UDim2.new(0,170,1,0),font=Theme.fontMedium})
-    local safeBtn
-    safeBtn=Ui.button(hub,safeRow,prefs.safeZoneKey,{width=150,order=1},function()
-        if onKeyCaptured then return end
-        safeBtn.Text="Key / Backspace = NONE"
-        onKeyCaptured=function(kc)
-            if kc==Enum.KeyCode.Backspace then
-                prefs.safeZoneKey="NONE"; savePrefs()
-            elseif kc~=Enum.KeyCode.Escape and isKey(kc.Name) and (not keyConflict or not keyConflict(kc.Name,"safeZoneKey")) then
-                prefs.safeZoneKey=kc.Name; savePrefs()
-            end
-            safeBtn.Text=prefs.safeZoneKey
-        end
-    end)
-    table.insert(syncs,function() safeBtn.Text=prefs.safeZoneKey end)
+    addSafeKeyControl(c0,6)
+
 	local opacity = Ui.slider(hub, c0, "Menu opacity", {
 		min = Settings.MIN_OPACITY,
 		max = 1,
@@ -1458,9 +1459,18 @@ local expansion=makeExpansion({hub=hub,parent=playerGui,prefs=function() return 
  headerRefresh=headerRefresh,sidebarLayout=sidebarLayout,logs=function() return logs end,bootLog=boot.text,
  keyConflict=keyConflict,capture=function(fn) if onKeyCaptured then return false end;onKeyCaptured=fn;return true end})
 expansionKeys=expansion.keyHandler
+statusBar=makeStatusBar(hub,playerGui,function() return prefs end,savePrefs,function() setMinimized(false) end,selectPage,function()
+ local features={}
+ local function add(on,label,page) if on then table.insert(features,{label=label,page=page}) end end
+ add(autoRoll:isRunning() or autoRoll.state=="Paused","Roll "..autoRoll.state,"roll")
+ add(safeZone.enabled,"Safe Zone","safe");add(expansion.visuals.active,"Visuals","visuals")
+ add(expansion.player.walkActive,"Speed","player");add(m1.enabled,"M1","combat");add(session.antiAfk,"Anti AFK","utility")
+ return {fps=metrics.fps,ping=metrics.ping,rollState=autoRoll.state,features=features}
+end)
+
 bootStep("Shared UI catalog and expansion features initialized")
 local function syncBlur() expansion.world.setBlur(prefs.backgroundBlur and window.Visible and not minimized) end
-hub:connect(window:GetPropertyChangedSignal("Visible"),syncBlur)
+hub:connect(window:GetPropertyChangedSignal("Visible"),function() minimized=not window.Visible;body.Visible=window.Visible;if grip then grip.Visible=window.Visible end;if statusBar then statusBar.show(not window.Visible) end;syncBlur() end)
 hub:connect(body:GetPropertyChangedSignal("Visible"),syncBlur)
 -- Search uses entries registered by actual shared controls, including legacy sections.
 local resultsScope,focusScope
@@ -1473,20 +1483,44 @@ local selectedResult=1
 local resultEntries={}
 local resultButtons={}
 local function openResult(index)
- local entry=resultEntries[index];if not entry then return end
- selectPage(entry.page);window.Visible=true;setMinimized(false);searchPanel.Visible=false
- searchInput:ReleaseFocus()
+ local entry=resultEntries[index];if not entry or not pages[entry.page] then return end
  if focusScope then focusScope:close() end;focusScope=Scope.new("search-focus")
- if entry.control and entry.control.Parent then
-  entry.control:SetAttribute("SearchFocused",true)
-  focusScope:add(function() if entry.control then entry.control:SetAttribute("SearchFocused",nil) end end)
-  focusScope:add(Ui.stroke(entry.control,Theme.accent,0))
-  pcall(function()
-   local page=pages[entry.page].page
-   page.CanvasPosition=Vector2.new(0,math.max(0,page.CanvasPosition.Y+entry.control.AbsolutePosition.Y-page.AbsolutePosition.Y-20))
-  end)
+ local selection=focusScope
+ selectPage(entry.page);setMinimized(false);searchPanel.Visible=false;searchInput:ReleaseFocus()
+ local control=entry.control;local page=pages[entry.page].page
+ if not control or not control.Parent then return end
+ -- Reveal UI containers only; never activate a feature as a side effect of search.
+ local ancestor=control
+ while ancestor and ancestor~=page do
+  if ancestor:IsA("GuiObject") then ancestor.Visible=true end
+  ancestor=ancestor.Parent
  end
+ control:SetAttribute("SearchFocused",true)
+ selection:add(function() if control.Parent then control:SetAttribute("SearchFocused",nil) end end)
+ selection:add(Ui.stroke(control,Theme.accent,0))
+ -- AutomaticSize/visibility layout must settle before AbsolutePosition is reliable.
+ local frames=0;local listener
+ listener=selection:connect(RunService.Heartbeat,function()
+  frames+=1;if frames<2 then return end
+  listener:Disconnect()
+  if selection.closed or not page.Visible or not control.Parent then return end
+  local node=control.Parent
+  while node do
+   if node:IsA("ScrollingFrame") then
+    local ok=pcall(function()
+     local current=node.CanvasPosition or Vector2.new()
+     local offset=math.max(0,current.Y+control.AbsolutePosition.Y-node.AbsolutePosition.Y-16)
+     node.CanvasPosition=Vector2.new(current.X,offset)
+     node:SetAttribute("SearchTargetOffset",offset)
+    end)
+    if ok then control:SetAttribute("SearchScrolled",true) end
+   end
+   if node==page then break end
+   node=node.Parent
+  end
+ end)
 end
+
 local function searchResults()
  if resultsScope then resultsScope:close() end;resultsScope=Scope.new("search-results")
  resultEntries=Ui.registry:search(searchInput.Text,12);selectedResult=1;resultButtons={}

@@ -7,6 +7,7 @@ local makePlayer=require("PlayerTools")
 local makeActions=require("RuntimeActions")
 local makeVisuals=require("Visuals")
 local makePreview=require("VisualPreview")
+local Logo=require("Logo")
 return function(ctx)
  local hub=ctx.hub
  local world=makeWorld(hub,ctx.prefs)
@@ -15,7 +16,7 @@ return function(ctx)
  local visuals=makeVisuals(hub,ctx.parent,ctx.prefs)
  local pages=ctx.pages
  local new={}
- for _,tab in ipairs({{"trigger","Triggerbot","Unsupported automation"},{"sounds","Sounds","No sound controls shown in the references"},{"friends","Friends","Friend filtering and compatibility"},{"visuals","Visuals","Visible player overlays and preview"},{"player","Player","Local speed and movement panel"},{"world","World","Lighting and camera"}}) do
+ for _,tab in ipairs({{"visuals","Visuals","Visible player overlays and preview"},{"player","Player","Local speed and movement panel"},{"world","World","Lighting and camera"}}) do
   new[tab[1]]=ctx.addPage(tab[1],tab[2],tab[3])
  end
  local refreshControls={}
@@ -91,9 +92,6 @@ return function(ctx)
   local button,setEnabled=Ui.button(hub,card,"Unsupported",{width=160},function() end);setEnabled(false)
   Ui.register(button,title,description)
  end
- unsupported(new.trigger,"Triggerbot","Automated attacks against other players are outside this task's permitted boundary. No attack or aim automation is installed.")
- unsupported(new.sounds,"Sounds","The supplied screenshots show the tab but no sound settings. No third-party sound pack or speculative controls are added.")
- unsupported(new.friends,"Friends","Mark Friends uses Roblox's friendship API, cached once per player while visualization is enabled. Team and friend colors are in Visuals. No friendship changes are sent.")
  unsupported(new.player,"CFrame Speed / Noclip / Fly","No game-authorized movement/collision API is established. No CFrame correction fallback, collision bypass, fly or infinite-jump control is enabled. Requested Fly key, Velocity/CFrame mode and speed remain unsupported.")
  unsupported(new.visuals,"Mobile Renderer / Dim Behind Walls","All overlays already use native GUI objects, including mobile. Fully hidden players are suppressed, not dimmed. Behind Wall color and hidden-target preview are sample-only; no wallhack or AlwaysOnTop chams is installed.")
  local preview=makePreview(new.visuals)
@@ -114,7 +112,7 @@ return function(ctx)
  ctx.onRefresh("visuals","visual statistics",function() Ui.set(visualStatus,"Text",visuals.status) end)
  local playerStatus=Ui.text(new.player,"",{order=100,textSize=Theme.size.small})
  ctx.onRefresh("player","player status",function() playerTools.refreshStatus();Ui.set(playerStatus,"Text",playerTools.status) end)
- Ui.button(hub,groups["world/Camera"],"Reset Camera",{order=20,width=180},function() world.resetCamera();apply() end)
+ Ui.button(hub,Ui.card(new.world,"Camera",75),"Reset Camera",{order=20,width=180},function() world.resetCamera();apply() end)
  local cameraStatus=Ui.text(new.world,"",{order=100,textSize=Theme.size.small})
  ctx.onRefresh("world","world status",function() Ui.set(cameraStatus,"Text",world.status) end)
  -- Reuse actions across Home, Utility and the Teleports section.
@@ -128,13 +126,14 @@ return function(ctx)
  end
  local homeQuick=quick(pages.dash.page,-7)
  local utilityQuick=quick(pages.utility.page,20)
- local teleQuick=quick(pages.safe.page,20)
+ local teleQuick=quick(pages.teleports.page,20)
  ctx.onRefresh("dash","home actions",homeQuick);ctx.onRefresh("utility","utility actions",function() utilityQuick();end)
- ctx.onRefresh("safe","teleport actions",teleQuick)
+ ctx.onRefresh("teleports","teleport actions",teleQuick)
  local fpsStatus=Ui.text(groups["utility/Rendering"],"",{order=5,textSize=Theme.size.small})
  ctx.onRefresh("utility","FPS cap status",function() Ui.set(fpsStatus,"Text",actions.fpsStatus) end)
  -- Welcome and performance use native shapes rather than borrowed art.
  local welcome=Ui.card(pages.dash.page,"Welcome · Ervi Hub",-10)
+ local official=Logo.create(welcome,UDim2.fromOffset(42,45));official.LayoutOrder=-1
  local avatar=Ui.new("ImageLabel",{Image="",BackgroundTransparency=1,Size=UDim2.fromOffset(52,52),LayoutOrder=0,Parent=welcome});Ui.corner(avatar,26)
  if type(Game.player.UserId)=="number" and Game.player.UserId>0 then avatar.Image=("rbxthumb://type=AvatarHeadShot&id=%d&w=150&h=150"):format(Game.player.UserId) end
  Ui.text(welcome,"Welcome back, "..(Game.player.DisplayName or Game.player.Name),{order=1,font=Theme.fontBold,textSize=18})
@@ -155,7 +154,7 @@ return function(ctx)
  local active=Ui.card(pages.dash.page,"Active now · click to disable",-6)
  local chipGrid=Ui.grid(active,135,28,1)
  local chips={}
- for i,entry in ipairs({{"M1 HUD","m1Enabled"},{"Anti AFK","antiAfk"},{"WalkSpeed","walkEnabled"},{"Freecam","freecam"},{"Visuals","espEnabled"},{"Movement Panel","movementPanel"},{"Auto Roll","roll"},{"Safe Zone","safe"},{"Fullbright","fullbright"},{"No Fog","noFog"},{"No Shadows","noShadows"},{"Custom Time","customTime"},{"Blur","backgroundBlur"},{"Reconnect","reconnect"},{"Auto-execute","autoExec"},{"Instant prompts","instantPrompts"},{"Target selection","targetEnabled"}}) do
+ for i,entry in ipairs({{"M1 HUD","m1Enabled"},{"Anti AFK","antiAfk"},{"WalkSpeed","walkEnabled"},{"Visuals","espEnabled"},{"Movement Panel","movementPanel"},{"Auto Roll","roll"},{"Safe Zone","safe"},{"Fullbright","fullbright"},{"No Fog","noFog"},{"No Shadows","noShadows"},{"Custom Time","customTime"},{"Blur","backgroundBlur"},{"Reconnect","reconnect"},{"Auto-execute","autoExec"},{"Instant prompts","instantPrompts"},{"Target selection","targetEnabled"}}) do
   local key=entry[2]
   chips[key]=Ui.button(hub,chipGrid,entry[1],{order=i},function()
    if key=="roll" then ctx.roll:stop() elseif key=="safe" then ctx.safe.setEnabled(false) else changed(key,false);ctx.applyPrefs() end
@@ -178,7 +177,7 @@ return function(ctx)
   Ui.set(server,"Text",("Players %d/%s · %d ms · Job %s"):format(#game:GetService("Players"):GetPlayers(),tostring(game:GetService("Players").MaxPlayers or "?"),metrics.ping,tostring(game.JobId or "unavailable")))
   local any=false
   for key,chip in pairs(chips) do
-   local on=key=="roll" and ctx.roll:isRunning() or key=="safe" and ctx.safe.enabled or key=="walkEnabled" and playerTools.walkActive or key=="freecam" and world.freecamActive or key=="espEnabled" and visuals.active or (key~="roll" and key~="safe" and key~="walkEnabled" and key~="freecam" and key~="espEnabled" and ctx.prefs()[key]==true)
+   local on=key=="roll" and ctx.roll:isRunning() or key=="safe" and ctx.safe.enabled or key=="walkEnabled" and playerTools.walkActive or key=="espEnabled" and visuals.active or (key~="roll" and key~="safe" and key~="walkEnabled" and key~="espEnabled" and ctx.prefs()[key]==true)
    chip.Visible=on==true;any=any or on==true
   end
   none.Visible=not any

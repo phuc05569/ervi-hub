@@ -90,6 +90,15 @@ end
 local T500 = { mode = "chance", min = 500 }
 
 return {
+    { "default run can exceed old 250-roll cap",function(_,eq)
+        local result={};for _=1,251 do table.insert(result,{name="Punch"}) end;table.insert(result,{name="Knockback Stick"})
+        local f,a=fakeGame({current={name="Punch",chance=3},results=result})
+        local m=AutoRoll.new(a);m:start(T500);eq(f.requests,252);eq(m.state,"Found")
+    end },
+    { "default run has no optional rare pause or roll cap",function(_,eq)
+      local f,a=fakeGame({current={name="Cyborg",chance=195},results=names({"Cyborg","Knockback Stick"})})
+      local m=AutoRoll.new(a);m:start(T500);eq(f.requests,2);eq(m.state,"Found");eq(m.opts.maxRolls,math.huge)
+    end },
     { "death during a nonqualifying in-flight roll resumes only after normal cooldown", function(check,eq)
         local script={current={name="Punch",chance=3},results={{name="Slap",delay=0.2},{name="Knockback Stick"}}}
         script.onRequest=function(f,n) if n==1 then script.deadUntil=f.t+3 end end
@@ -139,7 +148,7 @@ return {
         local f,a=fakeGame({deadUntil=1,current={name="Punch",chance=3},results={}})
         local wait=a.wait
         a.wait=function(dt) wait(dt); if f.t>=1 then f.current={name="Cyborg",chance=195} end end
-        local m=AutoRoll.new(a,{resumeAfterDeath=true}); m:start(T500); eq(f.requests,0); eq(m.state,"Paused")
+        local m=AutoRoll.new(a,{resumeAfterDeath=true,pauseOnRare=true}); m:start(T500); eq(f.requests,0); eq(m.state,"Paused")
     end },
 	{ "stops on first qualifying result with zero further requests", function(check, eq)
 		local f, a = fakeGame({ current = { name = "Punch", chance = 3 }, results = names({ "Punch", "Slap", "Knockback Stick" }) })
@@ -240,7 +249,7 @@ return {
 	end },
 	{ "rare current style needs explicit Continue", function(_, eq)
 		local f, a = fakeGame({ current = { name = "Cyborg", chance = 195 }, results = names({ "Knockback Stick" }) })
-		local m = AutoRoll.new(a)
+		local m = AutoRoll.new(a,{pauseOnRare=true})
 		m:start(T500)
 		eq(m.state, "Paused", "paused first")
 		eq(f.requests, 0, "no roll before Continue")
@@ -250,7 +259,7 @@ return {
 	end },
 	{ "rare-but-below-target result is kept (pause)", function(_, eq)
 		local f, a = fakeGame({ current = { name = "Punch", chance = 3 }, results = names({ "Jackpot" }) })
-		local m = AutoRoll.new(a)
+		local m = AutoRoll.new(a,{pauseOnRare=true})
 		m:start({ mode = "chance", min = 1000 })
 		eq(m.state, "Paused", "state")
 		eq(f.requests, 1, "requests")

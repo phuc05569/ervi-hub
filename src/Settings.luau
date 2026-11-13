@@ -30,6 +30,7 @@ Settings.DEFAULTS = {
 	winW = 880, -- window size, changed with the corner grip
 	winH = 580,
 	winX = 0.5, winY = 0.5,
+	statusX=0.5,statusY=0.93,
 	communityLink = "",
 	movementX=0.1, movementY=0.3, movementW=330, movementH=240,
 	m1Enabled = false,
@@ -38,9 +39,9 @@ Settings.DEFAULTS = {
 	targetEnabled = false, targetHp = 30,
 	resumeAfterDeath = false, autoM1Requested = false,
 }
-local KEYS = { "toggleKey", "opacity", "scale", "theme", "accent", "font", "textColor", "textScale", "outline", "textAlpha", "bgColor", "antiAfk", "reconnect", "autoExec", "instantPrompts", "winW", "winH", "winX", "winY", "movementX", "movementY", "movementW", "movementH", "communityLink", "m1Enabled", "m1X", "m1Y", "m1W", "m1H", "safeZoneKey", "targetEnabled", "targetHp", "resumeAfterDeath", "autoM1Requested" }
+local KEYS = { "toggleKey", "opacity", "scale", "theme", "accent", "font", "textColor", "textScale", "outline", "textAlpha", "bgColor", "antiAfk", "reconnect", "autoExec", "instantPrompts", "winW", "winH", "winX", "winY", "statusX", "statusY", "movementX", "movementY", "movementW", "movementH", "communityLink", "m1Enabled", "m1X", "m1Y", "m1W", "m1H", "safeZoneKey", "targetEnabled", "targetHp", "resumeAfterDeath", "autoM1Requested" }
 local BOOLS = { antiAfk = true, reconnect = true, autoExec = true, instantPrompts = true, m1Enabled = true, targetEnabled = true, resumeAfterDeath = true, autoM1Requested = true }
-local NUMBERS = { opacity = { 0, 1 }, scale = { 0.5, 1.5 }, textScale = { 0.8, 1.4 }, textAlpha = { 0, 0.6 }, winW = { 520, 1100 }, winH = { 360, 820 }, winX={0,1},winY={0,1},movementX={0,1},movementY={0,1},movementW={260,800},movementH={160,600}, m1X = {0,1}, m1Y = {0,1}, m1W = {260,800}, m1H = {160,600}, targetHp = {1,100} }
+local NUMBERS = { opacity = { 0, 1 }, scale = { 0.5, 1.5 }, textScale = { 0.8, 1.4 }, textAlpha = { 0, 0.6 }, winW = { 520, 1100 }, winH = { 360, 820 }, winX={0,1},winY={0,1},statusX={0,1},statusY={0,1},movementX={0,1},movementY={0,1},movementW={260,800},movementH={160,600}, m1X = {0,1}, m1Y = {0,1}, m1W = {260,800}, m1H = {160,600}, targetHp = {1,100} }
 
 for _, d in ipairs(Schema) do
  Settings.DEFAULTS[d.key]=d.default
@@ -180,7 +181,7 @@ function Settings.serialize(store)
 		table.insert(out, "[" .. name .. "]")
 		for _, key in ipairs(KEYS) do
 			local v = cfg[key]
-			table.insert(out, key .. "=" .. (type(v) == "number" and ((key == "m1X" or key == "m1Y") and ("%.6f"):format(v) or ("%.2f"):format(v)) or tostring(v)))
+			table.insert(out, key .. "=" .. (type(v) == "number" and (key:match("[XY]$") and ("%.6f"):format(v) or ("%.2f"):format(v)) or tostring(v)))
 		end
 	end
 	return table.concat(out, "\n") .. "\n"

@@ -29,7 +29,12 @@ return function(API, makeEngine, hubFn, loaderFn, schema)
 		return nil
 	end
 	local function nav(label)
-        for _,d in ipairs(ctl.pg:FindFirstChild("RNG_RollAttacks_Hub"):GetDescendants()) do
+        local root=ctl.pg:FindFirstChild("RNG_RollAttacks_Hub")
+        if label=="Diagnostics" or label=="Session" then
+            for _,d in ipairs(root:GetDescendants()) do if d.ClassName=="TextButton" and d:GetAttribute("NavPage")=="utility" then d.Activated:Fire() end end
+            return find(root,"TextButton",label=="Diagnostics" and "Open Diagnostics" or "Session management")
+        end
+        for _,d in ipairs(root:GetDescendants()) do
             if d.ClassName=="TextButton" and d:GetAttribute("NavPage") and find(d,"TextLabel",label) then return d end
         end
     end
@@ -101,20 +106,15 @@ return function(API, makeEngine, hubFn, loaderFn, schema)
 	check(ctl.invokes == 3, "zero further requests after Found", ctl.invokes)
 	noErrors("auto roll")
 
-	-- 3b. rare current style -> pause, Continue required
+	-- Optional rare-result pause and roll-cap UI were removed at the owner's request.
 	click(find(hubGui(), "TextButton", "1/1000"))
 	ctl.rollScript = { { "Punch", 3 } }
-	click(find(hubGui(), "TextButton", "Start"))
-	ctl.run(2)
-	check(ctl.invokes == 3, "no roll while current style is rare (1/750 > 1/125)", ctl.invokes)
-	check(find(hubGui(), "TextLabel", "PAUSED") ~= nil, "paused pending Continue")
-	click(find(hubGui(), "TextButton", "Continue"))
-	ctl.run(5) -- one roll + part of the 8 s cooldown
-	check(ctl.invokes == 4, "Continue rolls once", ctl.invokes)
-	click(find(hubGui(), "TextButton", "Stop"))
-	ctl.run(20)
-	check(ctl.invokes == 4, "Stop prevents further rolls", ctl.invokes)
-	noErrors("auto roll pause/stop")
+	click(find(hubGui(), "TextButton", "Start"));ctl.run(2)
+	check(ctl.invokes==4,"rare current style no longer requires Continue")
+	check(find(hubGui(),"TextLabel","SAFETY OPTIONS")==nil,"optional Safety options removed")
+	click(find(hubGui(),"TextButton","Stop"));ctl.run(20)
+	check(ctl.invokes==4,"Stop prevents further rolls")
+	noErrors("auto roll optional-pause removal")
 
 	-- 3c. death gates rolling
 	ctl.set(ctl.char:FindFirstChildOfClass("Humanoid"), "Health", 0)
@@ -149,8 +149,8 @@ return function(API, makeEngine, hubFn, loaderFn, schema)
 	-- 6. window controls
 	click(find(hubGui(), "TextButton", "–"))
 	ctl.run(0.2)
-	check(find(hubGui(), "TextButton", "+") ~= nil, "minimize")
-	click(find(hubGui(), "TextButton", "+"))
+	check(ctl.pg:FindFirstChild("Ervi_MinimizedStatus").Enabled,"minimize shows independent status bar")
+	click(ctl.pg:FindFirstChild("Ervi_MinimizedStatus"):FindFirstChildOfClass("TextButton"))
 	local E = env.Enum
 	local function press(key, processed)
 		ctl.UIS.InputBegan:Fire({ KeyCode = E.KeyCode[key], UserInputType = E.UserInputType.Keyboard }, processed == true)
@@ -518,7 +518,7 @@ return function(API, makeEngine, hubFn, loaderFn, schema)
 	check(win().Size.X.Offset == 520 and win().Size.Y.Offset == 360, "resize stops at the minimum size")
 	click(find(hubGui(), "TextButton", "–"))
 	check(grip.Visible == false, "grip hidden while minimized")
-	click(find(hubGui(), "TextButton", "+"))
+	click(ctl.pg:FindFirstChild("Ervi_MinimizedStatus"):FindFirstChildOfClass("TextButton"))
 	runHub()
 	ctl.run(0.5)
 	check(win().Size.X.Offset == 520, "window size restored after rerun")
@@ -734,7 +734,7 @@ return function(API, makeEngine, hubFn, loaderFn, schema)
     local originalFrame=activeRoot.CFrame
     activeRoot.AssemblyLinearVelocity=env.Vector3.new(0,-100,0)
     activeRoot.AssemblyAngularVelocity=env.Vector3.new(0,5,0)
-    click(nav("Teleports"))
+    click(nav("Safe Zone"))
     check(find(hubGui(),"TextButton","Set Current Position as Safe Zone")==nil and find(hubGui(),"TextButton","Clear Safe Zone")==nil,"Safe Zone: setup controls removed")
     check((ctl.pivotCalls or 0)==0,"Safe Zone: loading does not move character")
     click(toggleRow("Enable Safe Zone")); ctl.run(0.2)
@@ -751,7 +751,9 @@ return function(API, makeEngine, hubFn, loaderFn, schema)
     check(activeRoot.Anchored==false,"Safe Zone hold: external position update releases physics")
     click(toggleRow("Enable Safe Zone")); moves=ctl.pivotCalls
     click(toggleRow("Enable Safe Zone"))
-    check(ctl.pivotCalls==moves,"Safe Zone: OFF never moves character")
+    check(ctl.pivotCalls==moves+1,"Safe Zone: OFF makes one return move")
+    moves=ctl.pivotCalls
+    check(activeRoot.CFrame==originalFrame,"Safe Zone: OFF returns exact activation orientation and position")
     check(activeRoot.Anchored==false and activeRoot.AssemblyLinearVelocity.Y==0,"Safe Zone hold: OFF restores movement without old falling velocity")
     activeRoot.CFrame=originalFrame
     ctl.set(activeHum,"Health",0)
@@ -782,29 +784,36 @@ return function(API, makeEngine, hubFn, loaderFn, schema)
     check(ctl.pivotCalls==afterUnanchor+1,"Safe Zone hold: external unanchor resets toggle OFF")
     click(toggleRow("Enable Safe Zone"))
     click(nav("Settings"))
-    check(find(hubGui(),"TextButton","NONE")~=nil,"Safe Zone key: default NONE")
-    click(find(hubGui(),"TextButton","NONE")); press("F4")
-    check(find(hubGui(),"TextButton","NONE")~=nil,"Safe Zone key: GUI key conflict rejected")
-    click(find(hubGui(),"TextButton","NONE")); press("F8")
+    local function safeKeyButton(page)
+        for _,d in ipairs(hubGui():FindFirstChild("ErviPage_"..page,true):GetDescendants()) do
+            if d:GetAttribute("SettingKey")=="safeZoneKey" then return d end
+        end
+    end
+    check(safeKeyButton("settings").Size.X.Scale==1,"Safe Zone binding: full-width control avoids clipping")
+    check(safeKeyButton("safe")~=nil,"Safe Zone binding: present in its own tab")
+    check(safeKeyButton("settings").Text=="NONE","Safe Zone key: default NONE")
+    click(safeKeyButton("settings")); press("F4")
+    check(safeKeyButton("settings").Text=="NONE","Safe Zone key: GUI key conflict rejected")
+    click(safeKeyButton("settings")); press("F8",true)
     check((ctl.files["RNG_Hub_settings.txt"] or ""):find("safeZoneKey=F8",1,true),"Safe Zone key: rebinding persisted")
-    click(find(hubGui(),"TextButton","F4")); press("F8")
+    click(find(hubGui(),"TextButton","F4")); press("F8",true)
     check(find(hubGui(),"TextButton","F4")~=nil,"GUI key: Safe Zone key conflict rejected")
     moves=ctl.pivotCalls
-    win().Visible=false; ctl.focusedTextBox={}; press("F8")
+    win().Visible=false; ctl.focusedTextBox={}; press("F8",true)
     check(win().Visible==false and ctl.pivotCalls==moves,"Safe Zone key: ignored while typing")
-    ctl.focusedTextBox=nil; press("F8"); ctl.run(0.2)
+    ctl.focusedTextBox=nil; press("F8",true); ctl.run(0.2)
     check(ctl.pivotCalls==moves+1 and win().Visible==false,"Safe Zone key: moves once without opening menu")
     check(activeRoot.Anchored==true,"Safe Zone hold: key enables holding")
-    press("F8"); ctl.run(0.2)
-    check(ctl.pivotCalls==moves+1,"Safe Zone key: second press disables without movement")
+    press("F8",true); ctl.run(0.2)
+    check(ctl.pivotCalls==moves+2,"Safe Zone key: second press returns to activation origin")
     check(activeRoot.Anchored==false,"Safe Zone hold: key releases holding")
     win().Visible=true
-    click(find(hubGui(),"TextButton","F8")); press("Backspace")
-    check(find(hubGui(),"TextButton","NONE")~=nil and (ctl.files["RNG_Hub_settings.txt"] or ""):find("safeZoneKey=NONE",1,true),"Safe Zone key: clearing saves NONE")
-    moves=ctl.pivotCalls; press("F8")
+    click(safeKeyButton("settings")); press("Backspace")
+    check(safeKeyButton("settings").Text=="NONE" and (ctl.files["RNG_Hub_settings.txt"] or ""):find("safeZoneKey=NONE",1,true),"Safe Zone key: clearing saves NONE")
+    moves=ctl.pivotCalls; press("F8",true)
     check(ctl.pivotCalls==moves,"Safe Zone key: unbound key no longer activates")
 
-    click(nav("Teleports"))
+    click(nav("Safe Zone"))
     click(toggleRow("Enable Safe Zone")); ctl.run(0.2)
     moves=ctl.pivotCalls
     ctl.player.CharacterRemoving:Fire(activeChar)
@@ -820,7 +829,7 @@ return function(API, makeEngine, hubFn, loaderFn, schema)
     check(activeRoot.Anchored==false,"Safe Zone hold: unloading restores root physics")
     check(ctl.conns==baseConns,"Safe Zone hold: unloading disconnects hold listeners")
     runHub(); ctl.run(0.3)
-    click(nav("Teleports"))
+    click(nav("Safe Zone"))
     click(toggleRow("Enable Safe Zone"))
     runHub(); ctl.run(0.3)
     check(activeRoot.Anchored==false,"Safe Zone hold: rerunning releases old hold")
@@ -898,7 +907,7 @@ return function(API, makeEngine, hubFn, loaderFn, schema)
 
     -- 3.0 screenshot expansion: navigation, registry search, world/camera, overlays.
     runHub();ctl.run(0.4)
-    for _,tab in ipairs({"Home","Combat","Triggerbot","Sounds","Friends","Visuals","Player","World","Teleports","Utility","Config","Settings"}) do
+    for _,tab in ipairs({"Auto Roll","Styles","Home","Combat","Visuals","Player","World","Safe Zone","Teleports","Utility","Config","Settings"}) do
         click(nav(tab));ctl.run(0.15)
         check(nav(tab)~=nil,"3.0 navigation: "..tab)
     end
@@ -922,6 +931,11 @@ return function(API, makeEngine, hubFn, loaderFn, schema)
     local search
     for _,d in ipairs(hubGui():GetDescendants()) do if d.ClassName=="TextBox" and d.PlaceholderText=="Search settings · Ctrl+K" then search=d end end
     check(ctl.focusedTextBox==search,"Search: Ctrl+K focuses the field")
+    local worldScroll=hubGui():FindFirstChild("ErviPage_world",true)
+    local shadowRow=toggleRow("No Shadows")
+    ctl.set(worldScroll,"AbsolutePosition",env.Vector2.new(100,100));worldScroll.CanvasPosition=env.Vector2.new(0,0)
+    ctl.set(shadowRow,"AbsolutePosition",env.Vector2.new(100,700))
+    shadowRow.Parent.Visible=false
     search.Text="No Shadows";ctl.run(0.1)
     local result=find(hubGui(),"TextButton","No Shadows · World")
     check(result~=nil,"Search: finds an actual registered toggle across tabs")
@@ -930,6 +944,9 @@ return function(API, makeEngine, hubFn, loaderFn, schema)
     local focused=false
     for _,d in ipairs(hubGui():GetDescendants()) do if d:GetAttribute("SearchFocused") then focused=true end end
     check(focused,"Search: matching control highlighted")
+    check(shadowRow.Parent.Visible,"Search: reveals a hidden containing section")
+    check(worldScroll.CanvasPosition.Y==584,"Search: scrolls to actual matching control after layout settles")
+    check(shadowRow:GetAttribute("SearchScrolled")==true,"Search: completes deferred navigation")
     search.Text="no matching control 999";ctl.run(0.1)
     check(find(hubGui(),"TextLabel","No matching registered setting")~=nil,"Search: no-results feedback")
     search.Text="";ctl.focusedTextBox=nil
@@ -953,19 +970,9 @@ return function(API, makeEngine, hubFn, loaderFn, schema)
     lighting.Brightness=brightness
     local currentCamera=env.workspace.CurrentCamera
     local originalCamera,originalType,originalMouse=currentCamera.CFrame,currentCamera.CameraType,ctl.UIS.MouseBehavior
-    click(toggleRow("Freecam"));ctl.run(0.1)
-    check(currentCamera.CameraType==env.Enum.CameraType.Scriptable,"Freecam: scriptable camera while enabled")
-    check(ctl.boundActions and ctl.boundActions.ErviFreecamMovement~=nil,"Freecam: character movement input owned")
-    ctl.UIS.InputBegan:Fire({UserInputType=env.Enum.UserInputType.MouseButton2},false)
-    ctl.keysDown={W=true};ctl.run(0.2);ctl.keysDown={}
-    check(currentCamera.CFrame.Position.Z<originalCamera.Position.Z,"Freecam: held RMB plus W moves camera")
-    ctl.UIS.InputEnded:Fire({UserInputType=env.Enum.UserInputType.MouseButton2})
-    check(ctl.UIS.MouseBehavior==originalMouse,"Freecam: right mouse release restores pointer")
-    click(toggleRow("Freecam"))
-    check(currentCamera.CFrame==originalCamera and currentCamera.CameraType==originalType,"Freecam: disable restores prior camera")
-    check(ctl.boundActions.ErviFreecamMovement==nil,"Freecam: movement input unbound on disable")
-    click(toggleRow("Freecam"));click(find(hubGui(),"TextButton","Reset Camera"))
-    check(currentCamera.CameraType==env.Enum.CameraType.Custom and currentCamera.CameraSubject==ctl.player.Character:FindFirstChildOfClass("Humanoid"),"Freecam: Reset Camera restores character subject")
+    check(find(hubGui(),"TextLabel","Freecam")==nil and find(hubGui(),"TextLabel","Freecam Speed")==nil,"Freecam controls removed")
+    click(find(hubGui(),"TextButton","Reset Camera"))
+    check(currentCamera.CameraType==env.Enum.CameraType.Custom and currentCamera.CameraSubject==ctl.player.Character:FindFirstChildOfClass("Humanoid"),"Reset Camera preserves normal camera support")
     click(nav("Settings"));click(toggleRow("Background Blur"))
     check(lighting:FindFirstChild("ErviBackgroundBlur")~=nil,"Interface: own blur effect when open")
     win().Visible=false;check(lighting:FindFirstChild("ErviBackgroundBlur")==nil,"Interface: hiding window removes owned blur")
@@ -975,6 +982,7 @@ return function(API, makeEngine, hubFn, loaderFn, schema)
     local localCharacter=ctl.player.Character
     local localHum=localCharacter:FindFirstChildOfClass("Humanoid")
     local baseSpeed=localHum.WalkSpeed
+    click(find(hubGui(),"TextButton","Set"))
     click(toggleRow("WalkSpeed"));click(sliderBtn("Walk Speed","+"))
     check(localHum.WalkSpeed==17,"Player: local Set speed applies")
     click(find(hubGui(),"TextButton","Multiply"))
@@ -1036,7 +1044,7 @@ return function(API, makeEngine, hubFn, loaderFn, schema)
     click(find(utilityPage,"TextButton","Server Hop"));ctl.run(0.1)
     check(ctl.teleports==beforeTeleport+1,"Utility: failed server listing never invents a teleport")
     check(find(hubGui(),"TextLabel","0 · unchanged; getfpscap + setfpscap unavailable")~=nil,"Utility: FPS cap compatibility is explicit")
-    click(nav("World"));click(toggleRow("No Shadows"));click(toggleRow("Freecam"))
+    click(nav("World"));click(toggleRow("No Shadows"))
     click(nav("Settings"))
     click(find(hubGui(),"TextButton","RU"));ctl.run(0.2)
     check(find(hubGui(),"TextLabel","Настройки")~=nil,"Language: Russian interface labels apply")
@@ -1140,9 +1148,9 @@ return function(API, makeEngine, hubFn, loaderFn, schema)
     check(overlayCount()==0,"Visuals: all occluded targets remain suppressed with every option enabled")
     ctl.occluded=false
     click(nav("Player"));setToggle("WalkSpeed",true)
-    click(nav("World"));setToggle("No Shadows",true);setToggle("Fullbright",true);setToggle("Freecam",true)
+    click(nav("World"));setToggle("No Shadows",true);setToggle("Fullbright",true)
     ctl.run(0.3)
-    check(currentCamera.CameraType==env.Enum.CameraType.Scriptable and lighting.GlobalShadows==false,"Multiple active features: world/camera/visuals coexist")
+    check(currentCamera.CameraType==env.Enum.CameraType.Custom and lighting.GlobalShadows==false,"Multiple active features: lighting and visuals preserve normal camera")
     env._G.RNG_HUB_STOP();ctl.run(0.3)
     check(currentCap==240,"FPS cap: unload restores original value")
     check(ctl.pg:FindFirstChild("Ervi_VisibleOverlays")==nil and currentCamera.CameraType==env.Enum.CameraType.Custom,"Multiple active features: rendering/camera cleanup")
@@ -1155,7 +1163,7 @@ return function(API, makeEngine, hubFn, loaderFn, schema)
     newCamera.CFrame=env.CFrame.new(0,10,20);newCamera.CameraType=env.Enum.CameraType.Custom
     ctl.set(newCamera,"ViewportSize",env.Vector2.new(1280,720))
     ctl.set(env.workspace,"CurrentCamera",newCamera);ctl.run(0.2)
-    check(oldCamera.CameraType==env.Enum.CameraType.Custom and newCamera.CameraType==env.Enum.CameraType.Custom,"Freecam: camera replacement restores old owner and leaves new camera alone")
+    check(oldCamera.CameraType==env.Enum.CameraType.Custom and newCamera.CameraType==env.Enum.CameraType.Custom,"Camera replacement remains under normal game control")
     local previousCharacter=ctl.player.Character
     ctl.player.CharacterRemoving:Fire(previousCharacter)
     local replacement=ctl.new("Model",env.workspace);local replacementHum=ctl.new("Humanoid",replacement);replacementHum.WalkSpeed=18
@@ -1167,6 +1175,56 @@ return function(API, makeEngine, hubFn, loaderFn, schema)
     check(currentCap==123,"FPS cap: preserve later external cap changes")
     check(ctl.conns==baseConns and ctl.pendingThreads()==0,"Final supported-API run leaves no resources")
     noErrors("external cap restoration")
+
+    -- Compact bar and origin-return regression cases, independent of legacy tab helpers.
+    runHub();ctl.run(0.3)
+    local barGui=ctl.pg:FindFirstChild("Ervi_MinimizedStatus")
+    local bar=barGui:FindFirstChildOfClass("TextButton")
+    local navItems={}
+    for _,d in ipairs(hubGui():GetDescendants()) do
+        if d.ClassName=="TextButton" and d:GetAttribute("NavPage") and d.Visible then table.insert(navItems,d) end
+    end
+    table.sort(navItems,function(a,b) return a.LayoutOrder<b.LayoutOrder end)
+    local expected={"roll","styles","dash","combat","visuals","player","world","safe","teleports","utility","config","settings"}
+    check(#navItems==#expected,"Navigation: only the twelve requested primary entries")
+    local ordered=true;for i,id in ipairs(expected) do if not navItems[i] or navItems[i]:GetAttribute("NavPage")~=id then ordered=false end end
+    check(ordered,"Navigation: primary game tools first, Settings last")
+    check(nav("Friends")==nil and nav("Sounds")==nil and nav("Triggerbot")==nil,"Navigation: unwanted tabs removed")
+    check(hubGui():FindFirstChild("ErviOfficialLogo",true)~=nil,"Official logo: native transparent geometry mounted")
+    click(find(hubGui(),"TextButton","–"));ctl.run(0.3)
+    check(not win().Visible and barGui.Enabled,"Status bar: minimize hides entire main window")
+    check(bar:GetAttribute("AutoRollState")~=nil,"Status bar: reports Auto Roll state while hidden")
+    local beforeX=bar.Position.X.Offset
+    gesture(bar,-10000,-10000);ctl.run(0.3)
+    check(bar.Position.X.Offset==0 and bar.Position.Y.Offset==0,"Status bar: dragging remains on screen")
+    check((ctl.files["RNG_Hub_settings.txt"] or ""):find("statusX=0.000000",1,true),"Status bar: position persists")
+    click(bar);ctl.run(0.1)
+    check(win().Visible and not barGui.Enabled,"Status bar: click restores full GUI")
+    press("F4");check(not win().Visible and barGui.Enabled,"Status bar: GUI key minimizes")
+    press("F4");check(win().Visible and not barGui.Enabled,"Status bar: GUI key restores")
+    click(nav("Safe Zone"))
+    local character=ctl.player.Character
+    local h=character:FindFirstChildOfClass("Humanoid");ctl.set(h,"Health",100)
+    local r=character:FindFirstChild("HumanoidRootPart")
+    if not r then r=ctl.new("Part",character);r.Name="HumanoidRootPart" end
+    local origin=ctl.cframe(100,15,-25,0,0,1,0,1,0,-1,0,0)
+    r.CFrame=origin;r.Anchored=false
+    click(toggleRow("Enable Safe Zone"));ctl.run(0.1)
+    click(toggleRow("Enable Safe Zone"));ctl.run(0.1)
+    check(r.CFrame==origin and not r.Anchored,"Safe Zone return: exact activation origin and orientation restored")
+    check(ctl.pivotAnchorHistory[#ctl.pivotAnchorHistory]==true,"Safe Zone return: return move precedes hold release")
+    local changedOrigin=ctl.cframe(-10,20,50,1,0,0,0,1,0,0,0,1);r.CFrame=changedOrigin
+    for _=1,3 do click(toggleRow("Enable Safe Zone"));click(toggleRow("Enable Safe Zone")) end
+    check(r.CFrame==changedOrigin and not r.Anchored,"Safe Zone return: rapid toggles capture fresh origin without drift")
+    click(toggleRow("Enable Safe Zone"));ctl.rejectPivot=true
+    click(toggleRow("Enable Safe Zone"));ctl.rejectPivot=false
+    check(not r.Anchored,"Safe Zone return: rejection releases physics and does not retry")
+    r.CFrame=changedOrigin;click(toggleRow("Enable Safe Zone"))
+    env._G.RNG_HUB_STOP();ctl.run(0.2)
+    check(r.CFrame==changedOrigin and not r.Anchored,"Safe Zone return: unload returns before release")
+    check(ctl.pg:FindFirstChild("Ervi_MinimizedStatus")==nil,"Unload: compact status bar removed")
+    check(ctl.conns==baseConns and ctl.pendingThreads()==0,"3.1 UI and return workflow leave no resources",ctl.conns-baseConns)
+    noErrors("3.1 status and return")
 
     -- Exercise the actual emitted loader wrapper with isolated globals, no network.
     local requests, messages = 0, {}

@@ -3,6 +3,7 @@ local UserInputService = game:GetService("UserInputService")
 local Theme = require("Theme")
 
 local Locale = require("Locale")
+local Logo = require("Logo")
 local Registry = require("Registry")
 local Ui = { registry=Registry.new(),language="EN" }
 Ui.localeText=function(text) return Locale.text(text,Ui.language) end
@@ -143,6 +144,7 @@ end
 -- everything already built. FixedBackground / FixedTextColor elements (color previews) keep theirs.
 function Ui.applyLook(look)
 	local map = Theme.apply(look)
+    Logo.refresh(Theme.bg)
 	Ui.textScale, Ui.textAlpha, Ui.outline = look.textScale, look.textAlpha, look.outline
 	local function remap(inst, prop)
 		local c = inst[prop]
