@@ -1,0 +1,11 @@
+{
+  "artifactCommit": "fa4c53889c4afd99dd8d197191033699e363fe8d",
+  "url": "https://raw.githubusercontent.com/phuc05569/ervi-hub/fa4c53889c4afd99dd8d197191033699e363fe8d/build/Ervi_Hub.luau",
+  "httpStatus": 200,
+  "bytes": 254851,
+  "sha256": "6eb609a7dc0ef0bb8998ff6bbfd7a459bae49c760fdece5908699a79511a2443",
+  "remoteRefs": [
+    "fa4c53889c4afd99dd8d197191033699e363fe8d\trefs/heads/dev/ervi-hub-3.1-handoff",
+    "608dc220da4cd144d54c0415a31556264fd1ea0a\trefs/heads/main"
+  ]
+}
