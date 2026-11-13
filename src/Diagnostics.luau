@@ -44,6 +44,7 @@ return function(ctx,features)
   for _,key in ipairs({"toggleKey","opacity","scale","textScale","winW","winH","winX","winY","statusX","statusY","font","theme","accent","textColor","textAlpha"}) do result.settings[key]=p[key] end
   for name,feature in pairs(features) do
    local out={active=feature.active,status=feature.status};result.features[name]=out
+   if feature.snapshot then out.detail=feature.snapshot() end
    for _,key in ipairs({"held","teleportAvailable","flying","noclip","available","rows","selected","drawn","cached","rays","projections","effectiveRate","updates","totalMs","maxMs"}) do
     local v=feature[key];if type(v)=="boolean" or type(v)=="number" or type(v)=="string" then out[key]=v end
    end

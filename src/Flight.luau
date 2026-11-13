@@ -41,6 +41,7 @@ return function(hub,getPrefs,save,authority)
   if not api.available then api.status=authority.status;return false end
   getPrefs()[key]=not getPrefs()[key];save();api.apply();return true
  end
+ if not api.available then return api end
  if authority.changed then hub:connect(authority.changed,function(state)
   if type(state)=="table" and state.fly==false and state.noclip==false then reset("Studio server stopped: "..tostring(state.reason)) end
  end) end

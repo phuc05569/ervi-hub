@@ -26,7 +26,7 @@ return function(hub,parent,getPrefs,authority,moving)
   return false
  end
  function feature.stop()
-  feature.active=false;hide();feature.selected=nil
+  feature.active=false;hide();feature.selected=nil;feature.resultStatus=nil
   if scope then scope:close();scope=nil end
   marker=nil;lastCharacter=nil;boundKey=nil;feature.status="Off · targeting preview only"
  end
@@ -84,10 +84,10 @@ return function(hub,parent,getPrefs,authority,moving)
    if feature.teleportAvailable then
     if moving and moving() then feature.status="Stop flight and noclip first";return end
     if authority.busy then feature.status="Server request pending";return end
-    local selected=target
+    local selected=target;local owner=scope
     feature.resultStatus="Waiting for owned Studio server";feature.status=feature.resultStatus
     authority.request("teleport",{position=selected,range=getPrefs().clickTPRange},function(result)
-     if not feature.active then return end
+     if not feature.active or scope~=owner then return end
      feature.resultStatus=result.ok and "Teleport confirmed by owned Studio server" or tostring(result.message or "Server rejected teleport");feature.status=feature.resultStatus
     end)
     return
@@ -96,13 +96,17 @@ return function(hub,parent,getPrefs,authority,moving)
   end)
   scope:connect(Input.InputEnded,function(input) if input.KeyCode.Name==getPrefs().clickTPKey then hide() end end)
   scope:connect(Input.WindowFocusReleased,hide)
-  scope:connect(Game.player.CharacterRemoving,function() hide();feature.selected=nil end)
-  scope:connect(Game.player.CharacterAdded,function() hide();feature.selected=nil end)
+  scope:connect(Game.player.CharacterRemoving,function() hide();feature.selected=nil;feature.resultStatus=nil end)
+  scope:connect(Game.player.CharacterAdded,function() hide();feature.selected=nil;feature.resultStatus=nil end)
   feature.active=true;feature.status=feature.teleportAvailable and "Owned Studio server ready · hold to aim" or "Preview ready · bind and hold a key; server teleport unavailable"
  end
  function feature.keyDown(input)
   if not feature.active or getPrefs().clickTPKey=="NONE" or input.KeyCode.Name~=getPrefs().clickTPKey or not Game.alive() then return false end
   feature.held=true;return true
+ end
+ function feature.snapshot()
+  local point=feature.selected
+  return {markerVisible=marker~=nil and marker.Parent==workspace,selected=point and {x=point.X,y=point.Y,z=point.Z} or nil}
  end
  hub:add(feature.stop)
  return feature

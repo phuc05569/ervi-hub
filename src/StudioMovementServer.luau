@@ -68,7 +68,9 @@ return function()
   owner:add(function()
    if s.root.Parent then
     s.root.AssemblyLinearVelocity=Vector3.zero;s.root.AssemblyAngularVelocity=Vector3.zero
-    if wasAuto then s.root:SetNetworkOwnershipAuto() else s.root:SetNetworkOwner(priorOwner) end
+    if not s.root.Anchored and not s.root:GetNetworkOwnershipAuto() and s.root:GetNetworkOwner()==nil then
+     if wasAuto then s.root:SetNetworkOwnershipAuto() else s.root:SetNetworkOwner(priorOwner) end
+    end
    end
   end)
   local attachment=owner:add(Instance.new("Attachment"));attachment.Name="ErviFlightAttachment";attachment.Parent=s.root

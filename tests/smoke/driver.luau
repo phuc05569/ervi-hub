@@ -1105,6 +1105,7 @@ return function(API, makeEngine, hubFn, loaderFn, schema)
     check(find(overlay,"TextLabel","VisibleSample · 23 studs")~=nil or (function() for _,d in ipairs(overlay:GetDescendants()) do if d.ClassName=="TextLabel" and d.Text:find("VisibleSample",1,true) then return true end end return false end)(),"Visuals: visible target name and distance drawn")
     local espLabel
     for _,d in ipairs(overlay:GetDescendants()) do if d.ClassName=="TextLabel" and d.Text:find("VisibleSample",1,true) then espLabel=d;break end end
+    check(espLabel and espLabel.TextWrapped==false,"Visuals: name and distance remain one centered line")
     check(espLabel and hex(espLabel.TextColor3)==hex(rgb(255,255,255)),"Visuals: labels use white text")
     check(espLabel and hex(espLabel.TextStrokeColor3)==hex(rgb(0,0,0)) and espLabel.TextStrokeTransparency==0,"Visuals: labels use visible black outline")
     visibleHead.Transparency=1;ctl.run(0.3)

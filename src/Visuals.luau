@@ -64,7 +64,7 @@ return function(hub,parent,getPrefs,playerSource)
   for _=1,8 do table.insert(r.lines,line(r.root)) end
   r.tracer=line(r.root);r.health=line(r.root)
   r.name=Ui.text(r.root,"",{size=UDim2.fromOffset(500,30),align=Enum.TextXAlignment.Center})
-  r.name.AnchorPoint=Vector2.new(0.5,1)
+  r.name.AnchorPoint=Vector2.new(0.5,1);r.name.TextWrapped=false
   r.dot=Ui.new("Frame",{Size=UDim2.fromOffset(5,5),AnchorPoint=Vector2.new(0.5,0.5),BorderSizePixel=0,Parent=r.root});Ui.corner(r.dot,3)
   r.arrow=Ui.text(r.root,"▲",{size=UDim2.fromOffset(20,20),textSize=20});r.arrow.AnchorPoint=Vector2.new(0.5,0.5)
   r.highlight=owned:add(Ui.new("Highlight",{Name="ErviVisibleHighlight",DepthMode=Enum.HighlightDepthMode.Occluded,Enabled=false,Parent=gui}))
@@ -214,9 +214,9 @@ return function(hub,parent,getPrefs,playerSource)
    if player==Game.player or not getPrefs().markFriends or friends[player]~=nil then return end
    friends[player]=false
    local owner=scope
-   owner:add(task.spawn(function()
+   tracked[player].scope:add(task.spawn(function()
     local ok,value=pcall(function() return Game.player:IsFriendsWith(player.UserId) end)
-    if scope==owner and not owner.closed and ok then friends[player]=value==true end
+    if scope==owner and not owner.closed and tracked[player] and ok then friends[player]=value==true end
    end))
   end
   params=RaycastParams.new();params.FilterType=Enum.RaycastFilterType.Exclude
