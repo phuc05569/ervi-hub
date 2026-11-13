@@ -80,7 +80,7 @@ return {
 		eq(a.toggleKey, "RightShift", "unknown key ignored")
 		eq(a.opacity, Settings.MIN_OPACITY, "opacity clamped")
 		eq(a.scale, 1.5, "scale clamped")
-		eq(a.theme, "Midnight", "unknown theme ignored")
+		eq(a.theme, "Bloom", "unknown theme ignored")
 		eq(a.outline, "auto", "bad outline ignored")
 		eq(a.textAlpha, 0.6, "text transparency clamped")
 	end },

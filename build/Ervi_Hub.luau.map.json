@@ -1,115 +1,175 @@
 {
- "build": "2.6.2+3bd3d5e499ce",
+ "build": "3.0.0+e31b35baa4a4",
  "modules": {
   "Build": {
    "file": "(generated)",
    "bundleStart": 15,
    "bundleEnd": 15
   },
+  "BootLog": {
+   "file": "src/BootLog.luau",
+   "bundleStart": 18,
+   "bundleEnd": 32
+  },
+  "FeatureSchema": {
+   "file": "src/FeatureSchema.luau",
+   "bundleStart": 35,
+   "bundleEnd": 69
+  },
+  "Locale": {
+   "file": "src/Locale.luau",
+   "bundleStart": 72,
+   "bundleEnd": 99
+  },
+  "Registry": {
+   "file": "src/Registry.luau",
+   "bundleStart": 102,
+   "bundleEnd": 138
+  },
+  "PropertyOverrides": {
+   "file": "src/PropertyOverrides.luau",
+   "bundleStart": 141,
+   "bundleEnd": 165
+  },
+  "VisualPolicy": {
+   "file": "src/VisualPolicy.luau",
+   "bundleStart": 168,
+   "bundleEnd": 181
+  },
+  "World": {
+   "file": "src/World.luau",
+   "bundleStart": 184,
+   "bundleEnd": 275
+  },
+  "PlayerTools": {
+   "file": "src/PlayerTools.luau",
+   "bundleStart": 278,
+   "bundleEnd": 342
+  },
+  "RuntimeActions": {
+   "file": "src/RuntimeActions.luau",
+   "bundleStart": 345,
+   "bundleEnd": 405
+  },
+  "Visuals": {
+   "file": "src/Visuals.luau",
+   "bundleStart": 408,
+   "bundleEnd": 609
+  },
+  "VisualPreview": {
+   "file": "src/VisualPreview.luau",
+   "bundleStart": 612,
+   "bundleEnd": 661
+  },
+  "Expansion": {
+   "file": "src/Expansion.luau",
+   "bundleStart": 664,
+   "bundleEnd": 866
+  },
   "Scope": {
    "file": "src/Scope.luau",
-   "bundleStart": 18,
-   "bundleEnd": 89
+   "bundleStart": 869,
+   "bundleEnd": 940
   },
   "Rarity": {
    "file": "src/Rarity.luau",
-   "bundleStart": 92,
-   "bundleEnd": 161
+   "bundleStart": 943,
+   "bundleEnd": 1012
   },
   "AutoRoll": {
    "file": "src/AutoRoll.luau",
-   "bundleStart": 164,
-   "bundleEnd": 471
+   "bundleStart": 1015,
+   "bundleEnd": 1322
   },
   "Settings": {
    "file": "src/Settings.luau",
-   "bundleStart": 474,
-   "bundleEnd": 659
+   "bundleStart": 1325,
+   "bundleEnd": 1549
   },
   "WindowGeometry": {
    "file": "src/WindowGeometry.luau",
-   "bundleStart": 662,
-   "bundleEnd": 678
+   "bundleStart": 1552,
+   "bundleEnd": 1568
   },
   "FloatingWindow": {
    "file": "src/FloatingWindow.luau",
-   "bundleStart": 681,
-   "bundleEnd": 748
+   "bundleStart": 1571,
+   "bundleEnd": 1638
   },
   "SafeZoneState": {
    "file": "src/SafeZoneState.luau",
-   "bundleStart": 751,
-   "bundleEnd": 804
+   "bundleStart": 1641,
+   "bundleEnd": 1694
   },
   "PositionHold": {
    "file": "src/PositionHold.luau",
-   "bundleStart": 807,
-   "bundleEnd": 835
+   "bundleStart": 1697,
+   "bundleEnd": 1725
   },
   "SafeZone": {
    "file": "src/SafeZone.luau",
-   "bundleStart": 838,
-   "bundleEnd": 911
+   "bundleStart": 1728,
+   "bundleEnd": 1801
   },
   "TargetState": {
    "file": "src/TargetState.luau",
-   "bundleStart": 914,
-   "bundleEnd": 943
+   "bundleStart": 1804,
+   "bundleEnd": 1833
   },
   "Targets": {
    "file": "src/Targets.luau",
-   "bundleStart": 946,
-   "bundleEnd": 973
+   "bundleStart": 1836,
+   "bundleEnd": 1863
   },
   "M1State": {
    "file": "src/M1State.luau",
-   "bundleStart": 976,
-   "bundleEnd": 1020
+   "bundleStart": 1866,
+   "bundleEnd": 1910
   },
   "M1": {
    "file": "src/M1.luau",
-   "bundleStart": 1023,
-   "bundleEnd": 1132
+   "bundleStart": 1913,
+   "bundleEnd": 2022
   },
   "Theme": {
    "file": "src/Theme.luau",
-   "bundleStart": 1135,
-   "bundleEnd": 1299
+   "bundleStart": 2025,
+   "bundleEnd": 2191
   },
   "Ui": {
    "file": "src/Ui.luau",
-   "bundleStart": 1302,
-   "bundleEnd": 1988
+   "bundleStart": 2194,
+   "bundleEnd": 2963
   },
   "Game": {
    "file": "src/Game.luau",
-   "bundleStart": 1991,
-   "bundleEnd": 2166
+   "bundleStart": 2966,
+   "bundleEnd": 3141
   },
   "RollAdapter": {
    "file": "src/RollAdapter.luau",
-   "bundleStart": 2169,
-   "bundleEnd": 2213
+   "bundleStart": 3144,
+   "bundleEnd": 3188
   },
   "RollObserver": {
    "file": "src/RollObserver.luau",
-   "bundleStart": 2216,
-   "bundleEnd": 2416
+   "bundleStart": 3191,
+   "bundleEnd": 3391
   },
   "Session": {
    "file": "src/Session.luau",
-   "bundleStart": 2419,
-   "bundleEnd": 2623
+   "bundleStart": 3394,
+   "bundleEnd": 3598
   },
   "Prompts": {
    "file": "src/Prompts.luau",
-   "bundleStart": 2626,
-   "bundleEnd": 2678
+   "bundleStart": 3601,
+   "bundleEnd": 3653
   },
   "App": {
    "file": "src/App.luau",
-   "bundleStart": 2681,
-   "bundleEnd": 4029
+   "bundleStart": 3656,
+   "bundleEnd": 5203
   }
  }
 }

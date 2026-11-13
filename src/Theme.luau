@@ -38,8 +38,8 @@ local Theme = {
 	rowH = 30,
 	windowW = 660,
 	windowH = 450,
-	sidebarW = 150,
-	titleH = 42,
+	sidebarW = 172,
+	titleH = 52,
 }
 
 local NEUTRALS = { "bg", "surface", "surface2", "raised", "hover", "stroke", "text", "muted", "faint" }
@@ -53,6 +53,8 @@ Theme.PRESETS = {
 	{ name = "Forest", accent = "Mint", bg = rgb(11, 17, 13), surface = rgb(16, 25, 19), surface2 = rgb(22, 33, 26), raised = rgb(31, 45, 35), hover = rgb(40, 57, 45), stroke = rgb(44, 62, 49), text = rgb(234, 246, 236), muted = rgb(150, 175, 156), faint = rgb(100, 124, 106) },
 	{ name = "Light", accent = "Indigo", bg = rgb(232, 235, 241), surface = rgb(244, 246, 250), surface2 = rgb(252, 252, 254), raised = rgb(222, 226, 234), hover = rgb(208, 213, 224), stroke = rgb(196, 202, 214), text = rgb(24, 26, 32), muted = rgb(86, 92, 108), faint = rgb(128, 134, 148) },
 }
+
+table.insert(Theme.PRESETS, { name="Bloom",accent="Rose",bg=rgb(22,13,24),surface=rgb(30,20,33),surface2=rgb(39,27,42),raised=rgb(51,34,52),hover=rgb(66,42,63),stroke=rgb(84,53,78),text=rgb(246,233,243),muted=rgb(183,162,183),faint=rgb(131,109,135) })
 
 Theme.ACCENTS = {
 	{ name = "Indigo", color = rgb(112, 140, 255) },

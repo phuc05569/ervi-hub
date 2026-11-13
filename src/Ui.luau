@@ -2,7 +2,21 @@
 local UserInputService = game:GetService("UserInputService")
 local Theme = require("Theme")
 
-local Ui = {}
+local Locale = require("Locale")
+local Registry = require("Registry")
+local Ui = { registry=Registry.new(),language="EN" }
+Ui.localeText=function(text) return Locale.text(text,Ui.language) end
+function Ui.register(control,title,description)
+ if not title or title=="" or title=="+" or title=="−" then return end
+ local node=control
+ local page,section
+ while node do
+  page=page or node:GetAttribute("SearchPage")
+  section=section or node:GetAttribute("SearchSection")
+  node=node.Parent
+ end
+ if page then Ui.registry:add(page,title,description,control,section) end
+end
 
 -- Appearance state shared by every component (also ones built later):
 --   opacity   -> BackgroundTransparency of registered surfaces (window, panels, cards, overlay)
@@ -18,6 +32,20 @@ local FONT_ROLES = { "fontBold", "fontMedium", "font", "mono" }
 local surfaces = setmetatable({}, { __mode = "k" })
 local roots = setmetatable({}, { __mode = "k" })
 
+local activeTweens=setmetatable({},{__mode="k"})
+local tweenService
+pcall(function() tweenService=game:GetService("TweenService") end)
+local function ownAnimation(scope,inst)
+ scope:add(function() if activeTweens[inst] then pcall(function() activeTweens[inst]:Cancel() end);activeTweens[inst]=nil end end)
+end
+function Ui.animate(inst,properties)
+ if activeTweens[inst] then pcall(function() activeTweens[inst]:Cancel() end);activeTweens[inst]=nil end
+ if tweenService and TweenInfo then
+  local ok,tween=pcall(function() return tweenService:Create(inst,TweenInfo.new(0.12),properties) end)
+  if ok then activeTweens[inst]=tween;tween:Play();return end
+ end
+ for key,value in pairs(properties) do inst[key]=value end
+end
 local function outlineOn()
 	return Ui.outline == "on" or (Ui.outline == "auto" and Ui.opacity < LOW_OPACITY)
 end
@@ -43,6 +71,7 @@ function Ui.new(class, props, children)
 		end
 	end
 	if TEXT_CLASSES[class] then
+        inst:SetAttribute("SourceText",inst.Text);inst.Text=Ui.localeText(inst.Text)
 		for _, role in ipairs(FONT_ROLES) do
 			if props and props.Font == Theme[role] then
 				inst:SetAttribute("FontRole", role) -- lets a font change re-map this text later
@@ -85,6 +114,16 @@ local function eachText(fn)
 	end
 end
 
+function Ui.setLanguage(language)
+ if language==Ui.language then return end
+ local previous=Ui.language
+ Ui.language=language
+ eachText(function(inst)
+  local source=inst:GetAttribute("SourceText") or inst.Text
+  if Locale.text(source,previous)~=inst.Text then source=inst.Text;inst:SetAttribute("SourceText",source) end
+  inst.Text=Locale.text(source,language)
+ end)
+end
 function Ui.setOpacity(o, minimum)
 	o = math.clamp(o, minimum or 0, 1)
 	local outlineBefore = outlineOn()
@@ -146,6 +185,7 @@ end
 
 -- Assign only when changed: avoids needless property writes from the 10 Hz refresh loop.
 function Ui.set(inst, prop, value)
+    if prop=="Text" and type(value)=="string" then inst:SetAttribute("SourceText",value);value=Ui.localeText(value) end
 	if inst[prop] ~= value then
 		inst[prop] = value
 	end
@@ -232,17 +272,19 @@ function Ui.button(scope, parent, text, opts, onClick)
 		LayoutOrder = opts.order or 0,
 		Parent = parent,
 	})
+	ownAnimation(scope,btn)
+	Ui.register(btn,text,opts.description)
 	Ui.corner(btn)
 	scope:connect(btn.MouseEnter, function()
 		if enabled and not btn:GetAttribute("FixedBackground") then
-			btn.BackgroundColor3 = btn:GetAttribute("Selected") and Theme.accentHover or color(v.hover)
+			Ui.animate(btn,{BackgroundColor3=btn:GetAttribute("Selected") and Theme.accentHover or color(v.hover)})
 		end
 	end)
 	scope:connect(btn.MouseLeave, function()
 		if btn:GetAttribute("FixedBackground") then
 			return
 		end
-		btn.BackgroundColor3 = btn:GetAttribute("Selected") and Theme.accent or color(v.bg)
+		Ui.animate(btn,{BackgroundColor3=btn:GetAttribute("Selected") and Theme.accent or color(v.bg)})
 	end)
 	if onClick then
 		scope:connect(btn.Activated, function()
@@ -281,7 +323,7 @@ end
 -- Marks a secondary button as the selected option of a group (survives hover).
 function Ui.select(btn, on)
 	btn:SetAttribute("Selected", on or nil)
-	btn.BackgroundColor3 = on and Theme.accent or Theme.raised
+	Ui.animate(btn,{BackgroundColor3=on and Theme.accent or Theme.raised})
 end
 
 -- Card: titled surface whose height follows its content.
@@ -293,6 +335,8 @@ function Ui.card(parent, title, order, subtitle)
 		LayoutOrder = order or 0,
 		Parent = parent,
 	})
+	card:SetAttribute("SearchSection",title or "Section")
+	Ui.register(card,title or "Section",subtitle)
 	Ui.surface(card)
 	Ui.corner(card, Theme.radius)
 	Ui.stroke(card, Theme.stroke, 0.35)
@@ -404,13 +448,15 @@ function Ui.toggle(scope, parent, label, desc, initial, onChange, order)
 	Ui.corner(track, 11)
 	local knob = Ui.new("Frame", { Size = UDim2.fromOffset(16, 16), Position = UDim2.fromOffset(3, 3), BackgroundColor3 = Theme.muted, Parent = track })
 	Ui.corner(knob, 8)
+	ownAnimation(scope,knob)
 	local value = false
-	local api = {}
+	local api = {node=row}
 	function api.set(on, silent)
 		value = on == true
+        row:SetAttribute("Value",value)
 		track.BackgroundColor3 = value and Theme.accent or Theme.raised
 		knob.BackgroundColor3 = value and Theme.onAccent or Theme.muted
-		knob.Position = UDim2.fromOffset(value and 23 or 3, 3)
+		Ui.animate(knob,{Position=UDim2.fromOffset(value and 23 or 3,3)})
 		if not silent and onChange then
 			onChange(value)
 		end
@@ -418,6 +464,7 @@ function Ui.toggle(scope, parent, label, desc, initial, onChange, order)
 	function api.get()
 		return value
 	end
+	Ui.register(row,label,desc)
 	api.set(initial, true)
 	scope:connect(row.Activated, function()
 		api.set(not value)
@@ -460,7 +507,7 @@ function Ui.input(scope, parent, placeholder, opts, onCommit)
 end
 
 -- Drag `target` by `handle` (mouse or touch). Replaces the deprecated Frame.Draggable.
-function Ui.drag(scope, handle, target)
+function Ui.drag(scope, handle, target, onEnd, onMove)
 	local dragging, startInput, startPos
 	scope:connect(handle.InputBegan, function(input)
 		local t = input.UserInputType
@@ -471,6 +518,7 @@ function Ui.drag(scope, handle, target)
 	scope:connect(UserInputService.InputEnded, function(input)
 		local t = input.UserInputType
 		if t == Enum.UserInputType.MouseButton1 or t == Enum.UserInputType.Touch then
+			if dragging and onEnd then onEnd() end
 			dragging = false
 		end
 	end)
@@ -481,7 +529,9 @@ function Ui.drag(scope, handle, target)
 		local t = input.UserInputType
 		if t == Enum.UserInputType.MouseMovement or t == Enum.UserInputType.Touch then
 			local d = input.Position - startInput
-			target.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + d.X, startPos.Y.Scale, startPos.Y.Offset + d.Y)
+            local scale=target:FindFirstChildOfClass("UIScale");local factor=scale and scale.Scale or 1
+			target.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + d.X/factor, startPos.Y.Scale, startPos.Y.Offset + d.Y/factor)
+            if onMove then onMove() end
 		end
 	end)
 end
@@ -630,8 +680,10 @@ function Ui.slider(scope, parent, label, opts, onChange)
 	Ui.corner(knob, 7)
 
 	local value
-	local api = {}
+	local api = {enabled=true,node=row}
+    function api.setEnabled(on) api.enabled=on;row:SetAttribute("Disabled",not on or nil);row.BackgroundTransparency=on and 1 or 0.6 end
 	function api.set(v, silent)
+        if not silent and not api.enabled then return end
 		v = math.clamp(lo + math.floor((v - lo) / step + 0.5) * step, lo, hi)
 		if v == value then
 			return
@@ -680,8 +732,39 @@ function Ui.slider(scope, parent, label, opts, onChange)
 	scope:connect(plus.Activated, function()
 		api.set(value + step)
 	end)
+	Ui.register(row,label,opts.description)
 	api.set(opts.value, true)
 	return api
 end
 
+function Ui.segment(scope,parent,title,options,value,onChange,order)
+ local card=Ui.new("Frame",{BackgroundTransparency=1,Size=UDim2.new(1,0,0,0),AutomaticSize=Enum.AutomaticSize.Y,LayoutOrder=order or 0,Parent=parent})
+ Ui.text(card,title,{order=0,font=Theme.fontMedium}); local row=Ui.grid(card,90,28,1)
+ local buttons={}
+ local function set(v,silent)
+  value=v
+  for option,button in pairs(buttons) do Ui.select(button,option==v) end
+  if not silent then onChange(v) end
+ end
+ for i,option in ipairs(options) do buttons[option]=Ui.button(scope,row,option,{order=i},function() set(option,false) end) end
+ Ui.register(card,title,table.concat(options," / ")); set(value,true)
+ return {set=set,node=card}
+end
+function Ui.dropdown(scope,parent,title,options,value,onChange,order)
+ local group=Ui.new("Frame",{BackgroundTransparency=1,Size=UDim2.new(1,0,0,0),AutomaticSize=Enum.AutomaticSize.Y,LayoutOrder=order or 0,Parent=parent})
+ Ui.list(group,4)
+ local current=value; local button
+ local choices=Ui.grid(group,90,28,1);choices.Visible=false
+ local function set(v,silent) current=v;button.Text=title..": "..v.."  ▾";choices.Visible=false;if not silent then onChange(v) end end
+ button=Ui.button(scope,group,title,{order=0,size=UDim2.new(1,0,0,32)},function() choices.Visible=not choices.Visible end)
+ for i,option in ipairs(options) do Ui.button(scope,choices,option,{order=i},function() set(option,false) end) end
+ Ui.register(group,title,"Choose: "..table.concat(options,", "));set(value,true)
+ return {set=set,node=group}
+end
+function Ui.tooltip(scope,control,text)
+ local tip=Ui.text(control,text,{size=UDim2.new(1,0,0,40),textSize=Theme.size.tiny})
+ tip.BackgroundTransparency=0.05;tip.BackgroundColor3=Theme.raised; tip.Position=UDim2.new(0,0,1,2); tip.Visible=false; tip.ZIndex=20
+ scope:connect(control.MouseEnter,function() tip.Visible=true end)
+ scope:connect(control.MouseLeave,function() tip.Visible=false end)
+end
 return Ui

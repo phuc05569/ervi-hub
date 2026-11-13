@@ -10,9 +10,9 @@ import pathlib
 import sys
 
 ROOT = pathlib.Path(__file__).parent
-VERSION = "2.6.2"
-APP_MODULES = ["Scope", "Rarity", "AutoRoll", "Settings", "WindowGeometry", "FloatingWindow", "SafeZoneState", "PositionHold", "SafeZone", "TargetState", "Targets", "M1State", "M1", "Theme", "Ui", "Game", "RollAdapter", "RollObserver", "Session", "Prompts", "App"]
-PURE_MODULES = ["Scope", "Rarity", "AutoRoll", "Settings", "M1State", "Loader", "WindowGeometry", "SafeZoneState", "TargetState", "PositionHold"]
+VERSION = "3.0.0"
+APP_MODULES = ["BootLog", "FeatureSchema", "Locale", "Registry", "PropertyOverrides", "VisualPolicy", "World", "PlayerTools", "RuntimeActions", "Visuals", "VisualPreview", "Expansion", "Scope", "Rarity", "AutoRoll", "Settings", "WindowGeometry", "FloatingWindow", "SafeZoneState", "PositionHold", "SafeZone", "TargetState", "Targets", "M1State", "M1", "Theme", "Ui", "Game", "RollAdapter", "RollObserver", "Session", "Prompts", "App"]
+PURE_MODULES = ["BootLog", "FeatureSchema", "Locale", "Registry", "PropertyOverrides", "VisualPolicy", "Scope", "Rarity", "AutoRoll", "Settings", "M1State", "Loader", "WindowGeometry", "SafeZoneState", "TargetState", "PositionHold"]
 
 
 def read(path):
@@ -89,7 +89,8 @@ def smoke():
         f"local hubFn = function()\n{part('build/Ervi_Hub.luau')}\nend\n"
         f"local driver = (function()\n{part('tests/smoke/driver.luau')}\nend)()\n"
         f"local loaderFn = function()\n{part('build/loader.lua')}\nend\n"
-        "driver(API, makeEngine, hubFn, loaderFn)\n"
+        f"local schema = (function()\n{part('src/FeatureSchema.luau')}\nend)()\n"
+        "driver(API, makeEngine, hubFn, loaderFn, schema)\n"
     )
     (ROOT / "build" / "smoke.luau").write_text(text, encoding="utf-8", newline="\n")
     print("smoke.luau written")

@@ -5,6 +5,7 @@
 --   ...
 -- Every value is validated on load; unknown keys and bad values fall back to defaults.
 -- A 2.1.x file (plain key=value lines, no sections) is read into the "Default" config.
+local Schema = require("FeatureSchema")
 local Settings = {}
 
 Settings.FILE = "RNG_Hub_settings.txt"
@@ -14,7 +15,7 @@ Settings.DEFAULTS = {
 	toggleKey = "RightShift",
 	opacity = 0.95, -- on the slider's 5% grid
 	scale = 1,
-	theme = "Midnight",
+	theme = "Bloom",
 	accent = "", -- "" = the design's own accent
 	font = "Gotham",
 	textColor = "Theme",
@@ -26,17 +27,29 @@ Settings.DEFAULTS = {
 	reconnect = false,
 	autoExec = false,
 	instantPrompts = false,
-	winW = 660, -- window size, changed with the corner grip
-	winH = 450,
+	winW = 880, -- window size, changed with the corner grip
+	winH = 580,
+	winX = 0.5, winY = 0.5,
+	communityLink = "",
+	movementX=0.1, movementY=0.3, movementW=330, movementH=240,
 	m1Enabled = false,
 	m1X = 0.5, m1Y = 0.55, m1W = 330, m1H = 180,
 	safeZoneKey = "NONE",
 	targetEnabled = false, targetHp = 30,
 	resumeAfterDeath = false, autoM1Requested = false,
 }
-local KEYS = { "toggleKey", "opacity", "scale", "theme", "accent", "font", "textColor", "textScale", "outline", "textAlpha", "bgColor", "antiAfk", "reconnect", "autoExec", "instantPrompts", "winW", "winH", "m1Enabled", "m1X", "m1Y", "m1W", "m1H", "safeZoneKey", "targetEnabled", "targetHp", "resumeAfterDeath", "autoM1Requested" }
+local KEYS = { "toggleKey", "opacity", "scale", "theme", "accent", "font", "textColor", "textScale", "outline", "textAlpha", "bgColor", "antiAfk", "reconnect", "autoExec", "instantPrompts", "winW", "winH", "winX", "winY", "movementX", "movementY", "movementW", "movementH", "communityLink", "m1Enabled", "m1X", "m1Y", "m1W", "m1H", "safeZoneKey", "targetEnabled", "targetHp", "resumeAfterDeath", "autoM1Requested" }
 local BOOLS = { antiAfk = true, reconnect = true, autoExec = true, instantPrompts = true, m1Enabled = true, targetEnabled = true, resumeAfterDeath = true, autoM1Requested = true }
-local NUMBERS = { opacity = { 0, 1 }, scale = { 0.5, 1.5 }, textScale = { 0.8, 1.4 }, textAlpha = { 0, 0.6 }, winW = { 520, 1100 }, winH = { 360, 820 }, m1X = {0,1}, m1Y = {0,1}, m1W = {260,800}, m1H = {160,600}, targetHp = {1,100} }
+local NUMBERS = { opacity = { 0, 1 }, scale = { 0.5, 1.5 }, textScale = { 0.8, 1.4 }, textAlpha = { 0, 0.6 }, winW = { 520, 1100 }, winH = { 360, 820 }, winX={0,1},winY={0,1},movementX={0,1},movementY={0,1},movementW={260,800},movementH={160,600}, m1X = {0,1}, m1Y = {0,1}, m1W = {260,800}, m1H = {160,600}, targetHp = {1,100} }
+
+for _, d in ipairs(Schema) do
+ Settings.DEFAULTS[d.key]=d.default
+ table.insert(KEYS,d.key)
+ if d.kind=="bool" then BOOLS[d.key]=true end
+ if d.kind=="number" then NUMBERS[d.key]={d.min,d.max} end
+end
+local SCHEMA={}; for _,d in ipairs(Schema) do SCHEMA[d.key]=d end
+
 local OUTLINE = { auto = true, on = true, off = true }
 
 function Settings.defaults()
@@ -60,6 +73,10 @@ local function setField(cfg, key, value, validate)
 	if Settings.DEFAULTS[key] == nil then
 		return
 	end
+	local spec=SCHEMA[key]
+	if spec and spec.options and not table.find(spec.options,value) then return end
+	if spec and spec.kind=="color" and not value:match("^#%x%x%x%x%x%x$") then return end
+	if spec and spec.kind=="key" and value~="NONE" and (not value:match("^[A-Za-z][A-Za-z0-9]*$") or #value>24) then return end
 	local range = NUMBERS[key]
 	if range then
 		local n = tonumber(value)
@@ -74,13 +91,13 @@ local function setField(cfg, key, value, validate)
 		if OUTLINE[value] then
 			cfg[key] = value
 		end
-	elseif not validate[key] or validate[key](value) then
+	elseif #value<=300 and not value:find("[%c]") and (not validate[key] or validate[key](value)) then
 		cfg[key] = value
 	end
 end
 
 function Settings.newStore()
-	return { autoload = nil, configs = {}, order = {} }
+	return { autoload = nil, autoloadGames = {}, configs = {}, order = {} }
 end
 
 function Settings.put(store, name, cfg)
@@ -96,6 +113,7 @@ function Settings.delete(store, name)
 	end
 	store.configs[name] = nil
 	table.remove(store.order, table.find(store.order, name))
+	for place,slot in pairs(store.autoloadGames or {}) do if slot==name then store.autoloadGames[place]=nil end end
 	if store.autoload == name then
 		store.autoload = nil
 	end
@@ -104,7 +122,7 @@ end
 
 function Settings.parse(text, validate)
 	local store = Settings.newStore()
-	if type(text) ~= "string" then
+	if type(text) ~= "string" or #text>1048576 then
 		return store
 	end
 	local current, skipping = nil, false
@@ -123,6 +141,8 @@ function Settings.parse(text, validate)
 			if key and not skipping then
 				if current then
 					setField(current, key, value, validate)
+				elseif key:match("^autoloadGame_%d+$") then
+                    store.autoloadGames[key:match("%d+$")]=Settings.cleanName(value)
 				elseif key == "autoload" then
 					store.autoload = Settings.cleanName(value)
 				else
@@ -134,8 +154,13 @@ function Settings.parse(text, validate)
 			end
 		end
 	end
+	for place,name in pairs(store.autoloadGames) do if not store.configs[name] then store.autoloadGames[place]=nil end end
 	for _, cfg in pairs(store.configs) do
 		if cfg.safeZoneKey == cfg.toggleKey then cfg.safeZoneKey = "NONE" end
+        local used={[cfg.toggleKey]=true}
+        for _,key in ipairs({"safeZoneKey","panicKey","walkKey","espKey"}) do
+            if cfg[key]~="NONE" then if used[cfg[key]] then cfg[key]="NONE" else used[cfg[key]]=true end end
+        end
 	end
 	if store.autoload and not store.configs[store.autoload] then
 		store.autoload = nil
@@ -145,6 +170,8 @@ end
 
 function Settings.serialize(store)
 	local out = {}
+    local places={};for place in pairs(store.autoloadGames or {}) do table.insert(places,place) end;table.sort(places)
+    for _,place in ipairs(places) do table.insert(out,"autoloadGame_"..place.."="..store.autoloadGames[place]) end
 	if store.autoload then
 		table.insert(out, "autoload=" .. store.autoload)
 	end
@@ -183,4 +210,16 @@ function Settings.save(store)
 	return pcall(writefile, Settings.FILE, Settings.serialize(store))
 end
 
+-- Share a single slot as a bounded data-only envelope; never loadstring config text.
+function Settings.export(cfg)
+ local one=Settings.newStore(); Settings.put(one,"Imported",cfg)
+ return "ERVI_CONFIG_V1\n"..Settings.serialize(one)
+end
+function Settings.import(text,validate)
+ if type(text)~="string" or #text>65536 then return nil,"Import is missing or larger than 64 KiB" end
+ if text:sub(1,15)~="ERVI_CONFIG_V1\n" then return nil,"Unsupported config version" end
+ local parsed=Settings.parse(text:sub(16),validate or {})
+ if #parsed.order~=1 then return nil,"Import must contain exactly one slot" end
+ return parsed.configs[parsed.order[1]]
+end
 return Settings

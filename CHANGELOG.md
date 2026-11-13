@@ -1,5 +1,16 @@
 # Changelog
 
+## 3.0.0 (2026-11-13), build 3.0.0+e31b35baa4a4, NOT LIVE TESTED
+- Original Bloom/rose interface foundation: 12 main navigation tabs, retained Ervi tools, profile footer, tab header, native logo/gradient, scrolling/responsive controls and persisted/clamped main geometry.
+- Shared feature schema, native control registry, bilingual settings search, Ctrl+K/keyboard navigation and highlighting. EN/RU interface labels and optional lightweight native tween transitions.
+- Expanded Home with native thumbnails, game/server/session data, reusable FPS ring, active-feature chips, configured-only community link, capability checks and logs.
+- Named config selection/save/load/delete/rename, per-game autoload and validated bounded schema-v1 clipboard import/export, retaining legacy configs.
+- Local WalkSpeed Set/Multiply with keybind and restore-safe respawn support; persistent movement panel. No CFrame fallback, noclip or fly bypass.
+- Restore-safe lighting/time/atmosphere overrides, camera/input-owned Freecam, Reset Camera and owned background blur.
+- Visible-player native overlays and original live preview: boxes/corners, health/name/distance/skeleton/head dot, Occluded highlights, tracers/arrows, cached friend/team filters, colors and actual scheduling/resource budgets. No hidden-player/wallhack drawing.
+- Session quick actions, bounded public server-hop request/selection, reinjection check and restore-safe FPS cap when getter/setter are available.
+- 127 unit tests / 423 smoke checks pass, including all mounted schema controls and concurrent cleanup. Both artifacts compile. Unsupported reference operations and live-test limits are tracked individually in reports/UI_FEATURE_CHECKLIST.md.
+
 ## 2.6.2 (2026-11-13), build 2.6.2+3bd3d5e499ce, NOT LIVE TESTED
 - Fix Safe Zone falling after its one-shot move: ON now holds the root anchored and clears falling/spin velocity. OFF restores its previous anchor state without replaying old velocity.
 - Transactional PositionHold helper rolls back physics on move failure. Hold listeners/physics release on death, root/character removal, unload and rerun.

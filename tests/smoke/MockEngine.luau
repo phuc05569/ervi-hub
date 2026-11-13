@@ -220,6 +220,18 @@ return function(API)
 		end,
 	}
 	env.Vector2 = Vector2
+    local Vector3={}
+    local V3={}
+    V3.__index=function(v,key)
+        if key=="Magnitude" then return math.sqrt(v.X*v.X+v.Y*v.Y+v.Z*v.Z) end
+        if key=="Unit" then local n=v.Magnitude;return n>0 and Vector3.new(v.X/n,v.Y/n,v.Z/n) or Vector3.new() end
+    end
+    V3.__add=function(a,b) return Vector3.new(a.X+b.X,a.Y+b.Y,a.Z+b.Z) end
+    V3.__sub=function(a,b) return Vector3.new(a.X-b.X,a.Y-b.Y,a.Z-b.Z) end
+    V3.__mul=function(a,b) if type(a)=="number" then a,b=b,a end;return Vector3.new(a.X*b,a.Y*b,a.Z*b) end
+    Vector3.new=function(x,y,z) return typed("Vector3",{X=x or 0,Y=y or 0,Z=z or 0},V3) end
+    env.Vector3=Vector3
+
 
 	local enumCache = {}
 	local Enum = setmetatable({}, {
@@ -266,7 +278,7 @@ return function(API)
 		return false
 	end
 
-	local DEFAULTS = { Anchored = false, Visible = true, Text = "", Enabled = true, Health = 100, MaxHealth = 100, TextSize = 14 }
+	local DEFAULTS = { Transparency=0, LocalTransparencyModifier=0, Anchored = false, Visible = true, Text = "", Enabled = true, Health = 100, MaxHealth = 100, TextSize = 14, WalkSpeed=16, DisplayName="", Neutral=true }
 	local new
 	local METHODS = {}
 	local Proxy = {}
@@ -325,6 +337,11 @@ return function(API)
 
 	Proxy.__index = function(self, key)
 		local d = data[self]
+        if key=="HttpGet" and d.class=="DataModel" then return function(_,url)
+            ctl.lastHttp=url
+            if ctl.httpBody then return ctl.httpBody end
+            error("HTTP unavailable in mock")
+        end end
 		if key == "Parent" then
 			return d.parent
 		elseif key == "ClassName" then
@@ -337,6 +354,7 @@ return function(API)
 			return signalOf(d, key)
 		end
 		if member(d.class, "props", key) ~= nil then
+            if key=="Position" and d.props.CFrame and isA(d.class,"BasePart") then return d.props.CFrame.Position end
 			local v = d.props[key]
 			if v == nil then
 				v = DEFAULTS[key]
@@ -412,12 +430,13 @@ return function(API)
 			s:DisconnectAll()
 		end
 	end
-	function METHODS.FindFirstChild(self, name)
+	function METHODS.FindFirstChild(self, name, recursive)
 		for _, c in ipairs(data[self].children) do
 			if data[c].props.Name == name then
 				return c
 			end
 		end
+		if recursive then for _,c in ipairs(data[self].children) do local hit=METHODS.FindFirstChild(c,name,true);if hit then return hit end end end
 		return nil
 	end
 	function METHODS.WaitForChild(self, name)
@@ -513,6 +532,12 @@ return function(API)
 	function METHODS.GetFocusedTextBox()
 		return ctl.focusedTextBox
 	end
+	function METHODS.IsKeyDown(_,key) return ctl.keysDown and ctl.keysDown[key.Name]==true or false end
+    function METHODS.CaptureFocus(self) ctl.focusedTextBox=self;self.Focused:Fire() end
+    function METHODS.ReleaseFocus(self) if ctl.focusedTextBox==self then ctl.focusedTextBox=nil end end
+    function METHODS.BindActionAtPriority(_,name,fn) ctl.boundActions=ctl.boundActions or {};ctl.boundActions[name]=fn end
+    function METHODS.UnbindAction(_,name) if ctl.boundActions then ctl.boundActions[name]=nil end end
+    function METHODS.TeleportToPlaceInstance(_,place,job) ctl.teleports+=1;ctl.lastJob=job end
 	function METHODS.GetNetworkPing()
 		return 0.042
 	end
@@ -522,15 +547,52 @@ return function(API)
 		return out
 	end
 	function ctl.cframe(...)
-		local values=table.pack(...)
-		return setmetatable({GetComponents=function() return table.unpack(values,1,values.n) end}, {
+        local values=table.pack(...)
+        return setmetatable({GetComponents=function() return table.unpack(values,1,values.n) end}, {
+            __index=function(_,key)
+                if key=="Position" then return Vector3.new(values[1],values[2],values[3]) end
+                if key=="ToOrientation" then return function() return 0,0,0 end end
+                if key=="VectorToWorldSpace" then return function(_,v)
+                    return Vector3.new(values[4]*v.X+values[5]*v.Y+values[6]*v.Z,values[7]*v.X+values[8]*v.Y+values[9]*v.Z,values[10]*v.X+values[11]*v.Y+values[12]*v.Z)
+                end end
+                if key=="PointToWorldSpace" then return function(cf,v) return cf.Position+cf:VectorToWorldSpace(v) end end
+            end,
             __add=function(_,delta)
-                local copy=table.clone(values)
-                copy[1]+=delta.X; copy[2]+=delta.Y; copy[3]+=delta.Z
+                local copy=table.clone(values);copy[1]+=delta.X;copy[2]+=delta.Y;copy[3]+=delta.Z
                 return ctl.cframe(table.unpack(copy,1,copy.n))
             end,
+            __mul=function(a,b)
+                local pos=a:PointToWorldSpace(b.Position)
+                local av,bv={a:GetComponents()},{b:GetComponents()};local out={pos.X,pos.Y,pos.Z}
+                for r=0,2 do for c=1,3 do
+                    local n=0;for k=1,3 do n+=av[3+r*3+k]*bv[3+(k-1)*3+c] end
+                    table.insert(out,n)
+                end end
+                return ctl.cframe(table.unpack(out))
+            end,
         })
-	end
+    end
+    local CFrame={}
+    CFrame.new=function(x,y,z)
+        if type(x)=="table" then x,y,z=x.X,x.Y,x.Z end
+        return ctl.cframe(x or 0,y or 0,z or 0,1,0,0,0,1,0,0,0,1)
+    end
+    CFrame.fromOrientation=function(pitch,yaw,roll)
+        local cp,sp,cy,sy=math.cos(pitch),math.sin(pitch),math.cos(yaw),math.sin(yaw)
+        return ctl.cframe(0,0,0,cy,0,sy,sp*sy,cp,-sp*cy,-cp*sy,sp,cp*cy)
+    end
+    function METHODS.GetBoundingBox(self) return self:FindFirstChild("HumanoidRootPart").CFrame,Vector3.new(4,6,2) end
+    function METHODS.WorldToViewportPoint(self,position)
+        local delta=position-self.CFrame.Position
+        local depth=-delta.Z
+        local v=Vector3.new(self.ViewportSize.X/2+delta.X/math.max(0.1,depth)*400,self.ViewportSize.Y/2-delta.Y/math.max(0.1,depth)*400,depth)
+        return v,depth>0 and v.X>=0 and v.X<=self.ViewportSize.X and v.Y>=0 and v.Y<=self.ViewportSize.Y
+    end
+    function METHODS.Raycast()
+        ctl.raycasts=(ctl.raycasts or 0)+1
+        return ctl.occluded and {Instance=ctl.wall} or nil
+    end
+    function METHODS.IsFriendsWith(_,id) return ctl.friendIds and ctl.friendIds[id]==true or false end
 	function METHODS.GetPivot(self)
         return self:FindFirstChild("HumanoidRootPart").CFrame
     end
@@ -543,6 +605,7 @@ return function(API)
 		return 1000 + ctl.clock
 	end
 	function METHODS.JSONDecode(_, s)
+        if s==ctl.httpBody and ctl.serverList then return ctl.serverList end
 		error("MOCK JSONDecode: not JSON: " .. tostring(s))
 	end
 	function METHODS.InvokeServer(self)
@@ -570,6 +633,7 @@ return function(API)
 	ctl.set(gameRoot, "PlaceId", 119338513416973)
 	ctl.set(gameRoot, "PlaceVersion", 969)
 	ctl.set(gameRoot, "GameId", 10768634654)
+    ctl.set(gameRoot,"JobId","mock-job-current")
 	local function service(class)
 		local s = new(class, gameRoot)
 		services[class] = s
@@ -578,6 +642,11 @@ return function(API)
 	local Players = service("Players")
 	local RunService = service("RunService")
 	local UIS = service("UserInputService")
+    local lighting=service("Lighting")
+    lighting.Brightness=1;lighting.Ambient=Color3.fromRGB(80,80,80);lighting.OutdoorAmbient=Color3.fromRGB(90,90,90)
+    lighting.FogStart=0;lighting.FogEnd=500;lighting.GlobalShadows=true;lighting.ClockTime=14
+    ctl.lighting=lighting
+    service("ContextActionService")
 	local RS = service("ReplicatedStorage")
 	service("HttpService")
 	service("VirtualUser")
@@ -595,10 +664,13 @@ return function(API)
 	local cam = new("Camera", workspace)
 	ctl.set(cam, "ViewportSize", Vector2.new(1920, 1080))
 	ctl.set(workspace, "CurrentCamera", cam)
+    cam.CFrame=CFrame.new(0,10,20);cam.CameraType=Enum.CameraType.Custom;UIS.MouseBehavior=Enum.MouseBehavior.Default
+    ctl.wall=new("Part",workspace);ctl.wall.Name="Occluder"
 
 	local player = new("Player", Players)
 	player.Name = "MockUserSecret"
 	ctl.set(Players, "LocalPlayer", player)
+    ctl.set(player,"UserId",1);ctl.set(Players,"MaxPlayers",30)
 	ctl.player = player
 	local pg = new("PlayerGui", player)
 	local main = new("ScreenGui", pg)
@@ -622,6 +694,7 @@ return function(API)
 	new("Humanoid", char)
 	local root = new("Part", char)
 	root.Name = "HumanoidRootPart"
+    root.CFrame=CFrame.new(0,0,0)
 	ctl.set(player, "Character", char)
 	ctl.char, ctl.root = char, root
 
@@ -711,7 +784,9 @@ return function(API)
 		Vector2 = Vector2,
 		ColorSequence = ColorSequence,
 		ColorSequenceKeypoint = ColorSequenceKeypoint,
-        Vector3 = {new=function(x,y,z) return {X=x,Y=y,Z=z} end},
+        Vector3 = Vector3,
+        CFrame = CFrame,
+        RaycastParams = {new=function() return {} end},
 		queue_on_teleport = function(code)
 			table.insert(ctl.queued, code)
 		end,

@@ -1,5 +1,5 @@
 -- Headless GUI + lifecycle smoke test. Drives the real hub bundle against MockEngine.
-return function(API, makeEngine, hubFn, loaderFn)
+return function(API, makeEngine, hubFn, loaderFn, schema)
 	local env, ctl = makeEngine(API)
 	local passed, failed = 0, 0
 	local function check(cond, name, detail)
@@ -28,6 +28,11 @@ return function(API, makeEngine, hubFn, loaderFn)
 		end
 		return nil
 	end
+	local function nav(label)
+        for _,d in ipairs(ctl.pg:FindFirstChild("RNG_RollAttacks_Hub"):GetDescendants()) do
+            if d.ClassName=="TextButton" and d:GetAttribute("NavPage") and find(d,"TextLabel",label) then return d end
+        end
+    end
 	local function click(btn)
 		assert(btn, "button not found")
 		btn.Activated:Fire()
@@ -72,19 +77,19 @@ return function(API, makeEngine, hubFn, loaderFn)
 	noErrors("boot")
 
 	-- 2. every tab renders and refreshes
-	for _, tab in ipairs({ "Dashboard", "Auto Roll", "Combat", "Styles", "Diagnostics", "Session", "Utility", "Settings" }) do
-		click(find(hubGui(), "TextLabel", tab).Parent)
+	for _, tab in ipairs({ "Home", "Auto Roll", "Combat", "Styles", "Diagnostics", "Session", "Utility", "Settings" }) do
+		click(nav(tab))
 		ctl.run(0.5)
 		noErrors("tab " .. tab)
 	end
-	click(find(hubGui(), "TextLabel", "Styles").Parent)
+	click(nav("Styles"))
 	ctl.run(0.2)
 	check(find(hubGui(), "TextLabel", "Knockback Stick") ~= nil, "styles list shows game data")
 	check(find(hubGui(), "TextLabel", "Secret  (unreleased)") and not find(hubGui(), "TextLabel", "Secret  (unreleased)").Parent.Visible, "unreleased hidden by default")
 	check(find(hubGui(), "TextLabel", "Mythic") ~= nil, "RarityName override shown")
 
 	-- 3. Auto Roll: 1/500 target, scripted server results
-	click(find(hubGui(), "TextLabel", "Auto Roll").Parent)
+	click(nav("Auto Roll"))
 	click(find(hubGui(), "TextButton", "1/500"))
 	ctl.rollScript = { { "Punch", 3 }, { "Slap", 5 }, { "Knockback Stick", 750 } }
 	click(find(hubGui(), "TextButton", "Start"))
@@ -127,7 +132,7 @@ return function(API, makeEngine, hubFn, loaderFn)
 	check(ctl.pg:FindFirstChild("RNG_Hub_CombatHUD") == nil, "no duplicate Cyborg HUD")
 
 	-- 5. Diagnostics: capture, copy, redaction
-	click(find(hubGui(), "TextLabel", "Diagnostics").Parent)
+	click(nav("Diagnostics"))
 	click(find(hubGui(), "TextButton", "Start capture"))
 	ctl.player:SetAttribute("RollReadyAt", 1234)
 	ctl.run(1)
@@ -167,7 +172,7 @@ return function(API, makeEngine, hubFn, loaderFn)
 	noErrors("window")
 
 	-- 6b. rebind toggle key
-	click(find(hubGui(), "TextLabel", "Settings").Parent)
+	click(nav("Settings"))
 	ctl.run(0.2)
 	click(find(hubGui(), "TextButton", "RightShift"))
 	check(find(hubGui(), "TextButton", "Press a key… (Esc = cancel)") ~= nil, "key capture prompt shown")
@@ -266,17 +271,17 @@ return function(API, makeEngine, hubFn, loaderFn)
 	end
 	ctl.run(0.1)
 	check(label(probe).TextSize == 16, "text size 120%: 13 -> 16", label(probe).TextSize)
-	click(find(hubGui(), "TextLabel", "Styles").Parent)
+	click(nav("Styles"))
 	ctl.run(0.2)
 	local styleName = find(hubGui(), "TextLabel", "Knockback Stick")
 	check(styleName and styleName.TextSize == 14, "text built later is scaled too (12 -> 14)", styleName and styleName.TextSize)
-	click(find(hubGui(), "TextLabel", "Combat").Parent)
+	click(nav("Combat"))
 	click(toggleRow("Show M1 cooldown HUD")) -- overlay is built now, after the size change
 	ctl.run(0.2)
 	local hudTitle = find(ctl.pg:FindFirstChild("RNG_Hub_M1HUD"), "TextLabel", "Punch  M1")
 	check(hudTitle and hudTitle.TextSize == 16, "newly built HUD text is scaled (13 -> 16)", hudTitle and hudTitle.TextSize)
 	click(toggleRow("Show M1 cooldown HUD"))
-	click(find(hubGui(), "TextLabel", "Settings").Parent)
+	click(nav("Settings"))
 	click(find(hubGui(), "TextButton", "On"))
 	ctl.run(0.1)
 	check(label(probe).TextStrokeTransparency < 1, "outline On at 80% opacity")
@@ -318,7 +323,7 @@ return function(API, makeEngine, hubFn, loaderFn)
 	ctl.run(0.1)
 	local hexBox
 	for _, t in ipairs(hubGui():GetDescendants()) do
-		if t.ClassName == "TextBox" and t.PlaceholderText == "#RRGGBB" then
+		if t.ClassName == "TextBox" and t.PlaceholderText == "#RRGGBB" and t:GetAttribute("AppearanceHex") then
 			hexBox = t
 		end
 	end
@@ -348,7 +353,7 @@ return function(API, makeEngine, hubFn, loaderFn)
 	check(hex(label("CONTROLS").Parent.BackgroundColor3) ~= hex(rgb(32, 40, 48)), "cards get a lighter shade of a custom background")
 	click(find(hubGui(), "TextButton", "Reset appearance"))
 	ctl.run(0.1)
-	check(hex(win().BackgroundColor3) == hex(rgb(14, 15, 20)), "reset appearance: Midnight again")
+	check(hex(win().BackgroundColor3) == hex(rgb(22, 13, 24)), "reset appearance: Bloom again")
 	check(label(probe).TextSize == 13 and near(label(probe).TextTransparency, 0) and label(probe).Font == E.Font.GothamMedium, "reset appearance: text back to normal")
 	noErrors("appearance")
 
@@ -410,7 +415,7 @@ return function(API, makeEngine, hubFn, loaderFn)
 	ctl.requireDelay = nil
 	runHub()
 	ctl.run(0.5)
-	click(find(hubGui(), "TextLabel", "Settings").Parent)
+	click(nav("Settings"))
 	ctl.run(0.2)
 	local function rowOf(name)
 		for _, d in ipairs(hubGui():GetDescendants()) do
@@ -472,7 +477,7 @@ return function(API, makeEngine, hubFn, loaderFn)
 	runHub() -- simulates the next game join / autoexec
 	ctl.run(0.5)
 	check(near(win().BackgroundTransparency, 0.3), "autoload: PvP (70%) loaded at start", win().BackgroundTransparency)
-	click(find(hubGui(), "TextLabel", "Settings").Parent)
+	click(nav("Settings"))
 	ctl.run(0.2)
 	check(label("PvP  (active)") ~= nil, "autoload: PvP active at start")
 	local _, dBtns = rowOf("Default")
@@ -523,7 +528,7 @@ return function(API, makeEngine, hubFn, loaderFn)
 	ctl.promptService.PromptShown:Fire(prompt)
 	ctl.run(0.1)
 	check(prompt.HoldDuration == 2, "prompts untouched while the toggle is off")
-	click(find(hubGui(), "TextLabel", "Utility").Parent)
+	click(nav("Utility"))
 	ctl.run(0.2)
 	click(toggleRow("Instant prompts"))
 	ctl.promptService.PromptShown:Fire(prompt)
@@ -551,7 +556,7 @@ return function(API, makeEngine, hubFn, loaderFn)
 	-- 12. Session tab: anti-AFK, auto-reconnect, auto-execute (no autoexec file)
 	runHub()
 	ctl.run(0.5)
-	click(find(hubGui(), "TextLabel", "Session").Parent)
+	click(nav("Session"))
 	ctl.run(0.2)
 	ctl.player.Idled:Fire(120)
 	ctl.run(0.1)
@@ -620,7 +625,7 @@ return function(API, makeEngine, hubFn, loaderFn)
     m1Tool.Parent = ctl.char
     runHub()
     ctl.run(0.3)
-    click(find(hubGui(), "TextLabel", "Combat").Parent)
+    click(nav("Combat"))
     click(toggleRow("Show M1 cooldown HUD"))
     ctl.run(0.2)
     local m1hud = ctl.pg:FindFirstChild("RNG_Hub_M1HUD")
@@ -693,7 +698,7 @@ return function(API, makeEngine, hubFn, loaderFn)
 
     -- New persistent HUD geometry and integrated safe reference / manual targets.
     runHub(); ctl.run(0.3)
-    click(find(hubGui(), "TextLabel", "Combat").Parent)
+    click(nav("Combat"))
     local layoutHud=ctl.pg:FindFirstChild("RNG_Hub_M1HUD")
     if not layoutHud then click(toggleRow("Show M1 cooldown HUD")); layoutHud=ctl.pg:FindFirstChild("RNG_Hub_M1HUD") end
     local hudFrame=layoutHud:FindFirstChildOfClass("Frame")
@@ -729,7 +734,7 @@ return function(API, makeEngine, hubFn, loaderFn)
     local originalFrame=activeRoot.CFrame
     activeRoot.AssemblyLinearVelocity=env.Vector3.new(0,-100,0)
     activeRoot.AssemblyAngularVelocity=env.Vector3.new(0,5,0)
-    click(find(hubGui(),"TextLabel","Safe Zone").Parent)
+    click(nav("Teleports"))
     check(find(hubGui(),"TextButton","Set Current Position as Safe Zone")==nil and find(hubGui(),"TextButton","Clear Safe Zone")==nil,"Safe Zone: setup controls removed")
     check((ctl.pivotCalls or 0)==0,"Safe Zone: loading does not move character")
     click(toggleRow("Enable Safe Zone")); ctl.run(0.2)
@@ -776,7 +781,7 @@ return function(API, makeEngine, hubFn, loaderFn)
     click(toggleRow("Enable Safe Zone"))
     check(ctl.pivotCalls==afterUnanchor+1,"Safe Zone hold: external unanchor resets toggle OFF")
     click(toggleRow("Enable Safe Zone"))
-    click(find(hubGui(),"TextLabel","Settings").Parent)
+    click(nav("Settings"))
     check(find(hubGui(),"TextButton","NONE")~=nil,"Safe Zone key: default NONE")
     click(find(hubGui(),"TextButton","NONE")); press("F4")
     check(find(hubGui(),"TextButton","NONE")~=nil,"Safe Zone key: GUI key conflict rejected")
@@ -799,7 +804,7 @@ return function(API, makeEngine, hubFn, loaderFn)
     moves=ctl.pivotCalls; press("F8")
     check(ctl.pivotCalls==moves,"Safe Zone key: unbound key no longer activates")
 
-    click(find(hubGui(),"TextLabel","Safe Zone").Parent)
+    click(nav("Teleports"))
     click(toggleRow("Enable Safe Zone")); ctl.run(0.2)
     moves=ctl.pivotCalls
     ctl.player.CharacterRemoving:Fire(activeChar)
@@ -815,19 +820,19 @@ return function(API, makeEngine, hubFn, loaderFn)
     check(activeRoot.Anchored==false,"Safe Zone hold: unloading restores root physics")
     check(ctl.conns==baseConns,"Safe Zone hold: unloading disconnects hold listeners")
     runHub(); ctl.run(0.3)
-    click(find(hubGui(),"TextLabel","Safe Zone").Parent)
+    click(nav("Teleports"))
     click(toggleRow("Enable Safe Zone"))
     runHub(); ctl.run(0.3)
     check(activeRoot.Anchored==false,"Safe Zone hold: rerunning releases old hold")
 
-    click(find(hubGui(),"TextLabel","Combat").Parent)
+    click(nav("Combat"))
     click(toggleRow("Enable target selection")); ctl.run(0.3)
     check(find(hubGui(),"TextLabel","Waiting for an eligible player")~=nil,"Targets: fixed safe reference requires no setup")
     local enemy=ctl.new("Player",env.game:GetService("Players")); enemy.Name="ManualTarget"; ctl.set(enemy,"UserId",2)
     local enemyChar=ctl.new("Model",env.workspace)
     local enemyHum=ctl.new("Humanoid",enemyChar); ctl.set(enemyHum,"Health",25)
     ctl.set(enemy,"Character",enemyChar)
-    click(find(hubGui(),"TextLabel","Combat").Parent); ctl.run(0.4)
+    click(nav("Combat")); ctl.run(0.4)
     check(find(hubGui(),"TextLabel","ManualTarget")~=nil,"Targets: health threshold selects eligible player")
     check(find(hubGui(),"TextLabel","25.0%")~=nil,"Targets: correct HP percentage")
     local hpInput
@@ -864,7 +869,7 @@ return function(API, makeEngine, hubFn, loaderFn)
     check(find(hubGui(),"TextLabel","Disabled")~=nil,"Targets: menu disable stops selection")
 
     -- One Auto Roll worker survives death and resumes through ordinary readiness.
-    click(find(hubGui(),"TextLabel","Auto Roll").Parent)
+    click(nav("Auto Roll"))
     click(toggleRow("Resume Auto Roll After Death"))
     ctl.player:SetAttribute("EquippedAttack","Punch")
     ctl.player:SetAttribute("RollReadyAt",0)
@@ -890,6 +895,278 @@ return function(API, makeEngine, hubFn, loaderFn)
     env._G.RNG_HUB_STOP(); ctl.run(0.3)
     check(ctl.conns==baseConns and ctl.pendingThreads()==0,"Integrated features: unload leaves no listeners or workers",ctl.conns-baseConns)
     noErrors("integrated features")
+
+    -- 3.0 screenshot expansion: navigation, registry search, world/camera, overlays.
+    runHub();ctl.run(0.4)
+    for _,tab in ipairs({"Home","Combat","Triggerbot","Sounds","Friends","Visuals","Player","World","Teleports","Utility","Config","Settings"}) do
+        click(nav(tab));ctl.run(0.15)
+        check(nav(tab)~=nil,"3.0 navigation: "..tab)
+    end
+    for _,spec in ipairs(schema) do
+        local page=hubGui():FindFirstChild("ErviPage_"..spec.page,true)
+        local control
+        if page then for _,d in ipairs(page:GetDescendants()) do if d:GetAttribute("SettingKey")==spec.key then control=d end end end
+        check(control~=nil,"Catalog setting mounted: "..spec.key)
+    end
+    click(nav("Home"))
+    click(find(hubGui(),"TextButton","Copy Boot Log"))
+    check(ctl.clipboard:find("Current boot",1,true) and ctl.clipboard:find("Search initialized; Ready",1,true),"Boot log: copies actual initialized stages")
+    check((ctl.files["Ervi_Hub_boot.txt"] or ""):find("Ready",1,true)~=nil,"Boot log: retains last boot for next run")
+    check(find(hubGui(),"TextButton","Unsupported")~=nil,"Unsupported operations are not enabled fake toggles")
+    local mainGrip
+    for _,d in ipairs(win():GetChildren()) do if d:GetAttribute("ResizeGrip") then mainGrip=d end end
+    local scale=win():FindFirstChildOfClass("UIScale").Scale
+    gesture(mainGrip,(880-win().Size.X.Offset)*scale,(580-win().Size.Y.Offset)*scale)
+    check(win().Size.X.Offset==880 and win().Size.Y.Offset==580,"3.0 main window: resize uses responsive dimensions")
+    ctl.keysDown={LeftControl=true};press("K");ctl.keysDown={}
+    local search
+    for _,d in ipairs(hubGui():GetDescendants()) do if d.ClassName=="TextBox" and d.PlaceholderText=="Search settings · Ctrl+K" then search=d end end
+    check(ctl.focusedTextBox==search,"Search: Ctrl+K focuses the field")
+    search.Text="No Shadows";ctl.run(0.1)
+    local result=find(hubGui(),"TextButton","No Shadows · World")
+    check(result~=nil,"Search: finds an actual registered toggle across tabs")
+    click(result);ctl.run(0.1)
+    check(hubGui():FindFirstChild("ErviPage_world",true).Visible,"Search: result navigates to World")
+    local focused=false
+    for _,d in ipairs(hubGui():GetDescendants()) do if d:GetAttribute("SearchFocused") then focused=true end end
+    check(focused,"Search: matching control highlighted")
+    search.Text="no matching control 999";ctl.run(0.1)
+    check(find(hubGui(),"TextLabel","No matching registered setting")~=nil,"Search: no-results feedback")
+    search.Text="";ctl.focusedTextBox=nil
+    local lighting=ctl.lighting
+    local brightness,ambient,shadows,time=lighting.Brightness,lighting.Ambient,lighting.GlobalShadows,lighting.ClockTime
+    click(nav("World"))
+    click(toggleRow("Fullbright"))
+    check(lighting.Brightness==2 and lighting.Ambient==env.Color3.new(1,1,1),"World: Fullbright changes only owned light properties")
+    click(toggleRow("No Shadows"));check(lighting.GlobalShadows==false,"World: No Shadows applies")
+    click(toggleRow("Custom Time"));check(lighting.ClockTime==12,"World: custom time starts at selected hour")
+    click(sliderBtn("Time of Day","+"));check(lighting.ClockTime==12.25,"World: time slider applies immediately")
+    click(toggleRow("No Fog"))
+    local atmos=ctl.new("Atmosphere");atmos.Density=0.4;atmos.Haze=1;atmos.Parent=lighting
+    check(lighting.FogEnd==1000000 and atmos.Density==0,"World: No Fog handles late Atmosphere")
+    click(toggleRow("No Fog"));check(lighting.FogEnd==500 and atmos.Density==0.4 and atmos.Haze==1,"World: fog and atmosphere restore")
+    click(toggleRow("Fullbright"));check(lighting.Brightness==brightness and lighting.Ambient==ambient,"World: Fullbright restores original values")
+    click(toggleRow("No Shadows"));click(toggleRow("Custom Time"))
+    check(lighting.GlobalShadows==shadows and lighting.ClockTime==time,"World: time and shadows restore independently")
+    click(toggleRow("Fullbright"));lighting.Brightness=3;click(toggleRow("Fullbright"))
+    check(lighting.Brightness==3,"World: external game lighting change is preserved")
+    lighting.Brightness=brightness
+    local currentCamera=env.workspace.CurrentCamera
+    local originalCamera,originalType,originalMouse=currentCamera.CFrame,currentCamera.CameraType,ctl.UIS.MouseBehavior
+    click(toggleRow("Freecam"));ctl.run(0.1)
+    check(currentCamera.CameraType==env.Enum.CameraType.Scriptable,"Freecam: scriptable camera while enabled")
+    check(ctl.boundActions and ctl.boundActions.ErviFreecamMovement~=nil,"Freecam: character movement input owned")
+    ctl.UIS.InputBegan:Fire({UserInputType=env.Enum.UserInputType.MouseButton2},false)
+    ctl.keysDown={W=true};ctl.run(0.2);ctl.keysDown={}
+    check(currentCamera.CFrame.Position.Z<originalCamera.Position.Z,"Freecam: held RMB plus W moves camera")
+    ctl.UIS.InputEnded:Fire({UserInputType=env.Enum.UserInputType.MouseButton2})
+    check(ctl.UIS.MouseBehavior==originalMouse,"Freecam: right mouse release restores pointer")
+    click(toggleRow("Freecam"))
+    check(currentCamera.CFrame==originalCamera and currentCamera.CameraType==originalType,"Freecam: disable restores prior camera")
+    check(ctl.boundActions.ErviFreecamMovement==nil,"Freecam: movement input unbound on disable")
+    click(toggleRow("Freecam"));click(find(hubGui(),"TextButton","Reset Camera"))
+    check(currentCamera.CameraType==env.Enum.CameraType.Custom and currentCamera.CameraSubject==ctl.player.Character:FindFirstChildOfClass("Humanoid"),"Freecam: Reset Camera restores character subject")
+    click(nav("Settings"));click(toggleRow("Background Blur"))
+    check(lighting:FindFirstChild("ErviBackgroundBlur")~=nil,"Interface: own blur effect when open")
+    win().Visible=false;check(lighting:FindFirstChild("ErviBackgroundBlur")==nil,"Interface: hiding window removes owned blur")
+    win().Visible=true;click(toggleRow("Background Blur"))
+    -- Player speed and movement panel restoration across actual character replacement.
+    click(nav("Player"))
+    local localCharacter=ctl.player.Character
+    local localHum=localCharacter:FindFirstChildOfClass("Humanoid")
+    local baseSpeed=localHum.WalkSpeed
+    click(toggleRow("WalkSpeed"));click(sliderBtn("Walk Speed","+"))
+    check(localHum.WalkSpeed==17,"Player: local Set speed applies")
+    click(find(hubGui(),"TextButton","Multiply"))
+    check(localHum.WalkSpeed==baseSpeed*1.5,"Player: Multiply uses original base, not its own override")
+    click(toggleRow("WalkSpeed"));check(localHum.WalkSpeed==baseSpeed,"Player: disabling restores original speed")
+    click(toggleRow("Movement Panel"))
+    local movement=ctl.pg:FindFirstChild("Ervi_MovementPanel")
+    check(movement~=nil,"Player: floating movement panel exists")
+    local movementFrame=movement:FindFirstChildOfClass("Frame");local movementGrip
+    for _,d in ipairs(movementFrame:GetChildren()) do if d:GetAttribute("ResizeGrip") then movementGrip=d end end
+    gesture(movementGrip,50,30)
+    check((ctl.files["RNG_Hub_settings.txt"] or ""):find("movementW=380.00",1,true),"Player: movement-panel size persists")
+    click(toggleRow("Movement Panel"));check(ctl.pg:FindFirstChild("Ervi_MovementPanel")==nil,"Player: menu removes floating panel")
+    -- Config data sharing and per-game autoload are distinct from code execution.
+    click(nav("Config"))
+    click(find(hubGui(),"TextButton","Copy Config To Clipboard"))
+    check(type(ctl.clipboard)=="string" and ctl.clipboard:sub(1,15)=="ERVI_CONFIG_V1\n","Config: versioned export to clipboard")
+    local importText
+    for _,d in ipairs(hubGui():GetDescendants()) do if d.ClassName=="TextBox" and d.PlaceholderText=="Paste ERVI_CONFIG_V1 text" then importText=d end end
+    importText.Text="return error('must not run')";click(find(hubGui(),"TextButton","Apply Import"))
+    check(find(hubGui(),"TextLabel","Unsupported config version")~=nil,"Config: rejects executable/non-schema import")
+    importText.Text=ctl.clipboard;click(find(hubGui(),"TextButton","Apply Import"));ctl.run(0.1)
+    check(find(hubGui(),"TextLabel","Imported into Default")~=nil,"Config: valid import applies to selected current config")
+    click(find(hubGui(),"TextButton","Set Selected As Autoload"))
+    check((ctl.files["RNG_Hub_settings.txt"] or ""):find("autoloadGame_119338513416973=Default",1,true),"Config: per-game autoload persists")
+    click(find(hubGui(),"TextButton","Turn Off Autoload"))
+    check(not (ctl.files["RNG_Hub_settings.txt"] or ""):find("autoloadGame_119338513416973=",1,true),"Config: turn off autoload removes binding")
+    -- Render visible players, enforce occlusion, exercise budgets and cleanup.
+    local visiblePlayer=ctl.new("Player",env.game:GetService("Players"));visiblePlayer.Name="VisibleSample";ctl.set(visiblePlayer,"UserId",55)
+    local visibleChar=ctl.new("Model",env.workspace);ctl.new("Humanoid",visibleChar)
+    local visibleRoot=ctl.new("Part",visibleChar);visibleRoot.Name="HumanoidRootPart";visibleRoot.CFrame=env.CFrame.new(2,0,0)
+    local visibleHead=ctl.new("Part",visibleChar);visibleHead.Name="Head";visibleHead.CFrame=env.CFrame.new(2,3,0)
+    ctl.set(visiblePlayer,"Character",visibleChar)
+    click(nav("Visuals"));ctl.run(0.2)
+    click(toggleRow("Enabled"));ctl.run(0.3)
+    local overlay=ctl.pg:FindFirstChild("Ervi_VisibleOverlays")
+    check(overlay~=nil,"Visuals: native overlay root created")
+    check(find(overlay,"TextLabel","VisibleSample · 23 studs")~=nil or (function() for _,d in ipairs(overlay:GetDescendants()) do if d.ClassName=="TextLabel" and d.Text:find("VisibleSample",1,true) then return true end end return false end)(),"Visuals: visible target name and distance drawn")
+    visibleHead.Transparency=1;ctl.run(0.3)
+    check(#overlay:GetChildren()==0,"Visuals: invisible head does not reveal a hidden character")
+    visibleHead.Transparency=0;ctl.run(0.3)
+    click(toggleRow("Chams"));ctl.run(0.3)
+    local highlight=overlay:FindFirstChildOfClass("Highlight")
+    check(highlight and highlight.DepthMode==env.Enum.HighlightDepthMode.Occluded and highlight.Enabled,"Visuals: chams always use Occluded depth")
+    ctl.occluded=true;ctl.run(0.3)
+    check(overlay:FindFirstChildOfClass("Highlight")==nil,"Visuals: fully occluded target resources removed")
+    ctl.occluded=false;ctl.run(0.3)
+    click(toggleRow("Skeleton"));click(toggleRow("Head Dot"));click(toggleRow("Tracers Enabled"));ctl.run(0.3)
+    check(ctl.raycasts>0,"Visuals: line-of-sight queries actually executed")
+    visiblePlayer.Parent=nil;ctl.run(0.3)
+    check(#overlay:GetChildren()==0,"Visuals: leaving player removes drawing resources")
+    click(toggleRow("Enabled"));check(ctl.pg:FindFirstChild("Ervi_VisibleOverlays")==nil,"Visuals: disable removes every overlay")
+    -- Existing session controls + new actions; raw HTTP failure reports a status.
+    click(nav("Utility"));local beforeTeleport=ctl.teleports
+    local utilityPage=hubGui():FindFirstChild("ErviPage_utility",true)
+    click(find(utilityPage,"TextButton","Rejoin"))
+    check(ctl.teleports==beforeTeleport+1 and ctl.lastJob==env.game.JobId,"Utility: Rejoin requests this exact server")
+    click(find(utilityPage,"TextButton","Copy Job ID"));check(ctl.clipboard==env.game.JobId,"Utility: Copy Job ID")
+    click(find(utilityPage,"TextButton","Server Hop"));ctl.run(0.1)
+    check(ctl.teleports==beforeTeleport+1,"Utility: failed server listing never invents a teleport")
+    check(find(hubGui(),"TextLabel","0 · unchanged; getfpscap + setfpscap unavailable")~=nil,"Utility: FPS cap compatibility is explicit")
+    click(nav("World"));click(toggleRow("No Shadows"));click(toggleRow("Freecam"))
+    click(nav("Settings"))
+    click(find(hubGui(),"TextButton","RU"));ctl.run(0.2)
+    check(find(hubGui(),"TextLabel","Настройки")~=nil,"Language: Russian interface labels apply")
+    click(find(hubGui(),"TextButton","EN"));ctl.run(0.2)
+    check(nav("Settings")~=nil,"Language: English interface labels restore")
+    press("End");ctl.run(0.3)
+    check(hubGui()==nil,"Panic key unloads the hub")
+    check(lighting.GlobalShadows==shadows and currentCamera.CameraType==env.Enum.CameraType.Custom,"Unload restores lighting and camera")
+    check(ctl.conns==baseConns and ctl.pendingThreads()==0,"3.0 features leave no listeners or workers",ctl.conns-baseConns)
+    noErrors("3.0 expansion")
+
+    -- Supported FPS readback, successful server-list selection and rendering budgets.
+    local currentCap=240
+    env.getfpscap=function() return currentCap end
+    env.setfpscap=function(value) currentCap=value end
+    runHub();ctl.run(0.3)
+    local function setToggle(name,value)
+        local row=toggleRow(name)
+        if row:GetAttribute("Value")~=value then click(row) end
+    end
+    click(nav("Utility"))
+    click(sliderBtn("FPS Cap","+"))
+    check(currentCap==1,"FPS cap: supported setter applies slider value")
+    click(sliderBtn("FPS Cap","−"))
+    check(currentCap==240,"FPS cap: zero restores prior/default cap")
+    click(sliderBtn("FPS Cap","+"))
+    ctl.httpBody="mock-server-list"
+    ctl.serverList={data={{id=env.game.JobId,playing=1,maxPlayers=30},{id="full",playing=30,maxPlayers=30},{id="available",playing=12,maxPlayers=30}}}
+    utilityPage=hubGui():FindFirstChild("ErviPage_utility",true)
+    beforeTeleport=ctl.teleports
+    click(find(utilityPage,"TextButton","Server Hop"));ctl.run(0.1)
+    check(ctl.teleports==beforeTeleport+1 and ctl.lastJob=="available","Server Hop: skips current/full servers and selects available server")
+    check(ctl.lastHttp:find("limit=100",1,true)~=nil,"Server Hop: request is bounded to 100 results")
+    ctl.httpBody=nil;ctl.serverList=nil
+    click(nav("Visuals"))
+    setToggle("Chams",true);setToggle("Skeleton",true);setToggle("Tracers Enabled",false);setToggle("HealthBar",false)
+    local samplePlayers={}
+    for i=1,3 do
+        local sample=ctl.new("Player",env.game:GetService("Players"));sample.Name="Budget"..i;ctl.set(sample,"UserId",70+i)
+        local char=ctl.new("Model",env.workspace);ctl.new("Humanoid",char)
+        for _,part in ipairs({{"HumanoidRootPart",0},{"Head",3},{"Torso",1},{"Left Arm",1}}) do
+            local limb=ctl.new("Part",char);limb.Name=part[1];limb.CFrame=env.CFrame.new(i*2,part[2],0)
+        end
+        ctl.set(sample,"Character",char);table.insert(samplePlayers,sample)
+    end
+    setToggle("Enabled",true);ctl.run(0.3)
+    overlay=ctl.pg:FindFirstChild("Ervi_VisibleOverlays")
+    local function overlayCount()
+        local n=0
+        for _,d in ipairs(overlay:GetChildren()) do if d.Name=="ErviPlayerOverlay" then n+=1 end end
+        return n
+    end
+    check(overlayCount()==3,"Visual budgets: three visible players render")
+    for _=1,23 do click(sliderBtn("Max Targets","−")) end
+    ctl.run(0.3)
+    check(overlayCount()==1,"Visual budgets: Max Targets hard cap removes excess resources")
+    setToggle("Cheap Boxes",false);ctl.run(0.3)
+    check(overlayCount()==1,"Visual budgets: full bounding boxes respect same cap")
+    setToggle("Mark Friends",true);ctl.friendIds={[71]=true}
+    -- Cache began before the fixture map changed; toggling renderer refreshes cache.
+    setToggle("Enabled",false);setToggle("Enabled",true);ctl.run(0.3)
+    overlay=ctl.pg:FindFirstChild("Ervi_VisibleOverlays")
+    highlight=overlay:FindFirstChildOfClass("Highlight")
+    check(highlight and highlight.FillColor==env.Color3.fromHex("70AFFF"),"Visuals: cached Roblox friend status applies friend color")
+    local team=ctl.new("Team")
+    ctl.set(ctl.player,"Neutral",false);ctl.set(ctl.player,"Team",team)
+    for _,sample in ipairs(samplePlayers) do ctl.set(sample,"Neutral",false);ctl.set(sample,"Team",team) end
+    ctl.run(0.3)
+    check(overlayCount()==0,"Visuals: Team Check suppresses teammates")
+    setToggle("Show Teammates",true);ctl.run(0.3)
+    check(overlayCount()==1,"Visuals: Show Teammates permits them within cap")
+    highlight=overlay:FindFirstChildOfClass("Highlight")
+    check(highlight and not highlight.Enabled,"Visuals: Chams Enemies Only suppresses teammate highlight")
+    ctl.set(ctl.player,"Neutral",true)
+    click(find(hubGui(),"TextButton","None"));ctl.run(0.2)
+    for _=1,8 do click(sliderBtn("Skeleton Budget","−")) end
+    ctl.run(0.3)
+    local function visibleLines()
+        local n=0;for _,d in ipairs(overlay:GetDescendants()) do if d.Name=="OverlayLine" and d.Visible then n+=1 end end;return n
+    end
+    check(visibleLines()==0,"Visual budgets: zero Skeleton Budget disables bone projections")
+    click(sliderBtn("Skeleton Budget","+"));ctl.run(0.3)
+    check(visibleLines()>0,"Visual budgets: skeleton renders within a positive budget")
+    for i,sample in ipairs(samplePlayers) do
+        sample.Character:FindFirstChild("HumanoidRootPart").CFrame=env.CFrame.new(100+i,0,0)
+        sample.Character:FindFirstChild("Head").CFrame=env.CFrame.new(100+i,3,0)
+    end
+    ctl.run(0.3)
+    check(overlayCount()==0,"Visuals: off-screen targets hidden when arrows are off")
+    setToggle("Off-screen Arrows",true);ctl.run(0.3)
+    local arrow=find(overlay,"TextLabel","▲")
+    check(arrow and arrow.Visible and arrow.Position.X.Offset>1800,"Visuals: clear-line off-screen arrow clamps near screen edge")
+    for _=1,19 do click(sliderBtn("Max Distance","−")) end
+    ctl.run(0.3)
+    check(overlayCount()==0,"Visual budgets: distance limit removes far targets")
+    click(sliderBtn("Max Distance","+"));click(sliderBtn("Max Distance","+"));ctl.run(0.3)
+    check(overlayCount()==1,"Visual budgets: raising distance restores at most the target cap")
+    setToggle("Preview hidden target",true);ctl.run(0.2)
+    check(find(hubGui(),"TextLabel","Hidden: live overlay suppressed")~=nil,"Preview: hidden-target setting responds without revealing real occluded players")
+    ctl.occluded=true;ctl.run(0.3)
+    check(overlayCount()==0,"Visuals: all occluded targets remain suppressed with every option enabled")
+    ctl.occluded=false
+    click(nav("Player"));setToggle("WalkSpeed",true)
+    click(nav("World"));setToggle("No Shadows",true);setToggle("Fullbright",true);setToggle("Freecam",true)
+    ctl.run(0.3)
+    check(currentCamera.CameraType==env.Enum.CameraType.Scriptable and lighting.GlobalShadows==false,"Multiple active features: world/camera/visuals coexist")
+    env._G.RNG_HUB_STOP();ctl.run(0.3)
+    check(currentCap==240,"FPS cap: unload restores original value")
+    check(ctl.pg:FindFirstChild("Ervi_VisibleOverlays")==nil and currentCamera.CameraType==env.Enum.CameraType.Custom,"Multiple active features: rendering/camera cleanup")
+    check(ctl.conns==baseConns and ctl.pendingThreads()==0,"Multiple active features: no leaked workers or connections",ctl.conns-baseConns)
+    noErrors("supported APIs and budgets")
+    runHub();ctl.run(0.3)
+    currentCap=123
+    local oldCamera=env.workspace.CurrentCamera
+    local newCamera=ctl.new("Camera",env.workspace)
+    newCamera.CFrame=env.CFrame.new(0,10,20);newCamera.CameraType=env.Enum.CameraType.Custom
+    ctl.set(newCamera,"ViewportSize",env.Vector2.new(1280,720))
+    ctl.set(env.workspace,"CurrentCamera",newCamera);ctl.run(0.2)
+    check(oldCamera.CameraType==env.Enum.CameraType.Custom and newCamera.CameraType==env.Enum.CameraType.Custom,"Freecam: camera replacement restores old owner and leaves new camera alone")
+    local previousCharacter=ctl.player.Character
+    ctl.player.CharacterRemoving:Fire(previousCharacter)
+    local replacement=ctl.new("Model",env.workspace);local replacementHum=ctl.new("Humanoid",replacement);replacementHum.WalkSpeed=18
+    ctl.set(ctl.player,"Character",replacement);ctl.player.CharacterAdded:Fire(replacement);ctl.run(0.2)
+    check(replacementHum.WalkSpeed==27,"Player: respawn Multiply uses new character's base speed")
+    replacementHum.WalkSpeed=25;ctl.run(0.2)
+    check(replacementHum.WalkSpeed==25,"Player: server speed correction is not fought in a loop")
+    env._G.RNG_HUB_STOP();ctl.run(0.2)
+    check(currentCap==123,"FPS cap: preserve later external cap changes")
+    check(ctl.conns==baseConns and ctl.pendingThreads()==0,"Final supported-API run leaves no resources")
+    noErrors("external cap restoration")
 
     -- Exercise the actual emitted loader wrapper with isolated globals, no network.
     local requests, messages = 0, {}
