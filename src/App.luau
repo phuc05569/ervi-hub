@@ -13,6 +13,7 @@ local Rarity = require("Rarity")
 local AutoRoll = require("AutoRoll")
 local makeAdapter = require("RollAdapter")
 local makeCyborg = require("Cyborg")
+local makeM1 = require("M1")
 local makeObserver = require("RollObserver")
 local Settings = require("Settings")
 local makeSession = require("Session")
@@ -29,7 +30,7 @@ for _, key in ipairs({ "RNG_HUB_STOP", "RNG_CYBORG_V6_STOP", "RNG_DIAG_V5_STOP" 
 		pcall(stop)
 	end
 end
-for _, name in ipairs({ HUB_NAME, "RNG_Cyborg_M1_V6", "RNG_AttackDiagnostic_V5", "RNG_Hub_CombatHUD" }) do
+for _, name in ipairs({ HUB_NAME, "RNG_Cyborg_M1_V6", "RNG_AttackDiagnostic_V5", "RNG_Hub_CombatHUD", "RNG_Hub_M1HUD" }) do
 	local old = playerGui:FindFirstChild(name)
 	if old then
 		old:Destroy()
@@ -365,6 +366,7 @@ end
 
 -- ===================================================================== features
 local cyborg = makeCyborg(hub, playerGui, metrics, log)
+local m1 = makeM1(hub, playerGui)
 local observer = makeObserver(hub, log)
 local autoRoll = AutoRoll.new(makeAdapter())
 table.insert(onStop, function()
@@ -628,6 +630,21 @@ end
 
 -- ===================================================================== Combat
 local combat = addPage("combat", "Combat")
+do
+    local card = Ui.card(combat, "M1 cooldown evidence", 0, "Candidate AttackReadyAt timing for any style. Server-time semantics need a live capture; UNKNOWN means no usable evidence. Cyborg V6 remains a separate estimated fallback.")
+    local toggle = Ui.toggle(hub, card, "Show M1 cooldown HUD", "Read-only; updates at 10 Hz. Drag the title to move it.", false, m1.setEnabled, 1)
+    m1.onChanged = function(on) toggle.set(on, true) end
+    local setState = Ui.kv(card, "Observed M1 state", 2)
+    local setEvidence = Ui.kv(card, "Timing evidence", 3)
+    local setHealth = Ui.kv(card, "Your current health", 4)
+    onRefresh("combat", "m1 evidence", function()
+        local snapshot = m1.snapshot()
+        setState((snapshot.style or "none") .. " · " .. (snapshot.remaining and ("%.2fs / "):format(snapshot.remaining) or "") .. snapshot.status)
+        setEvidence(snapshot.evidence)
+        local h = Game.humanoid()
+        setHealth(h and h.MaxHealth > 0 and ("%.0f%%"):format(math.clamp(h.Health / h.MaxHealth * 100, 0, 100)) or "unavailable")
+    end)
+end
 do
 	local c1 = Ui.card(combat, "Cyborg M1 tracker (V6)", 1, "Detects your own Beam effect under HumanoidRootPart.SmearFX and estimates a 6.07 s cooldown from it. Effect proxy - user-verified in baseline v1.")
 	local tg = Ui.toggle(hub, c1, "Show Cyborg M1 overlay", "Floating timer; drag it by its title. Also shows FPS and ping.", false, function(v)

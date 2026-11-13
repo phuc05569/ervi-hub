@@ -290,6 +290,7 @@ return function(API)
 
 	local function setParent(self, parent)
 		local d = data[self]
+		local oldParent = d.parent
 		if d.destroyed then
 			error("The Parent property of " .. d.props.Name .. " is locked", 3)
 		end
@@ -303,6 +304,7 @@ return function(API)
 			end
 		end
 		d.parent = parent
+		if oldParent and oldParent ~= parent then fireIf(data[oldParent], "ChildRemoved", self) end
 		if parent then
 			table.insert(data[parent].children, self)
 			fireIf(data[parent], "ChildAdded", self)

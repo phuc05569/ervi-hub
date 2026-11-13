@@ -10,9 +10,9 @@ import pathlib
 import sys
 
 ROOT = pathlib.Path(__file__).parent
-VERSION = "2.4.0"
-APP_MODULES = ["Scope", "Rarity", "AutoRoll", "Settings", "Theme", "Ui", "Game", "RollAdapter", "Cyborg", "RollObserver", "Session", "Prompts", "App"]
-PURE_MODULES = ["Scope", "Rarity", "AutoRoll", "Settings"]
+VERSION = "2.5.0"
+APP_MODULES = ["Scope", "Rarity", "AutoRoll", "Settings", "M1State", "M1", "Theme", "Ui", "Game", "RollAdapter", "Cyborg", "RollObserver", "Session", "Prompts", "App"]
+PURE_MODULES = ["Scope", "Rarity", "AutoRoll", "Settings", "M1State", "Loader"]
 
 
 def read(path):
@@ -58,6 +58,28 @@ def bundle(modules, entry, out_name, title):
     print(f"{out_name}: {len(out) + 1} lines, build {build_id}, sha256 {hashlib.sha256(text.encode()).hexdigest()}")
 
 
+def loader():
+    # Deliberately unconfigured until the owner approves a distribution repository/release.
+    build = json.loads((ROOT / "build/Ervi_Hub.luau.map.json").read_text())["build"]
+    core = read(ROOT / "src/Loader.luau")
+    config = {"url": json.loads(read(ROOT / "loader.json"))["url"], "build": build}
+    text = ("-- Ervi Hub loader: unpublished template. Set URL after approving distribution.\n"
+            "local Loader = (function()\n" + core + "\nend)()\n"
+            'local config = { url = ' + json.dumps(config['url']) + ', build = ' + json.dumps(build) + ' }\n'
+            'local registryKey = "__ERVI_LOADER"\n'
+            'local registry = type(_G[registryKey]) == "table" and _G[registryKey] or {}\n_G[registryKey] = registry\n'
+            'local stop, message = Loader.run({\n'
+            ' placeId = game.PlaceId, registry = registry,\n'
+            ' currentStop = function() return _G.RNG_HUB_STOP end,\n'
+            ' fetch = function(url) return game:HttpGet(url) end,\n'
+            ' compile = loadstring, wait = task.wait,\n'
+            '}, config)\n'
+            'if not stop then warn("[Ervi Hub loader] " .. message) end\n'
+            'return stop\n')
+    (ROOT / "build/loader.lua").write_text(text, encoding="utf-8", newline="\n")
+    print("loader.lua written (distribution URL intentionally unset)")
+
+
 def smoke():
     """Headless run of the real hub bundle inside tests/smoke/MockEngine (needs build/rbx_api.luau)."""
     part = lambda p: read(ROOT / p)
@@ -66,7 +88,8 @@ def smoke():
         f"local makeEngine = (function()\n{part('tests/smoke/MockEngine.luau')}\nend)()\n"
         f"local hubFn = function()\n{part('build/Ervi_Hub.luau')}\nend\n"
         f"local driver = (function()\n{part('tests/smoke/driver.luau')}\nend)()\n"
-        "driver(API, makeEngine, hubFn)\n"
+        f"local loaderFn = function()\n{part('build/loader.lua')}\nend\n"
+        "driver(API, makeEngine, hubFn, loaderFn)\n"
     )
     (ROOT / "build" / "smoke.luau").write_text(text, encoding="utf-8", newline="\n")
     print("smoke.luau written")
@@ -75,8 +98,12 @@ def smoke():
 if __name__ == "__main__":
     if "--smoke" in sys.argv:
         bundle(APP_MODULES, "App", "Ervi_Hub.luau", "Ervi Hub")
+        loader()
         smoke()
     elif "--test" in sys.argv:
         bundle(PURE_MODULES, "run", "tests.luau", "RNG Hub test bundle")
     else:
         bundle(APP_MODULES, "App", "Ervi_Hub.luau", "Ervi Hub")
+
+    if "--test" not in sys.argv and "--smoke" not in sys.argv:
+        loader()

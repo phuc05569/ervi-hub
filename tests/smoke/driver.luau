@@ -1,5 +1,5 @@
 -- Headless GUI + lifecycle smoke test. Drives the real hub bundle against MockEngine.
-return function(API, makeEngine, hubFn)
+return function(API, makeEngine, hubFn, loaderFn)
 	local env, ctl = makeEngine(API)
 	local passed, failed = 0, 0
 	local function check(cond, name, detail)
@@ -638,6 +638,105 @@ return function(API, makeEngine, hubFn)
 	check(ctl.conns == baseConns, "session: no leaked connections", ctl.conns - baseConns)
 	check(ctl.pendingThreads() == 0, "session: no leaked threads", ctl.pendingThreads())
 	noErrors("session")
+
+
+    -- Candidate all-style M1 HUD, driven through real instance signals and lifecycle.
+    for _, child in ipairs(ctl.char:GetChildren()) do
+        if child:IsA("Tool") then child:Destroy() end
+    end
+    ctl.player:SetAttribute("EquippedAttack", "Punch")
+    ctl.player:SetAttribute("AttackReadyAt", nil)
+    local m1Tool = ctl.new("Tool")
+    m1Tool.Name = "Punch"
+    m1Tool.Parent = ctl.char
+    runHub()
+    ctl.run(0.3)
+    click(find(hubGui(), "TextLabel", "Combat").Parent)
+    click(toggleRow("Show M1 cooldown HUD"))
+    ctl.run(0.2)
+    local m1hud = ctl.pg:FindFirstChild("RNG_Hub_M1HUD")
+    check(m1hud ~= nil, "M1: overlay created")
+    check(find(m1hud, "TextLabel", "Punch  M1") ~= nil, "M1: equipped style shown")
+    check(find(m1hud, "TextLabel", "UNKNOWN") ~= nil, "M1: absent attribute is UNKNOWN")
+    local function cooldownShown()
+        for _, d in ipairs(m1hud:GetDescendants()) do
+            if d.ClassName == "TextLabel" and d.Text:match("^%d+%.%d%ds$") then return true end
+        end
+        return false
+    end
+    ctl.player:SetAttribute("AttackReadyAt", env.workspace:GetServerTimeNow() + 0.7)
+    ctl.run(0.2)
+    check(cooldownShown(), "M1: Punch observed countdown")
+    check(find(m1hud, "TextLabel", "Observed AttackReadyAt; server-time interpretation UNVERIFIED") ~= nil, "M1: uncertainty is visible")
+    ctl.run(1)
+    check(find(m1hud, "TextLabel", "READY") ~= nil, "M1: deadline transitions to READY")
+    ctl.player:SetAttribute("EquippedAttack", "Slap")
+    m1Tool:Destroy()
+    m1Tool = ctl.new("Tool"); m1Tool.Name = "Slap"; m1Tool.Parent = ctl.char
+    ctl.run(0.2)
+    check(find(m1hud, "TextLabel", "UNKNOWN") ~= nil, "M1: style switch invalidates stale READY")
+    ctl.player:SetAttribute("AttackReadyAt", env.workspace:GetServerTimeNow() + 3.5)
+    ctl.run(0.2)
+    check(cooldownShown(), "M1: Slap has its own cooldown duration")
+    ctl.player:SetAttribute("AttackReadyAt", env.workspace:GetServerTimeNow() + 8)
+    ctl.run(0.2)
+    check(cooldownShown() and not find(m1hud, "TextLabel", "READY"), "M1: changed cooldown replaces prior deadline")
+    m1Tool.Parent = nil
+    ctl.run(0.2)
+    check(find(m1hud, "TextLabel", "UNEQUIPPED") ~= nil, "M1: removing Tool hides countdown")
+    m1Tool.Parent = ctl.char
+    ctl.run(0.2)
+    check(find(m1hud, "TextLabel", "UNKNOWN") ~= nil, "M1: re-equip waits for fresh attribute")
+    ctl.player:SetAttribute("AttackReadyAt", env.workspace:GetServerTimeNow() + 2)
+    ctl.run(0.2)
+    local hum = ctl.char:FindFirstChildOfClass("Humanoid")
+    ctl.set(hum, "Health", 0); hum.Died:Fire()
+    ctl.run(0.2)
+    check(find(m1hud, "TextLabel", "UNAVAILABLE") ~= nil, "M1: death blocks READY")
+    ctl.player.CharacterRemoving:Fire(ctl.char)
+    local newChar = ctl.new("Model", env.workspace)
+    ctl.new("Humanoid", newChar)
+    local newTool = ctl.new("Tool"); newTool.Name = "Slap"; newTool.Parent = newChar
+    ctl.set(ctl.player, "Character", newChar)
+    ctl.player.CharacterAdded:Fire(newChar)
+    ctl.run(0.2)
+    check(find(m1hud, "TextLabel", "UNKNOWN") ~= nil, "M1: respawn discards old character sample")
+    ctl.player:SetAttribute("AttackReadyAt", env.workspace:GetServerTimeNow() + 1)
+    ctl.run(0.2)
+    check(cooldownShown(), "M1: delayed post-respawn sample recovers")
+    ctl.player:SetAttribute("AttackReadyAt", nil)
+    ctl.run(0.2)
+    check(find(m1hud, "TextLabel", "UNKNOWN") ~= nil, "M1: removed attribute clears deadline")
+    ctl.player:SetAttribute("AttackReadyAt", 99999999)
+    ctl.run(0.2)
+    check(find(m1hud, "TextLabel", "UNKNOWN") ~= nil, "M1: incompatible clock rejected")
+    click(find(m1hud, "TextButton", "Close M1 HUD"))
+    check(ctl.pg:FindFirstChild("RNG_Hub_M1HUD") == nil, "M1: close removes HUD only")
+    click(toggleRow("Show M1 cooldown HUD"))
+    runHub(); ctl.run(0.3)
+    check(ctl.pg:FindFirstChild("RNG_Hub_M1HUD") == nil, "M1: rerun removes old overlay")
+    env._G.RNG_HUB_STOP(); ctl.run(0.3)
+    check(ctl.conns == baseConns, "M1: no leaked connections", ctl.conns - baseConns)
+    check(ctl.pendingThreads() == 0, "M1: no leaked threads")
+    noErrors("M1 lifecycle")
+
+
+    -- Exercise the actual emitted loader wrapper with isolated globals, no network.
+    local requests, messages = 0, {}
+    local loaderEnv = setmetatable({
+        _G = {}, game = { PlaceId = 119338513416973, HttpGet = function() requests += 1; error("unexpected HTTP") end },
+        task = { wait = function() error("unexpected wait") end },
+        warn = function(message) table.insert(messages, message) end,
+    }, { __index = getfenv() })
+    setfenv(loaderFn, loaderEnv)
+    local wrapperOk, wrapperResult = pcall(loaderFn)
+    check(wrapperOk and wrapperResult == nil, "loader wrapper: unconfigured template fails closed")
+    check(requests == 0 and #messages == 1, "loader wrapper: unconfigured template performs no HTTP")
+    loaderEnv.game.PlaceId = 1
+    local wrongPlaceOk = pcall(loaderFn)
+    check(wrongPlaceOk and requests == 0 and messages[2]:find("Unsupported PlaceId", 1, true), "loader wrapper: unsupported place rejected")
+    loaderEnv._G.__ERVI_LOADER = "stale foreign value"
+    check(pcall(loaderFn), "loader wrapper: non-table registry recovers")
 
 	print(("%d passed, %d failed"):format(passed, failed))
 	if failed > 0 then

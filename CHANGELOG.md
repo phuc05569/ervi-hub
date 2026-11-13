@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.5.0 (2026-11-13), build 2.5.0+c99431989fa5, NOT LIVE TESTED
+- New optional M1 HUD observes player AttackReadyAt for any equipped style, explicitly labels the server-clock assumption as unverified, and clears stale evidence on style changes, re-equips, death and respawn. Does not assume Tool.Activated proves an accepted attack.
+- Combat shows current health percentage. Existing Cyborg V6, keybinding, opacity, appearance, resize, Auto Roll and local teleport loader behavior are preserved.
+- New original loader core and generated build/loader.lua template: exact-commit GitHub URL, place routing, bounded download retries, version/banner checks, duplicate/concurrent-load guards and failure cleanup. URL is intentionally blank; no cache, publication or credentials.
+- Tests: 68 unit tests and 210 smoke checks pass, including interruption during initialization, HUD lifecycle and generated loader fail-closed behavior. Both artifacts compile; baseline remains byte-identical.
+- Cloud-only build; Windows/Potassium copies and GitHub were not updated. See reports/CONTINUATION_2_5_0.md.
+
 ## 2.4.0 (2026-11-13), build 2.4.0+1276e5c68ba3, NOT LIVE TESTED
 - Corner resize grip (bottom-right): drag to resize between 520x360 and 1100x820; size saved in the active config; hidden while minimized.
 - Configs: per-row Overwrite button (asks once) copies the current settings into that saved config.

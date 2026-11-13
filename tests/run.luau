@@ -1,5 +1,5 @@
 -- Test runner: executes every *.spec module bundled by `python build.py --test`.
-local specs = { "AutoRoll.spec", "Rarity.spec", "Scope.spec", "Settings.spec" }
+local specs = { "AutoRoll.spec", "Rarity.spec", "Scope.spec", "Settings.spec", "M1State.spec", "Loader.spec" }
 local passed, failed = 0, 0
 
 local function check(cond, msg)
