@@ -345,8 +345,8 @@ function Ui.button(scope, parent, text, opts, onClick)
 		end
 		Ui.animate(btn,{BackgroundColor3=btn:GetAttribute("Selected") and Theme.accent or color(v.bg)})
 	end)
- scope:connect(btn.MouseButton1Down,function() if enabled then Ui.animate(btn,{BackgroundColor3=Theme.accentHover},0.08) end end)
- scope:connect(btn.MouseButton1Up,function() if enabled then Ui.animate(btn,{BackgroundColor3=btn:GetAttribute("Selected") and Theme.accent or color(v.bg)}) end end)
+ scope:connect(btn.MouseButton1Down,function() if enabled and not btn:GetAttribute("FixedBackground") then Ui.animate(btn,{BackgroundColor3=Theme.accentHover},0.08) end end)
+ scope:connect(btn.MouseButton1Up,function() if enabled and not btn:GetAttribute("FixedBackground") then Ui.animate(btn,{BackgroundColor3=btn:GetAttribute("Selected") and Theme.accent or color(v.bg)}) end end)
  local focus=Ui.stroke(btn,Theme.accent,1);ownAnimation(scope,focus)
  scope:connect(btn.SelectionGained,function() Ui.animate(focus,{Transparency=0}) end)
  scope:connect(btn.SelectionLost,function() Ui.animate(focus,{Transparency=1}) end)
@@ -733,6 +733,7 @@ function Ui.colorWheel(scope, parent, size, order, onPick)
 		end
 	end
 	local dragging = false
+ scope:connect(UserInputService.WindowFocusReleased,function() dragging=false end)
 	scope:connect(wheel.InputBegan, function(input)
 		local t = input.UserInputType
 		if t == Enum.UserInputType.MouseButton1 or t == Enum.UserInputType.Touch then
@@ -942,10 +943,12 @@ function Ui.dropdown(scope,parent,title,options,value,onChange,order)
  Ui.register(group,title,"Choose: "..table.concat(options,", "));set(value,true)
  return {set=set,node=group}
 end
--- Transient messages live inside the main window; bounded to three, all scoped.
+-- Transient viewport notifications remain visible with the menu minimized.
 function Ui.notifications(scope,parent,getPrefs)
  local Scope=require("Scope")
- local stack=Ui.new("Frame",{Name="NotificationStack",BackgroundTransparency=1,AnchorPoint=Vector2.new(1,1),Position=UDim2.new(1,-20,1,-24),Size=UDim2.new(0.52,0,0,176),ZIndex=40,Parent=parent})
+ local notificationGui=scope:add(Ui.new("ScreenGui",{Name="Ervi_Notifications",ResetOnSpawn=false,IgnoreGuiInset=false,DisplayOrder=352,Parent=parent}))
+ Ui.root(notificationGui)
+ local stack=Ui.new("Frame",{Name="NotificationStack",BackgroundTransparency=1,AnchorPoint=Vector2.new(1,1),Position=UDim2.new(1,-20,1,-24),Size=UDim2.new(0.42,0,0,176),ZIndex=40,Active=false,Interactable=false,Parent=notificationGui})
  local entries={}
  local function layout()
   for i,entry in ipairs(entries) do Ui.animate(entry.frame,{Position=UDim2.new(0,0,1,-i*56),GroupTransparency=0},0.24,nil,"soft") end
@@ -956,7 +959,11 @@ function Ui.notifications(scope,parent,getPrefs)
   entry.scope:close();layout()
  end
  scope:add(function() for _,entry in ipairs(entries) do entry.scope:close() end;table.clear(entries);stack:Destroy() end)
- return function(message)
+ local function sync()
+  notificationGui.Enabled=getPrefs().notificationsEnabled
+  if not notificationGui.Enabled then while #entries>0 do remove(entries[#entries]) end end
+ end
+ local function notify(message)
   if scope.closed or not getPrefs().notificationsEnabled then return end
   if #entries>=3 then remove(entries[1]) end
   local owner=Scope.new("notification")
@@ -972,6 +979,8 @@ function Ui.notifications(scope,parent,getPrefs)
    Ui.animate(frame,{GroupTransparency=1,Position=UDim2.new(at.X.Scale,at.X.Offset+16,at.Y.Scale,at.Y.Offset)},0.16,function() remove(entry) end,"accelerate")
   end))
  end
+ sync()
+ return notify,sync
 end
 
 -- Atlas icons (Lucide, ISC) when the executor can load local images; distinct native shapes

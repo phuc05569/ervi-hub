@@ -6,9 +6,9 @@ local Motion=require("Motion")
 local makeTransport=require("MovementTransport")
 local Input=game:GetService("UserInputService")
 local Run=game:GetService("RunService")
-return function(hub,parent,getPrefs,authority,moving)
- local feature={active=false,held=false,status="Off · targeting preview only",selected=nil,teleportAvailable=authority and authority.available==true}
- local transport=makeTransport(hub,authority)
+return function(hub,parent,getPrefs,authority,moving,sharedTransport)
+ local feature={active=false,held=false,status="Off · Click TP",selected=nil,teleportAvailable=authority and authority.available==true}
+ local transport=sharedTransport or makeTransport(hub,authority)
  local scope,marker,lastCharacter,target,motion,boundKey
  local function hide()
   feature.held=false;target=nil
@@ -28,9 +28,9 @@ return function(hub,parent,getPrefs,authority,moving)
   return false
  end
  function feature.stop()
-  transport.cancel("Click TP disabled");feature.active=false;hide();feature.selected=nil;feature.resultStatus=nil
+  transport.cancel("Click TP disabled",feature);feature.active=false;hide();feature.selected=nil;feature.resultStatus=nil
   if scope then scope:close();scope=nil end
-  marker=nil;lastCharacter=nil;boundKey=nil;feature.status="Off · targeting preview only"
+  marker=nil;lastCharacter=nil;boundKey=nil;feature.status="Off · Click TP"
  end
  function feature.apply()
   if not getPrefs().clickTPEnabled then feature.stop();return end
@@ -63,7 +63,7 @@ return function(hub,parent,getPrefs,authority,moving)
     local ray=cam:ViewportPointToRay(mouse.X,mouse.Y)
     return workspace:Raycast(ray.Origin,ray.Direction*getPrefs().clickTPRange,params)
    end)
-   if not ok or not result then marker.Parent=nil;target=nil;feature.status="Aim at a valid world surface · preview only";return end
+   if not ok or not result then marker.Parent=nil;target=nil;feature.status="Aim at a valid world surface";return end
    local model=result.Instance:FindFirstAncestorOfClass("Model")
    if model and model:FindFirstChildOfClass("Humanoid") then marker.Parent=nil;target=nil;return end
    local pos,normal=result.Position,result.Normal
@@ -88,7 +88,7 @@ return function(hub,parent,getPrefs,authority,moving)
    local owner=scope
    local ok,reason=transport.move(target+Vector3.new(0,3,0),getPrefs().clickTPRange+3,function(status)
     if feature.active and scope==owner then feature.resultStatus=status;feature.status=status end
-   end)
+   end,feature,target)
    feature.resultStatus=ok and transport.status or reason;feature.status=feature.resultStatus
   end)
   scope:connect(Input.InputEnded,function(input) if input.KeyCode.Name==getPrefs().clickTPKey then hide() end end)

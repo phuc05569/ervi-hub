@@ -10,6 +10,7 @@ return {
   local e=E.new();check(not e:evaluate(true,false,20,100,30));check(e:evaluate(true,true,30,100,30))
   check(not e:evaluate(true,true,10,100,30));check(not e:evaluate(false,true,10,100,30));check(not e:evaluate(true,true,10,100,30))
   check(not e:evaluate(true,true,40,100,30));check(e:evaluate(true,true,20,100,30))
-  e:reset();check(not e:evaluate(true,true,0,100,30));check(e:evaluate(true,true,10,100,30))
+  check(not e:evaluate(false,true,90,100,30));check(e:evaluate(true,true,20,100,30))
+  e:reset();check(not e:evaluate(true,true,0,100,30));check(not e:evaluate(true,true,0/0,100,30));check(e:evaluate(true,true,10,100,30))
  end},
 }

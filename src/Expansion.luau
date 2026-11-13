@@ -15,13 +15,16 @@ local makePreview=require("VisualPreview")
 local Logo=require("Logo")
 return function(ctx)
  local hub=ctx.hub
+ local background=require("Background")(hub,ctx.backgroundParent,ctx.prefs)
  local world=makeWorld(hub,ctx.prefs)
  local playerTools=makePlayer(hub,ctx.parent,ctx.prefs,ctx.save)
  local actions=makeActions(hub,ctx.prefs)
  local visuals=makeVisuals(hub,ctx.parent,ctx.prefs)
  local authority=makeAuthority(hub)
  local flight=makeFlight(hub,ctx.prefs,ctx.save,authority)
- local clickTP=makeClickTP(hub,ctx.parent,ctx.prefs,authority,function() return flight.active end)
+ ctx.safe.transport.setAuthority(authority)
+ ctx.safe.beforeMove=function() if flight.active then flight.stop("Safe Zone selected") end end
+ local clickTP=makeClickTP(hub,ctx.parent,ctx.prefs,authority,function() return flight.active end,ctx.safe.transport)
  require("LocationControls")(ctx)
  local pages=ctx.pages
  local new={}
@@ -32,13 +35,16 @@ return function(ctx)
  local diagnostics=makeDiagnostics(ctx,{visuals=visuals,clickTP=clickTP,player=playerTools,world=world,flight=flight,tracker=tracker})
  local refreshControls={}
  local pageRefresh={}
+ local keys
  local function apply()
   if hub.closed then return end
+  if keys then keys.reconcile() end
+  if ctx.syncNotifications then ctx.syncNotifications() end
   Ui.setLanguage(ctx.prefs().language)
   Ui.configureMotion(ctx.prefs())
   ctx.headerRefresh()
   if ctx.statusBarRefresh then ctx.statusBarRefresh() end
-  ctx.safe.checkEmergency();world.apply();world.setBlur(ctx.prefs().backgroundBlur and ctx.isOpen());playerTools.apply();actions.applyFPS();visuals.apply();flight.apply();clickTP.apply();tracker.apply()
+  background.apply();ctx.safe.checkEmergency();world.apply();world.setBlur(ctx.prefs().backgroundBlur and ctx.isOpen());playerTools.apply();actions.applyFPS();visuals.apply();flight.apply();clickTP.apply();tracker.apply()
   for _,fn in ipairs(refreshControls) do fn(true) end
  end
  local function changed(key,value)
@@ -61,6 +67,9 @@ return function(ctx)
   elseif d.kind=="choice" then
    local component=#d.options<=3 and Ui.segment or Ui.dropdown
    control=component(hub,card,d.title,d.options,ctx.prefs()[key],function(v) changed(key,v) end,2)
+  elseif d.kind=="text" then
+   local input=Ui.input(hub,card,d.title,{order=3},function(text) if #text<=300 and not text:find("[%c]") then changed(key,text) end end)
+   control={node=input,set=function(v) input.Text=v end}
   elseif d.kind=="color" then
    local row=Ui.card(card,d.title,3,d.description)
    local grid=Ui.grid(row,35,25,1)
@@ -68,11 +77,24 @@ return function(ctx)
    local buttons={}
    for i,hex in ipairs(swatches) do
     local b=Ui.button(hub,grid,"",{order=i},function() changed(key,hex) end)
-    b.BackgroundColor3=Color3.fromHex(hex:sub(2));b:SetAttribute("FixedBackground",true);buttons[hex]=b
+    b.BackgroundColor3=Color3.fromHex(hex:sub(2));b:SetAttribute("FixedBackground",true);b:SetAttribute("SwatchHex",hex);buttons[hex]=b
    end
    local input=Ui.input(hub,row,"#RRGGBB",{order=2},function(text) if Theme.hex(text) then changed(key,text:upper()) end end)
    Ui.register(input,d.title,d.description)
-   control={node=row,set=function(v) if input.Text~=v then input.Text=v end; for hex,b in pairs(buttons) do b.Text=hex==v and "✓" or "" end end}
+   local wheel,brightness,holder
+   Ui.button(hub,row,"Pick custom color",{order=3,width=190},function()
+    if holder then holder.Visible=not holder.Visible;return end
+    holder=Ui.new("Frame",{BackgroundTransparency=1,AutomaticSize=Enum.AutomaticSize.Y,Size=UDim2.new(1,0,0,0),LayoutOrder=4,Parent=row});Ui.list(holder,6)
+    wheel=Ui.colorWheel(hub,holder,150,1,function(c) changed(key,"#"..c:ToHex():upper()) end)
+    wheel.set(Color3.fromHex(ctx.prefs()[key]:sub(2)))
+    local _,_,v=wheel.get():ToHSV()
+    brightness=Ui.slider(hub,holder,"Color brightness",{min=0,max=1,step=.01,value=v,order=2},function(value) wheel.setValue(value);changed(key,"#"..wheel.get():ToHex():upper()) end)
+   end)
+   control={node=row,set=function(v)
+    if input.Text~=v then input.Text=v end
+    for hex,b in pairs(buttons) do Ui.cancelAnimation(b);b.BackgroundColor3=Color3.fromHex(hex:sub(2));b.Text=hex==v and "✓" or "";b:SetAttribute("ColorSelected",hex==v) end
+    if wheel then wheel.set(Color3.fromHex(v:sub(2)));local _,_,value=wheel.get():ToHSV();brightness.set(value,true) end
+   end}
   else
    local row=Ui.row(card,3,32)
    Ui.text(row,d.title,{size=UDim2.new(0.55,0,1,0),textSize=Theme.size.small})
@@ -95,7 +117,7 @@ return function(ctx)
   if (key=="flyEnabled" or key=="noclipEnabled") and control.setEnabled then control.setEnabled(flight.available) end
   if control then
    local last=ctx.prefs()[key]
-   local refresh=function(force) local value=ctx.prefs()[key];if force or value~=last then control.set(value,true);last=value end end
+   local refresh=function(force) local value=ctx.prefs()[key];if force or value~=last then control.set(value,true);last=value end;if key=="walkSpeed" then control.node.Visible=ctx.prefs().speedMode=="Set" elseif key=="speedMultiplier" then control.node.Visible=ctx.prefs().speedMode=="Multiply" end end
    table.insert(refreshControls,refresh)
    pageRefresh[d.page]=pageRefresh[d.page] or {};table.insert(pageRefresh[d.page],refresh)
   end
@@ -107,8 +129,7 @@ return function(ctx)
   local button,setEnabled=Ui.button(hub,card,"Unsupported",{width=160},function() end);setEnabled(false)
   Ui.register(button,title,description)
  end
- unsupported(new.player,"CFrame Speed / Infinite Jump","No game-authorized API is established. Flight and Noclip above require the explicitly installed owned Studio server; they are disabled in RNG RollAttacks.")
- unsupported(new.visuals,"Mobile Renderer / Dim Behind Walls","All overlays already use native GUI objects, including mobile. Fully hidden players are suppressed, not dimmed. Behind Wall color and hidden-target preview are sample-only; no wallhack or AlwaysOnTop chams is installed.")
+ unsupported(new.player,"CFrame Speed / Infinite Jump","No game-authorized API is established. Flight and Noclip use native local controllers or the owned Studio server when present; game acceptance is reported separately.")
  local preview=makePreview(new.visuals)
  pages.visuals.preview=preview.frame
  local function previewLayout()
@@ -144,6 +165,8 @@ return function(ctx)
  local teleQuick=quick(pages.teleports.page,20)
  ctx.onRefresh("dash","home actions",homeQuick);ctx.onRefresh("utility","utility actions",function() utilityQuick();end)
  ctx.onRefresh("teleports","teleport actions",teleQuick)
+ local backgroundStatus=Ui.text(groups["settings/Background"],"",{order=20})
+ ctx.onRefresh("settings","background load",function() Ui.set(backgroundStatus,"Text",background.status) end)
  local clickStatus=Ui.text(groups["teleports/Click TP"],"",{order=20,textSize=Theme.size.small})
  ctx.onRefresh("teleports","click targeting",function() Ui.set(clickStatus,"Text",clickTP.status) end)
  local fpsStatus=Ui.text(groups["utility/Rendering"],"",{order=5,textSize=Theme.size.small})
@@ -207,19 +230,23 @@ return function(ctx)
  Ui.button(hub,liveDiagnostic,"Measure render cadence (5s)",{order=2,width=240},diagnostics.measure).Name="MeasureRenderCadence"
  local diagnosticStatus=Ui.text(liveDiagnostic,"Diagnostics ready",{order=2,textSize=Theme.size.small})
  ctx.onRefresh("utility","live diagnostic status",function() Ui.set(diagnosticStatus,"Text",diagnostics.status) end)
- local function keyHandler(input)
+ keys=require("Keybinds")(hub,game:GetService("UserInputService"),ctx.prefs,{
+  {key="walkKey",mode="walkKeyMode",get=function() return ctx.prefs().walkEnabled end,set=function(on) ctx.prefs().walkEnabled=on;ctx.save();playerTools.apply() end},
+  {key="flyKey",mode="flyKeyMode",get=function() return ctx.prefs().flyEnabled end,set=function(on) ctx.prefs().flyEnabled=on;ctx.save();flight.apply() end},
+  {key="noclipKey",mode="noclipKeyMode",get=function() return ctx.prefs().noclipEnabled end,set=function(on) ctx.prefs().noclipEnabled=on;ctx.save();flight.apply() end},
+  {key="safeZoneKey",mode="safeZoneKeyMode",get=function() return ctx.safe.enabled end,set=function(on) ctx.safe.setEnabled(on) end},
+ })
+ local function keyHandler(input,processed)
   local p=ctx.prefs();local name=input.KeyCode.Name
+  if processed and name~=p.safeZoneKey then return false end
   if p.panicKey~="NONE" and name==p.panicKey then ctx.stop();return true end
-  if p.walkKey~="NONE" and name==p.walkKey then changed("walkEnabled",not p.walkEnabled);return true end
+  if keys.press(name) then apply();return true end
   if p.espKey~="NONE" and name==p.espKey then changed("espEnabled",not p.espEnabled);return true end
   if p.diagnosticKey~="NONE" and name==p.diagnosticKey then diagnostics.export();return true end
-  for _,binding in ipairs({{"flyKey","flyEnabled"},{"noclipKey","noclipEnabled"}}) do
-   if p[binding[1]]~="NONE" and name==p[binding[1]] and not ctx.keyConflict(name,binding[1]) then flight.toggle(binding[2]);apply();return true end
-  end
   if not flight.active and not ctx.keyConflict(name,"clickTPKey") and clickTP.keyDown(input) then return true end
   return false
  end
  table.insert(ctx.syncs,apply)
  apply();previewLayout()
- return {apply=apply,keyHandler=keyHandler,actions=actions,world=world,visuals=visuals,player=playerTools,clickTP=clickTP,diagnostics=diagnostics,flight=flight,authority=authority,tracker=tracker}
+ return {background=background,apply=apply,keyHandler=keyHandler,actions=actions,world=world,visuals=visuals,player=playerTools,clickTP=clickTP,diagnostics=diagnostics,flight=flight,authority=authority,tracker=tracker}
 end

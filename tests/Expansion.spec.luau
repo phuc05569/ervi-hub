@@ -6,10 +6,17 @@ local Schema=require("FeatureSchema")
 local Locale=require("Locale")
 local Boot=require("BootLog")
 return {
+ {"legacy visibility migration preserves behavior and explicit new value wins",function(_,eq)
+  eq(Settings.parse("[A]\nthroughWalls=true\n",{}).configs.A.visibilityMode,false)
+  eq(Settings.parse("[A]\nthroughWalls=false\n",{}).configs.A.visibilityMode,true)
+  eq(Settings.parse("[A]\nvisibilityMode=true\nthroughWalls=true\n",{}).configs.A.visibilityMode,true)
+  eq(Settings.parse("[A]\nthroughWalls=false\nvisibilityMode=false\n",{}).configs.A.visibilityMode,false)
+  eq(Settings.defaults().teamCheck,nil);eq(Settings.defaults().previewOccluded,nil)
+ end},
  {"through-wall mode admits replicated occluded targets and still respects filters",function(check)
   local p=Settings.defaults();local c={alive=true,clearLine=false,distance=20,sameTeam=false}
-  check(Policy.eligible(p,c));p.throughWalls=false;check(not Policy.eligible(p,c))
-  p.throughWalls=true;c.alive=false;check(not Policy.eligible(p,c));c.alive=true;c.distance=99999;check(not Policy.eligible(p,c))
+  check(Policy.eligible(p,c));p.visibilityMode=true;check(not Policy.eligible(p,c))
+  p.visibilityMode=false;c.alive=false;check(not Policy.eligible(p,c));c.alive=true;c.distance=99999;check(not Policy.eligible(p,c))
  end},
  {"tracers default white and skeleton core defaults one pixel",function(_,eq)
   local p=Settings.defaults();eq(p.tracerColor,"#FFFFFF");eq(p.skeletonThickness,1)
@@ -24,9 +31,9 @@ return {
   local p=Settings.defaults();eq(Policy.chamsColor(p,{}),"#FFFFFF")
   p.enemyColor="#112233";eq(Policy.chamsColor(p,{}),"#112233")
  end},
- {"new speed defaults to Multiply and explicit saved mode is retained",function(_,eq)
-  eq(Settings.defaults().speedMode,"Multiply")
-  eq(Settings.parse("[A]\nspeedMode=Set\n",{}).configs.A.speedMode,"Set")
+ {"new speed defaults to Set and explicit saved Multiply is retained",function(_,eq)
+  eq(Settings.defaults().speedMode,"Set")
+  eq(Settings.parse("[A]\nspeedMode=Multiply\n",{}).configs.A.speedMode,"Multiply")
   eq(Settings.parse("[A]\nfreecam=true\nfreecamSpeed=8\n",{}).configs.A.freecam,nil)
  end},
  {"status bar position precision persists",function(_,eq)
@@ -100,13 +107,13 @@ return {
   eq(a.Value,false);o:close();eq(b.Value,true)
  end},
  {"Visible Only rejects occluded players",function(check)
-  local p=Settings.defaults();p.throughWalls=false;check(not Policy.eligible(p,{alive=true,clearLine=false,distance=10,sameTeam=false}))
+  local p=Settings.defaults();p.visibilityMode=true;check(not Policy.eligible(p,{alive=true,clearLine=false,distance=10,sameTeam=false}))
   check(Policy.eligible(p,{alive=true,clearLine=true,distance=10,sameTeam=false}))
  end},
  {"distance team and dead filters are explicit",function(check)
   local p=Settings.defaults();check(not Policy.eligible(p,{alive=false,clearLine=true,distance=10}))
   check(not Policy.eligible(p,{alive=true,clearLine=true,distance=99999}))
-  check(not Policy.eligible(p,{alive=true,clearLine=true,distance=10,sameTeam=true}));p.showTeammates=true
+  check(Policy.eligible(p,{alive=true,clearLine=true,distance=10,sameTeam=true}));p.showTeammates=true
   check(Policy.eligible(p,{alive=true,clearLine=true,distance=10,sameTeam=true}))
  end},
  {"near and far redraws obey budgets",function(check)

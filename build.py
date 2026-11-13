@@ -10,16 +10,16 @@ import pathlib
 import sys
 
 ROOT = pathlib.Path(__file__).parent
-VERSION = "3.4.0"
+VERSION = "3.5.0-dev"
 APP_MODULES = ["ClickTarget", "ClickTP", "LogoGeometry", "VisualTextStyle", "SliderValue", "Motion", "Logo", "StatusBar", "BootLog", "FeatureSchema", "Locale", "Registry", "PropertyOverrides", "VisualPolicy", "World", "PlayerTools", "RuntimeActions", "Visuals", "VisualPreview", "Expansion", "Scope", "Rarity", "AutoRoll", "Settings", "WindowGeometry", "FloatingWindow", "SafeZoneState", "PositionHold", "SafeZone", "TargetState", "Targets", "M1State", "M1", "Theme", "Ui", "Game", "RollAdapter", "RollObserver", "Session", "Prompts", "App"]
 APP_MODULES[0:0] = ["TrackerState", "PlayerTracker", "MovementPolicy", "MovementAuthority", "Flight", "SkeletonGeometry", "RigSkeleton", "Diagnostics"]
 APP_MODULES.insert(0, "JsonText")
-APP_MODULES[0:0] = ["MovementAttempt", "MovementTransport", "PositionData", "EmergencyState", "LocationControls"]
+APP_MODULES[0:0] = ["MovementAttempt", "MovementTransport", "PositionData", "EmergencyState", "LocationControls", "LocalFlight", "Keybinds", "ImageSource", "Background"]
 APP_MODULES[0:0] = ["UiAssets", "UiImages", "SkeletonStroke"]
 PURE_MODULES = ["ClickTarget", "LogoGeometry", "VisualTextStyle", "SliderValue", "Motion", "BootLog", "FeatureSchema", "Locale", "Registry", "PropertyOverrides", "VisualPolicy", "Scope", "Rarity", "AutoRoll", "Settings", "M1State", "Loader", "WindowGeometry", "SafeZoneState", "TargetState", "PositionHold"]
 PURE_MODULES[0:0] = ["JsonText", "SkeletonGeometry", "MovementPolicy", "TrackerState"]
 PURE_MODULES[0:0] = ["UiAssets", "UiImages", "SkeletonStroke"]
-PURE_MODULES[0:0] = ["MovementAttempt", "PositionData", "EmergencyState"]
+PURE_MODULES[0:0] = ["MovementAttempt", "PositionData", "EmergencyState", "ImageSource", "Keybinds"]
 
 
 def read(path):
@@ -61,7 +61,7 @@ def bundle(modules, entry, out_name, title):
     text = "\n".join(out) + "\n"
     (ROOT / "build").mkdir(exist_ok=True)
     (ROOT / "build" / out_name).write_text(text, encoding="utf-8", newline="\n")
-    (ROOT / "build" / (out_name + ".map.json")).write_text(json.dumps({"build": build_id, "modules": smap}, indent=1), encoding="utf-8")
+    (ROOT / "build" / (out_name + ".map.json")).write_text(json.dumps({"build": build_id, "modules": smap}, indent=1), encoding="utf-8", newline="\n")
     print(f"{out_name}: {len(out) + 1} lines, build {build_id}, sha256 {hashlib.sha256(text.encode()).hexdigest()}")
 
 

@@ -13,6 +13,7 @@ return function(ctx)
   local draft,fields={},{}
   for n,axis in ipairs({"X","Y","Z"}) do
    fields[n]=Ui.input(hub,card,axis,{order=n},function(value) draft[n]=tonumber(value) end)
+   fields[n].Name="Zone"..zone.."_"..axis
   end
   local status=Ui.text(card,"",{order=9})
   Ui.button(hub,card,"Capture Current Position · "..zone,{order=4},function()

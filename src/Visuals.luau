@@ -22,10 +22,11 @@ local function segment(frame,a,b,tint,thickness,transparency)
 end
 return function(hub,parent,getPrefs,playerSource)
  local playerService=playerSource or Players
- local visuals={status="Off · visible players only",active=false,drawn=0,projections=0,rays=0}
+ local visuals={status="Off · replicated player overlays",active=false,drawn=0,projections=0,rays=0}
  local scope,gui
  local records,friends={},{}
  local tracked,candidates,kept={},{},{}
+ local thumbnails={}
  local params
  local lastCharacter,friendMode
  local tick,elapsed=0,0
@@ -36,14 +37,14 @@ return function(hub,parent,getPrefs,playerSource)
  end
  local function drop(player,leaving)
   if records[player] then records[player].scope:close();records[player]=nil end
-  if leaving then friends[player]=nil end
+  if leaving then friends[player]=nil;thumbnails[player.UserId]=nil end
  end
  function visuals.stop()
   visuals.active=false;visuals.drawn=0;visuals.cached=0
   if scope then scope:close();scope=nil end
   for player in pairs(records) do drop(player) end
   for player in pairs(tracked) do closeTracked(player) end
-  records={};friends={};tracked={};table.clear(candidates);table.clear(kept);params=nil;lastCharacter=nil;friendMode=nil;elapsed=0;tick=0
+  records={};friends={};tracked={};thumbnails={};table.clear(candidates);table.clear(kept);params=nil;lastCharacter=nil;friendMode=nil;elapsed=0;tick=0
  end
  local function project(cam,position)
   visuals.projections+=1
@@ -63,7 +64,15 @@ return function(hub,parent,getPrefs,playerSource)
   local r={scope=owned,lines={},bones={},boneOutlines={},boneCache={},visibleParts={}}
   r.root=owned:add(Ui.new("Frame",{Name="ErviPlayerOverlay",Size=UDim2.fromScale(1,1),ClipsDescendants=true,Active=false,Interactable=false,BackgroundTransparency=1,Visible=false,Parent=gui}))
   for _=1,8 do table.insert(r.lines,line(r.root)) end
-  r.tracer=line(r.root);r.health=line(r.root)
+  r.tracer=line(r.root);r.healthOutline=line(r.root);r.health=line(r.root)
+  r.icon=Ui.new("Frame",{Name="AvatarIcon",BackgroundTransparency=1,AnchorPoint=Vector2.new(.5,1),Size=UDim2.fromOffset(28,28),Visible=false,Parent=r.root})
+  Ui.corner(r.icon,100)
+  r.avatarFallback=Ui.text(r.icon,"?",{size=UDim2.fromScale(1,1),align=Enum.TextXAlignment.Center});r.avatarFallback.Name="AvatarFallback"
+  local id=player.UserId
+  if type(id)=="number" and id>0 then thumbnails[id]=thumbnails[id] or ("rbxthumb://type=AvatarHeadShot&id=%d&w=150&h=150"):format(id) end
+  r.avatar=Ui.new("ImageLabel",{Name="AvatarThumbnail",Image=thumbnails[id] or "",BackgroundTransparency=1,Size=UDim2.fromScale(1,1),Parent=r.icon});Ui.corner(r.avatar,100)
+  owned:connect(r.avatar:GetPropertyChangedSignal("IsLoaded"),function() r.avatarFallback.Visible=not r.avatar.IsLoaded end)
+  r.avatarFallback.Visible=not r.avatar.IsLoaded
   r.name=Ui.text(r.root,"",{size=UDim2.fromOffset(500,30),align=Enum.TextXAlignment.Center})
   r.name.AnchorPoint=Vector2.new(0.5,1);r.name.TextWrapped=false
   r.distance=Ui.text(r.root,"",{size=UDim2.fromOffset(220,24),align=Enum.TextXAlignment.Center});r.distance.AnchorPoint=Vector2.new(0.5,0);r.distance.TextWrapped=false
@@ -82,7 +91,7 @@ return function(hub,parent,getPrefs,playerSource)
      for _,l in ipairs(r.lines) do l.Visible=false end
      for _,l in ipairs(r.bones) do l.Visible=false end
      for _,l in ipairs(r.boneOutlines) do l.Visible=false end
-     r.tracer.Visible=false;r.health.Visible=false;r.dot.Visible=false;r.name.Visible=false;r.distance.Visible=false;r.arrow.Visible=false
+     r.icon.Visible=false;r.tracer.Visible=false;r.healthOutline.Visible=false;r.health.Visible=false;r.dot.Visible=false;r.name.Visible=false;r.distance.Visible=false;r.arrow.Visible=false
      if not c.on then
       local vp=cam.ViewportSize;local dx,dy=c.point.X-vp.X/2,c.point.Y-vp.Y/2
       if c.depth<0 then dx,dy=-dx,-dy end
@@ -117,7 +126,14 @@ return function(hub,parent,getPrefs,playerSource)
        local points={{a,Vector2.new(left+w,yTop)},{a,Vector2.new(left,yTop+h)},{b,Vector2.new(right-w,yTop)},{b,Vector2.new(right,yTop+h)},{d,Vector2.new(right-w,yBottom)},{d,Vector2.new(right,yBottom-h)},{e,Vector2.new(left+w,yBottom)},{e,Vector2.new(left,yBottom-h)}}
        for i,pair in ipairs(points) do segment(r.lines[i],pair[1],pair[2],tint) end
       end
-      if p.healthBar then segment(r.health,Vector2.new(left-4,yBottom),Vector2.new(left-4,yBottom-(yBottom-yTop)*math.clamp(c.hum.Health/c.hum.MaxHealth,0,1)),Theme.good,3) end
+      if p.healthBar then
+       local fraction=math.clamp(c.hum.Health/c.hum.MaxHealth,0,1)
+       local high=fraction>.5
+       segment(r.healthOutline,Vector2.new(left-4,yBottom+1),Vector2.new(left-4,yTop-1),color(high and p.healthHighOutline or p.healthLowOutline),5)
+       segment(r.health,Vector2.new(left-4,yBottom),Vector2.new(left-4,yBottom-(yBottom-yTop)*fraction),color(high and p.healthHighColor or p.healthLowColor),3)
+      end
+      r.icon.Visible=p.iconESP
+      r.icon.Size=UDim2.fromOffset(p.iconSize,p.iconSize);r.icon.Position=UDim2.fromOffset(top.X,top.Y-p.espTextSize*2-8)
       local function label(obj,text,x,y,on)
        obj.Text=text;obj.Position=UDim2.fromOffset(x,y)
        TextStyle.apply(obj,Color3.new(1,1,1),Color3.new(0,0,0))
@@ -140,7 +156,7 @@ return function(hub,parent,getPrefs,playerSource)
        local cache=r.boneCache;table.clear(cache)
        local function point(part)
         if cache[part]~=nil then return cache[part] end
-        if not part.Parent or part.Transparency>=1 or part.LocalTransparencyModifier>=1 or not (sample and (p.throughWalls or clearLine(cam,part.Position,c.char,params)) or not sample and r.visibleParts[part]) then cache[part]=false;return false end
+        if not part.Parent or part.Transparency>=1 or part.LocalTransparencyModifier>=1 or not (sample and (not p.visibilityMode or clearLine(cam,part.Position,c.char,params)) or not sample and r.visibleParts[part]) then cache[part]=false;return false end
         if sample then r.visibleParts[part]=true end
         local v,_,z=project(cam,part.Position);local value={v.X,v.Y+p.verticalOffset,z};cache[part]=value;return value
        end
@@ -158,7 +174,7 @@ return function(hub,parent,getPrefs,playerSource)
         local a,b=point(link.a),point(link.b)
         if link.joint and link.joint.Parent and link.joint.Enabled then
          local world=link.b.CFrame:PointToWorldSpace(link.joint.C1.Position)
-         if a and b and (sample and (p.throughWalls or clearLine(cam,world,c.char,params)) or not sample and r.visibleParts[link.joint]) then
+         if a and b and (sample and (not p.visibilityMode or clearLine(cam,world,c.char,params)) or not sample and r.visibleParts[link.joint]) then
           if sample then r.visibleParts[link.joint]=true end
           local v,_,z=project(cam,world);local joint={v.X,v.Y+p.verticalOffset,z}
           bone(i*2-1,a,joint);bone(i*2,joint,b)
@@ -166,8 +182,8 @@ return function(hub,parent,getPrefs,playerSource)
         elseif not link.joint then bone(i*2-1,a,b) end
        end
       end
-      if p.chams and (not p.chamsEnemies or not c.sameTeam) then
-       r.highlight.DepthMode=p.throughWalls and Enum.HighlightDepthMode.AlwaysOnTop or Enum.HighlightDepthMode.Occluded
+      if p.chams then
+       r.highlight.DepthMode=not p.visibilityMode and Enum.HighlightDepthMode.AlwaysOnTop or Enum.HighlightDepthMode.Occluded
        r.highlight.Adornee=c.char;local chamsTint=Policy.chamsColor(p,c)=="#FFFFFF" and Color3.new(1,1,1) or tint;r.highlight.FillColor=chamsTint;r.highlight.OutlineColor=chamsTint
        r.highlight.FillTransparency=p.chamsFill;r.highlight.OutlineTransparency=p.chamsOutline;r.highlight.Enabled=true
       end
@@ -199,11 +215,10 @@ return function(hub,parent,getPrefs,playerSource)
     local h,root,head=candidate.hum,candidate.root,candidate.head
     if h and h.Health>0 and h.MaxHealth>0 and root and head and head.Transparency<1 and head.LocalTransparencyModifier<1 then
      local distance=(root.Position-cam.CFrame.Position).Magnitude
-     local sameTeam=not Game.player.Neutral and not player.Neutral and Game.player.Team~=nil and player.Team==Game.player.Team
-     if distance<=p.maxDistance and (not p.teamCheck or not sameTeam or p.showTeammates) then
+     if distance<=p.maxDistance then
       local point,on,depth=project(cam,head.Position)
       candidate.player,candidate.char,candidate.hum,candidate.root,candidate.head=player,char,h,root,head
-      candidate.distance,candidate.sameTeam,candidate.friend=distance,sameTeam,friends[player]==true
+      candidate.distance,candidate.friend=distance,friends[player]==true
       candidate.point,candidate.on,candidate.depth,candidate.alive=point,on,depth,true
       table.insert(candidates,candidate)
      end
@@ -214,7 +229,7 @@ return function(hub,parent,getPrefs,playerSource)
   table.clear(kept);local drawn=0
   for rank,c in ipairs(candidates) do
    if drawn>=p.maxTargets then break end
-   c.clearLine=p.throughWalls or clearLine(cam,c.head.Position,c.char,params)
+   c.clearLine=not p.visibilityMode or clearLine(cam,c.head.Position,c.char,params)
    if Policy.eligible(p,c) and (c.on or p.offscreenArrows) then
     local r=record(c.player);kept[c.player]=true;drawn+=1
     local redraw,bones=Policy.budget(p,drawn,tick)
@@ -238,7 +253,7 @@ return function(hub,parent,getPrefs,playerSource)
  end
  function visuals.apply()
   local p=getPrefs()
-  if not p.espEnabled then visuals.stop();visuals.status="Off · visible players only";return end
+  if not p.espEnabled then visuals.stop();visuals.status="Off · replicated player overlays";return end
   if visuals.active or hub.closed then return end
   local supported=pcall(function() assert(RaycastParams.new());assert(type(workspace.Raycast)=="function") end)
   if not supported then p.espEnabled=false;visuals.status="Unsupported: native raycast API unavailable";return end

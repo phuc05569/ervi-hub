@@ -4,7 +4,7 @@ local Theme=require("Theme")
 local TextStyle=require("VisualTextStyle")
 local Stroke=require("SkeletonStroke")
 return function(parent)
- local frame=Ui.card(parent,"Visualization preview",0,"Native sample · visibility follows Through Walls")
+ local frame=Ui.card(parent,"Visualization preview",0,"Native sample · Visibility Mode filters live targets")
  local canvas=Ui.new("Frame",{Size=UDim2.new(1,0,0,270),BackgroundColor3=Color3.fromRGB(21,25,35),LayoutOrder=1,Parent=frame})
  canvas:SetAttribute("FixedBackground",true);Ui.corner(canvas,10)
  local center=Ui.new("Frame",{Size=UDim2.fromOffset(150,210),Position=UDim2.new(0.5,-75,0,26),BackgroundTransparency=1,Parent=canvas})
@@ -37,8 +37,8 @@ return function(parent)
  local fillStroke=Ui.stroke(fill,Theme.accent,0)
  local state=Ui.text(frame,"",{order=2,textSize=Theme.size.tiny,color=Theme.muted})
  return {frame=frame,render=function(p,status)
-  local tint=Color3.fromHex((p.previewOccluded and p.wallColor or p.enemyColor):sub(2))
-  local visible=not p.previewOccluded or p.throughWalls
+  local tint=Color3.fromHex(p.enemyColor:sub(2))
+  local visible=true
   box.Visible=visible and p.boxStyle=="Box";boxStroke.Color=tint
   for _,c in ipairs(corners) do c.Visible=visible and p.boxStyle=="Corners";c.BackgroundColor3=tint end
   health.Visible=p.healthBar and visible;head.Visible=p.headDot and visible;head.BackgroundColor3=tint
@@ -52,7 +52,7 @@ return function(parent)
    b.Visible=p.skeleton and visible;b.BackgroundColor3=Color3.new(1,1,1);outlines[i].Visible=b.Visible
   end
   TextStyle.apply(name,Color3.new(1,1,1),Color3.new(0,0,0));TextStyle.apply(distance,Color3.new(1,1,1),Color3.new(0,0,0))
-  name.Visible=p.espNames;name.TextSize=p.espTextSize;name.Text=p.previewOccluded and not p.throughWalls and "Hidden: overlay suppressed" or "Sample player"
+  name.Visible=p.espNames;name.TextSize=p.espTextSize;name.Text="Sample player"
   distance.Visible=p.espDistance;distance.TextSize=p.espTextSize
   center.Position=UDim2.new(0.5,-75,0,26+p.verticalOffset)
   fill.Visible=p.chams and visible;fill.BackgroundColor3=p.enemyColor=="#F0628E" and Color3.new(1,1,1) or tint;fill.BackgroundTransparency=p.chamsFill

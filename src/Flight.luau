@@ -4,6 +4,10 @@ local Game=require("Game")
 local Input=game:GetService("UserInputService")
 local Run=game:GetService("RunService")
 return function(hub,getPrefs,save,authority)
+ if not authority.available then
+  getPrefs().flyEnabled=false;getPrefs().noclipEnabled=false
+  return require("LocalFlight")(hub,getPrefs,save)
+ end
  local api={active=false,flying=false,noclip=false,available=authority.available,status=authority.status}
  local desired,lastRequest,elapsed,focused=nil,nil,0,true
  local cooldown=0

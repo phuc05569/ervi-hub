@@ -16,7 +16,7 @@ return function(hub,getPrefs,save)
  getPrefs=getPrefs or function() return {} end;save=save or function() end
  local function root() local char=Game.player.Character;return char and char:FindFirstChild("HumanoidRootPart") end
  function feature.saved(zone)
-  zone=zone or feature.zone
+  zone=zone or "A" -- preserve the legacy read-only target selector's reference
   local point=Positions.decode(getPrefs().safeZoneLocations or "")[zone]
   if point then return point.place==game.PlaceId and {place=point.place,components={point.x,point.y,point.z}} or nil end
   return zone=="A" and State.preset(game.PlaceId) or nil
@@ -27,7 +27,7 @@ return function(hub,getPrefs,save)
   all[zone]=point;local encoded=Positions.encode(all)
   if not encoded then return false end
   if feature.enabled and feature.zone==zone then feature.setEnabled(false,true) end
-  getPrefs().safeZoneLocations=encoded;save();return true
+  getPrefs().safeZoneLocations=encoded;save();if feature.checkEmergency then feature.checkEmergency() end;return true
  end
  function feature.select(zone,on)
   if zone~="A" and zone~="B" then return end
@@ -37,7 +37,7 @@ return function(hub,getPrefs,save)
  end
  function feature.describe()
   local part=root();local ok,cf=pcall(function() return {part.CFrame:GetComponents()} end)
-  return State.describe(feature.saved(),ok and cf or nil)
+  return State.describe(feature.saved(feature.zone),ok and cf or nil)
  end
  local function matches(a,b)
   local av,bv={a:GetComponents()},{b:GetComponents()}
@@ -47,19 +47,21 @@ return function(hub,getPrefs,save)
  function feature.setEnabled(on,skipReturn)
   if feature.transitioning or (hub.closed and on) or on==feature.enabled then return end
   feature.transitioning=true
+  if on and feature.beforeMove then feature.beforeMove() end
+  if on and transport.busy then transport.cancel("Superseded by explicit Safe Zone activation") end
   if feature.zone=="B" then
    if not on then
-    transport.cancel("Zone B off · remaining at current position");feature.enabled=false;feature.status=transport.status
+    transport.cancel("Zone B off · remaining at current position",feature);feature.enabled=false;feature.status=transport.status
    else
     local destination=feature.saved("B")
     if not destination then feature.status="Zone B destination missing for this place"
     else
      local c=destination.components
-     local accepted,reason=transport.move(Vector3.new(c[1],c[2],c[3]),nil,function(status)
+     local accepted,reason=transport.move(Vector3.new(c[1],c[2],c[3]),nil,function(status,outcome)
       feature.status="Zone B: "..status.." · protection unverified"
-      if not status:find("observed",1,true) or status:find("not observed",1,true) then feature.enabled=false end
+      if outcome~="observed" and outcome~="server-acknowledged" then feature.enabled=false end
       if feature.onChanged then feature.onChanged(feature.enabled) end
-     end)
+     end,feature)
      feature.enabled=accepted;feature.status=accepted and "Zone B move requested · no protection claim" or reason
     end
    end
@@ -89,7 +91,7 @@ return function(hub,getPrefs,save)
    else
     local char=Game.player.Character
     local ok,originPivot,originRoot=pcall(function() return char:GetPivot(),part.CFrame end)
-    local valid,encoded=pcall(function() return ok and State.encode(game.PlaceId,{originPivot:GetComponents()}) end)
+    local valid,encoded=pcall(function() local c={originPivot:GetComponents()};return ok and Positions.point(game.PlaceId,c[1],c[2],c[3]) end)
     if not valid or not encoded then
      feature.status="Activation origin is invalid; no move performed"
     else
@@ -119,8 +121,9 @@ return function(hub,getPrefs,save)
  end
  function feature.checkEmergency()
   local p=getPrefs();local h=Game.humanoid()
-  if emergency:evaluate(p.emergencyEnabled,feature.saved("B")~=nil,h and h.Health,h and h.MaxHealth,p.emergencyHp or 30) then
-   if feature.enabled and feature.zone=="B" then emergency.status="Already at selected Zone B";return end
+  if emergency:evaluate(p.emergencyEnabled,feature.saved("B")~=nil,root() and h and h.Health,h and h.MaxHealth,p.emergencyHp or 30) then
+   local destination=feature.saved("B");local part=root();local c=destination and destination.components
+   if c and part and (part.Position-Vector3.new(c[1],c[2],c[3])).Magnitude<=6 then emergency.status="Already at configured Zone B · protection unverified";return end
    feature.select("B",true);emergency.status=feature.status
   end
  end
@@ -137,7 +140,8 @@ return function(hub,getPrefs,save)
   end
   if char then
    local h=char:FindFirstChildOfClass("Humanoid");if h then watch(h) end
-   healthScope:connect(char.ChildAdded,watch)
+   healthScope:connect(char.ChildAdded,function(child) watch(child);if child.Name=="HumanoidRootPart" then feature.checkEmergency() end end)
+   healthScope:connect(char.ChildRemoved,function(child) if child.Name=="HumanoidRootPart" then feature.setEnabled(false,true);emergency.status="Waiting for character root" end end)
   end
  end
  bindHealth(Game.player.Character)

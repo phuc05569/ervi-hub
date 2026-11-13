@@ -802,6 +802,7 @@ return function(API)
     ctl.renderBindings=renderBindings
 	function ctl.step(dt)
 		ctl.clock += dt
+		RunService.PreSimulation:Fire(dt)
 		RunService.Heartbeat:Fire(dt)
         RunService.RenderStepped:Fire(dt)
         for _,binding in pairs(table.clone(renderBindings)) do task.spawn(binding.callback,dt) end

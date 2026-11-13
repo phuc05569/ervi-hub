@@ -46,7 +46,7 @@ for _, old in ipairs(playerGui:GetChildren()) do
 		if old.Parent then old:Destroy() end
 	end
 end
-local OWNED_GUIS = { HUB_NAME, "RNG_Cyborg_M1_V6", "RNG_AttackDiagnostic_V5", "RNG_Hub_CombatHUD", "RNG_Hub_M1HUD", "Ervi_MinimizedStatus", "Ervi_MovementPanel", "Ervi_VisibleOverlays" }
+local OWNED_GUIS = { HUB_NAME, "RNG_Cyborg_M1_V6", "RNG_AttackDiagnostic_V5", "RNG_Hub_CombatHUD", "RNG_Hub_M1HUD", "Ervi_MinimizedStatus", "Ervi_MovementPanel", "Ervi_VisibleOverlays", "Ervi_Notifications" }
 for _, old in ipairs(playerGui:GetChildren()) do -- every copy, not just the first match
 	if table.find(OWNED_GUIS, old.Name) then
 		old:Destroy()
@@ -148,6 +148,7 @@ if not store.configs[activeName] then
 end
 local prefs = store.configs[activeName]
 bootStep("Settings loaded: "..activeName)
+local syncBackground=function() end
 local syncs = {} -- each re-reads `prefs` into its control (after loading a config, a reset or a look change)
 Ui.applyLook(prefs)
 Ui.setOpacity(prefs.opacity, Settings.MIN_OPACITY)
@@ -444,13 +445,13 @@ hub:connect(UserInputService.InputBegan, function(input, processed)
   if onSearchInput then onSearchInput(input,processed) end
   return
  end
+ if onKeyCaptured and input.KeyCode.Name=="Unknown" then return end
  if onKeyCaptured then
   local done=onKeyCaptured;onKeyCaptured=nil;done(input.KeyCode);return
  end
  if onSearchInput and onSearchInput(input,processed) then return end
- if prefs.safeZoneKey~="NONE" and input.KeyCode.Name==prefs.safeZoneKey and onSafeKey then onSafeKey();return end
+ if expansionKeys and expansionKeys(input,processed) then return end
  if processed then return end
- if expansionKeys and expansionKeys(input) then return end
  if input.KeyCode==toggleKey then setMinimized(not minimized) end
 end)
 
@@ -927,8 +928,8 @@ end
 local safePage = addPage("safe", "Safe Zone", "Destination, return origin and keybind")
 local teleportsPage=addPage("teleports","Teleports","Server travel")
 do
-    local card=Ui.card(safePage,"Fixed Safe Zone",1,"Destination: X 278.78 · Y -16.30 · Z 7.82. ON records your origin and holds you here. OFF returns you to that origin before releasing movement.")
-    local toggle=Ui.toggle(hub,card,"Enable Safe Zone", "OFF returns once to your activation origin. Death and server corrections release without a return or retry.",false,safeZone.setEnabled,1)
+    local card=Ui.card(safePage,"Safe Zone state",1,"Zone A retains its scoped hold and origin return. Zone B uses a configured destination without an automatic return. Position and game protection are reported separately.")
+    local toggle=Ui.toggle(hub,card,"Enable Safe Zone", "OFF returns once to your activation origin. Death and server corrections release without a return or retry.",safeZone.enabled,safeZone.setEnabled,1)
     safeZone.onChanged=function(on) toggle.set(on,true) end
     local coords=Ui.text(card,"",{order=2,textSize=Theme.size.small})
     local status=Ui.text(card,"",{order=3,textSize=Theme.size.small,color=Theme.muted})
@@ -936,6 +937,7 @@ do
     addSafeKeyControl(card,5)
     onSafeKey=safeZone.keyAction
     onRefresh("safe","safe zone",function()
+        toggle.set(safeZone.enabled,true)
         Ui.set(coords,"Text",safeZone.describe())
         Ui.set(status,"Text",safeZone.status)
         Ui.set(bind,"Text","Key: " .. prefs.safeZoneKey .. " · toggles Safe Zone ON/OFF. Assign a key in Settings; Backspace clears it.")
@@ -1237,6 +1239,7 @@ do
 		end,
 	}, function(v)
 		prefs.opacity = Ui.setOpacity(v, Settings.MIN_OPACITY)
+        syncBackground()
 		savePrefs()
 	end)
 
@@ -1397,7 +1400,7 @@ do
 		end
 	end)
 
-	picker("Background", 45, 80, { { label = "Design", value = "" }, CUSTOM }, "bgColor")
+	picker("Background", 45, 80, { { label = "Design", value = "" }, {label="Black",value="#000000"}, {label="Slate",value="#182030"}, {label="Navy",value="#101030"}, CUSTOM }, "bgColor")
 
 	local textSize = Ui.slider(hub, cA, "Text size", { min = 0.8, max = 1.4, step = 0.05, value = prefs.textScale, order = 50, format = pct }, function(v)
 		setLook("textScale", v)
@@ -1443,18 +1446,19 @@ keyConflict=function(value,except)
  return false
 end
 local function headerRefresh() if searchInput then searchInput.PlaceholderText=prefs.searchKey=="NONE" and "Search settings" or ("Search settings · Ctrl+"..prefs.searchKey) end end
-local notify=Ui.notifications(hub,window,function() return prefs end)
-local expansion=makeExpansion({notify=notify,hub=hub,parent=playerGui,prefs=function() return prefs end,save=savePrefs,pages=pages,addPage=addPage,onRefresh=onRefresh,syncs=syncs,content=content,
+local notify,syncNotifications=Ui.notifications(hub,playerGui,function() return prefs end)
+local expansion=makeExpansion({syncNotifications=syncNotifications,backgroundParent=window,notify=notify,hub=hub,parent=playerGui,prefs=function() return prefs end,save=savePrefs,pages=pages,addPage=addPage,onRefresh=onRefresh,syncs=syncs,content=content,
  width=function() return W end,isOpen=function() return window.Visible and not minimized end,metrics=metrics,build=Build,session=session,roll=autoRoll,safe=safeZone,stop=stopHub,applyPrefs=applyPrefs,
  headerRefresh=headerRefresh,statusBarRefresh=function() if statusBar then statusBar.refresh() end end,sidebarLayout=sidebarLayout,logs=function() return logs end,bootLog=boot.text,
  keyConflict=keyConflict,capture=function(fn) if onKeyCaptured then return false end;onKeyCaptured=fn;return true end})
+syncBackground=expansion.background.apply
 expansionKeys=expansion.keyHandler
 statusBar=makeStatusBar(hub,playerGui,function() return prefs end,savePrefs,function() setMinimized(false) end,selectPage,function()
  local features={}
  local function add(on,label,page) if on then table.insert(features,{label=label,page=page}) end end
  add(autoRoll:isRunning() or autoRoll.state=="Paused","Roll "..autoRoll.state,"roll")
  add(safeZone.enabled,"Safe Zone","safe");add(expansion.visuals.active,"Visuals","visuals")
- add(expansion.player.walkActive,"Speed","player");add(expansion.flight.flying,"Fly","player");add(expansion.flight.noclip,"Noclip","player");add(expansion.clickTP.active,"Click preview","teleports");add(m1.enabled,"M1","combat");add(session.antiAfk,"Anti AFK","utility")
+ add(expansion.player.walkActive,"Speed","player");add(expansion.flight.flying,"Fly","player");add(expansion.flight.noclip,"Noclip","player");add(expansion.clickTP.active,"Click TP","teleports");add(m1.enabled,"M1","combat");add(session.antiAfk,"Anti AFK","utility")
  return {fps=metrics.fps,ping=metrics.ping,rollState=autoRoll.state,features=features}
 end)
 

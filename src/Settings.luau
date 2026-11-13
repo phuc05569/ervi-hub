@@ -75,6 +75,11 @@ end
 
 -- validate[key](string) -> bool for the string-valued keys (injected so this stays testable).
 local function setField(cfg, key, value, validate)
+ if key=="throughWalls" then
+  if not cfg._visibilityExplicit and (value=="true" or value=="false") then cfg.visibilityMode=value=="false" end
+  return
+ end
+ if key=="visibilityMode" and (value=="true" or value=="false") then cfg._visibilityExplicit=true end
 	if Settings.DEFAULTS[key] == nil then
 		return
 	end
@@ -163,9 +168,10 @@ function Settings.parse(text, validate)
 	end
 	for place,name in pairs(store.autoloadGames) do if not store.configs[name] then store.autoloadGames[place]=nil end end
 	for _, cfg in pairs(store.configs) do
+        cfg._visibilityExplicit=nil
 		if cfg.safeZoneKey == cfg.toggleKey then cfg.safeZoneKey = "NONE" end
         local used={[cfg.toggleKey]=true}
-        for _,key in ipairs({"safeZoneKey","panicKey","walkKey","espKey"}) do
+        for _,key in ipairs({"safeZoneKey","panicKey","walkKey","espKey","flyKey","noclipKey","clickTPKey","diagnosticKey"}) do
             if cfg[key]~="NONE" then if used[cfg[key]] then cfg[key]="NONE" else used[cfg[key]]=true end end
         end
 	end

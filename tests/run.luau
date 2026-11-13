@@ -2,6 +2,8 @@
 local specs = { "TrackerState.spec", "MovementPolicy.spec", "SkeletonGeometry.spec", "JsonText.spec", "ClickTarget.spec", "LogoGeometry.spec", "RequestedControls.spec", "SliderValue.spec", "Motion.spec", "AutoRoll.spec", "Rarity.spec", "Scope.spec", "Settings.spec", "M1State.spec", "Loader.spec", "WindowGeometry.spec", "SafeZoneState.spec", "TargetState.spec", "PositionHold.spec", "Expansion.spec", "UiPolish.spec" }
 table.insert(specs,"MovementAttempt.spec")
 table.insert(specs,"PositionData.spec")
+table.insert(specs,"ImageSource.spec")
+table.insert(specs,"Keybinds.spec")
 local passed, failed = 0, 0
 
 local function check(cond, msg)

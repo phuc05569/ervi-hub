@@ -19,7 +19,7 @@ return {
   eq(Settings.parse("[Old]\nscale=1.2\n",{}).configs.Old.customN,500)
  end},
  {"supported ESP policy retains occlusion and live labels use high contrast",function(check,eq)
-  local p={espNames=true,espDistance=true,maxDistance=100,maxTargets=8,teamCheck=false,showTeammates=true}
+  local p={espNames=true,espDistance=true,maxDistance=100,maxTargets=8,visibilityMode=true}
   local target={alive=true,clearLine=true,distance=20,on=true,head={}}
   check(Policy.eligible(p,target));target.clearLine=false;check(not Policy.eligible(p,target))
   local label={};TextStyle.apply(label,"white","black")
