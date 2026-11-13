@@ -35,7 +35,7 @@ local Theme = {
 	radiusSm = 6,
 	pad = 12,
 	gap = 8,
-	rowH = 30,
+	rowH = 32,
 	windowW = 660,
 	windowH = 450,
 	sidebarW = 172,
@@ -54,7 +54,7 @@ Theme.PRESETS = {
 	{ name = "Light", accent = "Indigo", bg = rgb(232, 235, 241), surface = rgb(244, 246, 250), surface2 = rgb(252, 252, 254), raised = rgb(222, 226, 234), hover = rgb(208, 213, 224), stroke = rgb(196, 202, 214), text = rgb(24, 26, 32), muted = rgb(86, 92, 108), faint = rgb(128, 134, 148) },
 }
 
-table.insert(Theme.PRESETS, { name="Bloom",accent="Rose",bg=rgb(22,13,24),surface=rgb(30,20,33),surface2=rgb(39,27,42),raised=rgb(51,34,52),hover=rgb(66,42,63),stroke=rgb(84,53,78),text=rgb(246,233,243),muted=rgb(183,162,183),faint=rgb(131,109,135) })
+table.insert(Theme.PRESETS, { name="Bloom",accent="Rose",bg=rgb(17,15,22),surface=rgb(24,21,31),surface2=rgb(31,27,39),raised=rgb(43,36,51),hover=rgb(58,43,64),stroke=rgb(66,53,75),text=rgb(247,238,248),muted=rgb(190,174,198),faint=rgb(152,133,162) })
 
 Theme.ACCENTS = {
 	{ name = "Indigo", color = rgb(112, 140, 255) },

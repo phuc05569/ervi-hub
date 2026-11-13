@@ -1,5 +1,8 @@
 -- Interface labels only. Player names, API errors and diagnostic evidence stay verbatim.
 local RU={
+ ["Notifications"]="Уведомления",["Notification Duration"]="Длительность уведомлений",
+ ["Motion"]="Анимация",["Reduce Animations"]="Уменьшить анимацию",["Animation Speed"]="Скорость анимации",["UI Scale"]="Масштаб интерфейса",
+ ["General"]="Основное",["Player Overlays"]="Метки игроков",["Appearance"]="Оформление",["Filters"]="Фильтры",
  ["Home"]="Главная",["Combat"]="Бой",["Visuals"]="Визуализация",["Player"]="Игрок",["World"]="Мир",["Safe Zone"]="Безопасная точка",["Teleports"]="Перемещения",["Utility"]="Утилиты",["Config"]="Конфигурации",["Settings"]="Настройки",
  ["Movement"]="Передвижение",["Movement Panel"]="Панель движения",["Panel Size"]="Размер панели",["Speed"]="Скорость",["WalkSpeed"]="Скорость ходьбы",["Walk Speed"]="Скорость ходьбы",["WalkSpeed key"]="Клавиша скорости",["Speed Mode"]="Режим скорости",["Speed Multiplier"]="Множитель скорости",
  ["Lighting"]="Освещение",["Fullbright"]="Яркий свет",["No Fog"]="Без тумана",["No Shadows"]="Без теней",["Custom Time"]="Своё время",["Time of Day"]="Время суток",["Camera"]="Камера",["Reset Camera"]="Сбросить камеру",

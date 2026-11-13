@@ -61,7 +61,7 @@ end
 return Loader
 
 end)()
-local config = { url = "", build = "3.1.0+afe2e9bc90e3" }
+local config = { url = "", build = "3.1.0+ffbbe1486037" }
 local registryKey = "__ERVI_LOADER"
 local registry = type(_G[registryKey]) == "table" and _G[registryKey] or {}
 _G[registryKey] = registry

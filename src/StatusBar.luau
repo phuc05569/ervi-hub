@@ -38,7 +38,11 @@ return function(hub,parent,getPrefs,save,restore,navigate,getState)
    button.Visible=i<=capacity and i<=#entries
    if button.Visible then
     local overflow=#entries>capacity and i==capacity
-    Ui.set(button,"Text",overflow and ("+"..(#entries-capacity+1)) or entries[i].label)
+    local label=overflow and ("+"..(#entries-capacity+1)) or entries[i].label
+    if button.Text~=Ui.localeText(label) then
+     Ui.set(button,"Text",label);button.TextTransparency=0.65
+     Ui.animate(button,{TextTransparency=Ui.textAlpha},0.16)
+    end
     chipTargets[i]=overflow and "dash" or entries[i].page
    end
   end
@@ -70,6 +74,13 @@ return function(hub,parent,getPrefs,save,restore,navigate,getState)
   if not gui.Enabled then return end
   elapsed+=dt;if elapsed>=0.25 then elapsed=0;update() end
  end)
+ hub:connect(frame.MouseEnter,function() Ui.animate(frame,{BackgroundColor3=Theme.raised}) end)
+ hub:connect(frame.MouseLeave,function() Ui.animate(frame,{BackgroundColor3=Theme.surface}) end)
+ local scale=Ui.new("UIScale",{Parent=frame})
+ hub:add(function() Ui.cancelAnimation(frame);Ui.cancelAnimation(scale) end)
  update()
- return {gui=gui,frame=frame,show=function(on) gui.Enabled=on;if on then update() end end}
+ return {gui=gui,frame=frame,show=function(on)
+  gui.Enabled=on
+  if on then update();scale.Scale=0.96;Ui.animate(scale,{Scale=1},0.22) end
+ end}
 end

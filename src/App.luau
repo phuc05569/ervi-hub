@@ -168,7 +168,8 @@ local gui = hub:add(Ui.new("ScreenGui", {
 Ui.root(gui)
 local W, H, TH, SW = prefs.winW, prefs.winH, Theme.titleH, Theme.sidebarW -- W/H change with the resize grip
 local HOME = UDim2.new(0.5, -W / 2, 0.5, -H / 2)
-local window = Ui.new("Frame", {
+local window = Ui.new("CanvasGroup", {
+ Name="ErviWindow",
 	Size = UDim2.fromOffset(W, H),
 	Position = HOME,
 	BackgroundColor3 = Theme.bg,
@@ -224,15 +225,17 @@ local minBtn = titleButton("–", -46)
 local onWindowDragged
 Ui.drag(hub, titleBar, window,function() if onWindowDragged then onWindowDragged(true) end end,function() if onWindowDragged then onWindowDragged(false) end end)
 
-local body = Ui.new("Frame", { BackgroundTransparency = 1, Position = UDim2.fromOffset(0, TH), Size = UDim2.new(1, 0, 1, -TH), Parent = window })
-local sidebar=Ui.scroll(body,{Size=UDim2.new(0,SW,1,-76),ScrollBarThickness=2})
-Ui.pad(sidebar,6,10,10,10);Ui.list(sidebar,4)
+local body = Ui.new("Frame", { Name="Body", BackgroundTransparency = 1, Position = UDim2.fromOffset(0, TH), Size = UDim2.new(1, 0, 1, -TH), Parent = window })
+local sidebar=Ui.scroll(body,{Name="Navigation",Size=UDim2.new(0,SW,1,-120),ScrollBarThickness=2})
+Ui.pad(sidebar,8,10,10,10);Ui.list(sidebar,4)
+local settingsDock=Ui.new("Frame",{Name="SettingsDock",BackgroundTransparency=1,Size=UDim2.new(0,SW-20,0,36),Position=UDim2.new(0,10,1,-112),Parent=body})
 local profile=Ui.new("Frame",{Size=UDim2.new(0,SW-20,0,64),Position=UDim2.new(0,10,1,-72),BackgroundColor3=Theme.surface2,Parent=body})
 Ui.surface(profile);Ui.corner(profile,10);Ui.pad(profile,8)
 Ui.text(profile,player.DisplayName or player.Name,{font=Theme.fontMedium,textSize=12,order=1})
 local profileStatus=Ui.text(profile,"v"..Build.version.." · local tools",{textSize=10,color=Theme.muted,order=2})
 Ui.list(profile,4)
 local content = Ui.new("Frame", {
+ Name="Content",
 	BackgroundColor3 = Theme.surface,
 	Position = UDim2.fromOffset(SW, 0),
 	Size = UDim2.new(1, -SW - 10, 1, -10),
@@ -243,10 +246,10 @@ Ui.surface(content)
 Ui.corner(content, Theme.radius)
 
 local communityButton=Ui.button(hub,body,"Community ↗",{width=SW-20,height=30},function() if prefs.communityLink~="" then Game.copy(prefs.communityLink) end end)
-communityButton.Position=UDim2.new(0,10,1,-110);communityButton.Visible=prefs.communityLink~=""
+communityButton.Position=UDim2.new(0,10,1,-150);communityButton.Visible=prefs.communityLink~=""
 local function sidebarLayout()
  communityButton.Visible=prefs.communityLink~=""
- sidebar.Size=UDim2.new(0,SW,1,prefs.communityLink~="" and -116 or -76)
+ sidebar.Size=UDim2.new(0,SW,1,prefs.communityLink~="" and -158 or -120)
 end
 local userScale = prefs.scale
 local searchBox, searchInput, expansionKeys, onSearchInput
@@ -288,13 +291,27 @@ bindViewport()
 local minimized = false
 local statusBar
 local grip
+local syncBlur
 local function setMinimized(on)
  minimized=on
- body.Visible=not on
+ Ui.cancelAnimation(window);Ui.cancelAnimation(uiScale)
  window.Size=UDim2.fromOffset(W,H)
- window.Visible=not on
- if grip then grip.Visible=not on end
  if statusBar then statusBar.show(on) end
+ if grip then grip.Visible=not on end
+ if on then
+  Ui.animate(uiScale,{Scale=uiScale.Scale*0.97},0.22)
+  Ui.animate(window,{GroupTransparency=1},0.22,function()
+   if minimized then window.Visible=false;body.Visible=false end
+  end)
+ else
+  window.Visible=true;body.Visible=true
+  applyScale()
+  local target=uiScale.Scale
+  uiScale.Scale=target*0.97
+  Ui.animate(uiScale,{Scale=target},0.22)
+  Ui.animate(window,{GroupTransparency=0},0.22)
+ end
+ if syncBlur then syncBlur() end
 end
 
 -- Resize grip in the bottom-right corner: drag to resize; the size is saved in the active config.
@@ -371,7 +388,7 @@ hub:connect(UserInputService.InputBegan, function(input, processed)
  if prefs.safeZoneKey~="NONE" and input.KeyCode.Name==prefs.safeZoneKey and onSafeKey then onSafeKey();return end
  if processed then return end
  if expansionKeys and expansionKeys(input) then return end
- if input.KeyCode==toggleKey then setMinimized(window.Visible) end
+ if input.KeyCode==toggleKey then setMinimized(not minimized) end
 end)
 
 bootStep("Main window and input handlers initialized")
@@ -379,16 +396,24 @@ bootStep("Main window and input handlers initialized")
 -- ===================================================================== tabs
 local pages, order, refreshers = {}, 0, {}
 local NAV={roll=10,styles=20,dash=30,combat=40,visuals=50,player=60,world=70,safe=80,teleports=90,utility=100,config=110,settings=1000,diag=900,session=910}
-local ICON={dash="⌂",combat="◇",trigger="⊕",sounds="♪",friends="♧",visuals="◉",player="♙",world="☼",safe="↗",utility="ϟ",config="▣",settings="☷"}
+local ICON={roll="↻",styles="✦",teleports="↗",dash="⌂",combat="◇",trigger="⊕",sounds="♪",friends="♧",visuals="◉",player="♙",world="☼",safe="↗",utility="ϟ",config="▣",settings="☷"}
+local activePage
 local function selectPage(id)
-	for key, p in pairs(pages) do
+ local changed=activePage~=id
+ activePage=id
+ for key, p in pairs(pages) do
 		local on = key == id
 		p.page.Visible = on
         if p.preview then p.preview.Visible=on end
         if on then Ui.set(headerTitle,"Text",p.label);Ui.set(headerDesc,"Text",p.description) end
 		p.ind.Visible = on
-		p.btn.BackgroundTransparency = on and 0 or 1
-		p.lbl.TextColor3 = on and Theme.text or Theme.muted
+		p.btn:SetAttribute("Selected",on)
+        Ui.animate(p.btn,{BackgroundTransparency=on and 0 or 1},0.16)
+        Ui.animate(p.lbl,{TextColor3=on and Theme.text or Theme.muted},0.16)
+        if on and changed then
+         p.page.Position=UDim2.fromOffset(0,6)
+         Ui.animate(p.page,{Position=UDim2.new()},0.2)
+        end
 		if on and p.onShow then
 			p.onShow()
 		end
@@ -404,16 +429,17 @@ local function addPage(id, label, description)
 		Size = UDim2.new(1, 0, 0, 32),
 		Text = "",
 		LayoutOrder = NAV[id] or order,
-		Parent = sidebar,
+		Parent = id=="settings" and settingsDock or sidebar,
 	})
-	btn:SetAttribute("NavPage",id)
+	btn.Name="Nav_"..id
+ btn:SetAttribute("NavPage",id)
 	Ui.corner(btn)
 	local ind = Ui.new("Frame", { BackgroundColor3 = Theme.accent, Size = UDim2.fromOffset(3, 16), Position = UDim2.new(0, 0, 0.5, -8), Visible = false, Parent = btn })
 	Ui.corner(ind, 2)
 	local lbl = Ui.text(btn, label, { size = UDim2.new(1, -34, 1, 0), font = Theme.fontMedium, color = Theme.muted })
 	lbl.Position = UDim2.fromOffset(30, 0)
-    local icon=Ui.text(btn,ICON[id] or "·",{size=UDim2.new(0,24,1,0),color=Theme.accent,textSize=15})
-    icon.Position=UDim2.fromOffset(6,0)
+    local icon=Ui.navIcon(btn,id)
+    icon.Position=UDim2.fromOffset(6,7)
 	local page = Ui.scroll(content, { Visible = false })
     page:SetAttribute("SearchPage",id)
     page.Name="ErviPage_"..id
@@ -421,9 +447,9 @@ local function addPage(id, label, description)
 	Ui.list(page, 10)
 	pages[id] = { page = page, btn = btn, ind = ind, lbl = lbl, label=label, description=description or "Ervi Hub · "..label }
     if id=="diag" or id=="session" then btn.Visible=false end
-	hub:connect(btn.Activated, function()
-		selectPage(id)
-	end)
+	hub:connect(btn.MouseEnter,function() if not btn:GetAttribute("Selected") then Ui.animate(btn,{BackgroundTransparency=0.45}) end end)
+ hub:connect(btn.MouseLeave,function() Ui.animate(btn,{BackgroundTransparency=btn:GetAttribute("Selected") and 0 or 1}) end)
+ hub:connect(btn.Activated, function() selectPage(id) end)
 	return page, pages[id]
 end
 
@@ -1092,23 +1118,10 @@ do
 		opacity.set(prefs.opacity, true)
 	end)
 
-	Ui.text(c0, "Window size (scales everything, text included)", { font = Theme.fontMedium, order = 4 })
-	local scaleRow = Ui.grid(c0,60,30,5)
-	local scaleButtons = {}
-	for i, pct in ipairs({ 80, 90, 100, 110, 125 }) do
-		scaleButtons[pct / 100] = Ui.button(hub, scaleRow, pct .. "%", { width = 60, order = i }, function()
-			prefs.scale = pct / 100
-			userScale = prefs.scale
-			applyScale()
-			savePrefs()
-			syncAll()
-		end)
-	end
-	table.insert(syncs, function()
-		for s, b in pairs(scaleButtons) do
-			Ui.select(b, math.abs(prefs.scale - s) < 0.001)
-		end
-	end)
+ local scaleSlider=Ui.slider(hub,c0,"UI Scale",{min=0.5,max=1.5,step=0.05,value=prefs.scale,order=5,format=function(v) return ("%d%%"):format(math.floor(v*100+0.5)) end},function(v)
+  prefs.scale=v;userScale=v;applyScale();savePrefs()
+ end)
+ table.insert(syncs,function() scaleSlider.set(prefs.scale,true) end)
 	local resetRow = Ui.row(c0, 7)
 	Ui.button(hub, resetRow, "Reset this config", { width = 150 }, function()
 		for k, v in pairs(Settings.DEFAULTS) do
@@ -1455,7 +1468,8 @@ keyConflict=function(value,except)
  return false
 end
 local function headerRefresh() if searchInput then searchInput.PlaceholderText=prefs.searchKey=="NONE" and "Search settings" or ("Search settings · Ctrl+"..prefs.searchKey) end end
-local expansion=makeExpansion({hub=hub,parent=playerGui,prefs=function() return prefs end,save=savePrefs,pages=pages,addPage=addPage,onRefresh=onRefresh,syncs=syncs,content=content,
+local notify=Ui.notifications(hub,window,function() return prefs end)
+local expansion=makeExpansion({notify=notify,hub=hub,parent=playerGui,prefs=function() return prefs end,save=savePrefs,pages=pages,addPage=addPage,onRefresh=onRefresh,syncs=syncs,content=content,
  width=function() return W end,isOpen=function() return window.Visible and not minimized end,metrics=metrics,build=Build,session=session,roll=autoRoll,safe=safeZone,stop=stopHub,applyPrefs=applyPrefs,
  headerRefresh=headerRefresh,sidebarLayout=sidebarLayout,logs=function() return logs end,bootLog=boot.text,
  keyConflict=keyConflict,capture=function(fn) if onKeyCaptured then return false end;onKeyCaptured=fn;return true end})
@@ -1470,7 +1484,7 @@ statusBar=makeStatusBar(hub,playerGui,function() return prefs end,savePrefs,func
 end)
 
 bootStep("Shared UI catalog and expansion features initialized")
-local function syncBlur() expansion.world.setBlur(prefs.backgroundBlur and window.Visible and not minimized) end
+syncBlur=function() expansion.world.setBlur(prefs.backgroundBlur and window.Visible and not minimized) end
 hub:connect(window:GetPropertyChangedSignal("Visible"),function() minimized=not window.Visible;body.Visible=window.Visible;if grip then grip.Visible=window.Visible end;if statusBar then statusBar.show(not window.Visible) end;syncBlur() end)
 hub:connect(body:GetPropertyChangedSignal("Visible"),syncBlur)
 -- Search uses entries registered by actual shared controls, including legacy sections.
@@ -1498,7 +1512,9 @@ local function openResult(index)
  end
  control:SetAttribute("SearchFocused",true)
  selection:add(function() if control.Parent then control:SetAttribute("SearchFocused",nil) end end)
- selection:add(Ui.stroke(control,Theme.accent,0))
+ local focusStroke=selection:add(Ui.stroke(control,Theme.accent,1))
+ Ui.animate(focusStroke,{Transparency=0},0.18)
+ selection:add(function() Ui.cancelAnimation(focusStroke) end)
  -- AutomaticSize/visibility layout must settle before AbsolutePosition is reliable.
  local frames=0;local listener
  listener=selection:connect(RunService.Heartbeat,function()
@@ -1511,7 +1527,7 @@ local function openResult(index)
     local ok=pcall(function()
      local current=node.CanvasPosition or Vector2.new()
      local offset=math.max(0,current.Y+control.AbsolutePosition.Y-node.AbsolutePosition.Y-16)
-     node.CanvasPosition=Vector2.new(current.X,offset)
+     Ui.animate(node,{CanvasPosition=Vector2.new(current.X,offset)},0.18)
      node:SetAttribute("SearchTargetOffset",offset)
     end)
     if ok then control:SetAttribute("SearchScrolled",true) end
@@ -1548,7 +1564,7 @@ onSearchInput=function(input,processed)
  end
  local ok,ctrl=pcall(function() return UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) or UserInputService:IsKeyDown(Enum.KeyCode.RightControl) end)
  if not processed and not focused and ok and ctrl and input.KeyCode.Name==prefs.searchKey and prefs.searchKey~="NONE" then
-  window.Visible=true;setMinimized(false);searchInput:CaptureFocus();searchResults();return true
+  setMinimized(false);searchInput:CaptureFocus();searchResults();return true
  end
  return false
 end

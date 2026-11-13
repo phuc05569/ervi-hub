@@ -31,6 +31,7 @@ return function(ctx)
  end
  local function changed(key,value)
   ctx.prefs()[key]=value;ctx.save();apply()
+  if type(value)=="boolean" and ctx.notify then local title=key;for _,d in ipairs(Schema) do if d.key==key then title=d.title;break end end;ctx.notify(Ui.localeText(title).." · "..(value and "ON" or "OFF")) end
  end
  local groups={}
  local groupCount=0
@@ -44,7 +45,7 @@ return function(ctx)
   if d.kind=="bool" then
    control=Ui.toggle(hub,card,d.title,d.description,ctx.prefs()[key],function(v) changed(key,v) end,1)
   elseif d.kind=="number" then
-   control=Ui.slider(hub,card,d.title,{min=d.min,max=d.max,step=d.step,value=ctx.prefs()[key],order=2,description=d.description,format=function(v) return ("%.2f"):format(v):gsub("%.00$","") end},function(v) changed(key,v) end)
+   control=Ui.slider(hub,card,d.title,{min=d.min,max=d.max,step=d.step,value=ctx.prefs()[key],order=2,description=d.description,format=function(v) if key=="chamsFill" or key=="chamsOutline" then return ("%d%%"):format(math.floor(v*100+0.5)) end;return require("SliderValue").format(v,d.step) end},function(v) changed(key,v) end)
   elseif d.kind=="choice" then
    local component=#d.options<=3 and Ui.segment or Ui.dropdown
    control=component(hub,card,d.title,d.options,ctx.prefs()[key],function(v) changed(key,v) end,2)
@@ -77,7 +78,7 @@ return function(ctx)
    Ui.register(button,d.title,d.description)
    control={node=button,set=function(v) button.Text=v end}
   end
-  if control and control.node then control.node:SetAttribute("SettingKey",key) end
+  if control and control.node then control.node.Name="Setting_"..key;control.node:SetAttribute("SettingKey",key) end
   if key=="fpsCap" and control.setEnabled then control.setEnabled(actions.fpsSupported) end
   if control then
    local last=ctx.prefs()[key]
@@ -134,23 +135,19 @@ return function(ctx)
  ctx.onRefresh("utility","FPS cap status",function() Ui.set(fpsStatus,"Text",actions.fpsStatus) end)
  -- Welcome and performance use native shapes rather than borrowed art.
  local welcome=Ui.card(pages.dash.page,"Welcome · Ervi Hub",-10)
- local official=Logo.create(welcome,UDim2.fromOffset(42,45));official.LayoutOrder=-1
- local avatar=Ui.new("ImageLabel",{Image="",BackgroundTransparency=1,Size=UDim2.fromOffset(52,52),LayoutOrder=0,Parent=welcome});Ui.corner(avatar,26)
+ local identity=Ui.new("Frame",{BackgroundTransparency=1,Size=UDim2.new(1,0,0,60),Parent=welcome})
+ local avatar=Ui.new("ImageLabel",{Image="",BackgroundTransparency=1,Size=UDim2.fromOffset(44,44),Position=UDim2.fromOffset(0,4),Parent=identity});Ui.corner(avatar,22)
  if type(Game.player.UserId)=="number" and Game.player.UserId>0 then avatar.Image=("rbxthumb://type=AvatarHeadShot&id=%d&w=150&h=150"):format(Game.player.UserId) end
- Ui.text(welcome,"Welcome back, "..(Game.player.DisplayName or Game.player.Name),{order=1,font=Theme.fontBold,textSize=18})
- local info=Ui.text(welcome,"",{order=2,textSize=Theme.size.small})
- local ring=Ui.new("Frame",{BackgroundTransparency=1,Size=UDim2.new(1,0,0,120),LayoutOrder=3,Parent=welcome})
+ Ui.text(identity,"Welcome back, "..(Game.player.DisplayName or Game.player.Name),{size=UDim2.new(1,-60,0,24),font=Theme.fontBold,textSize=18}).Position=UDim2.fromOffset(56,2)
+ local info=Ui.text(identity,"",{size=UDim2.new(1,-60,0,30),textSize=Theme.size.small,color=Theme.muted});info.Position=UDim2.fromOffset(56,26)
+ local ring=Ui.new("Frame",{BackgroundColor3=Theme.surface,Size=UDim2.new(1,0,0,54),LayoutOrder=3,Parent=welcome});Ui.corner(ring,8)
  local arcs={}
- for i=1,32 do
-  local angle=(i-1)*math.pi*2/32
-  local segment=Ui.new("Frame",{Size=UDim2.fromOffset(4,8),Position=UDim2.new(0.5,math.cos(angle)*46,0.5,math.sin(angle)*46),Rotation=math.deg(angle)-90,BackgroundColor3=Theme.accent,BorderSizePixel=0,Parent=ring})
-  Ui.corner(segment,2);arcs[i]=segment
- end
- local fps=Ui.text(ring,"0 FPS",{size=UDim2.fromOffset(90,40),font=Theme.fontBold,textSize=20,align=Enum.TextXAlignment.Center})
- fps.Position=UDim2.new(0.5,-45,0.5,-20)
+ local fps=Ui.text(ring,"0 FPS",{size=UDim2.new(0.5,-16,1,0),font=Theme.fontBold,textSize=20});fps.Position=UDim2.fromOffset(12,0)
+ local latency=Ui.text(ring,"",{size=UDim2.new(0.5,-16,1,0),font=Theme.mono,textSize=14,align=Enum.TextXAlignment.Right,color=Theme.muted});latency.Position=UDim2.new(0.5,0,0,0)
  local gameInfo=Ui.card(pages.dash.page,"Game and server",-9)
  local gameIcon=Ui.new("ImageLabel",{Image="",Size=UDim2.fromOffset(56,56),BackgroundTransparency=1,LayoutOrder=0,Parent=gameInfo});Ui.corner(gameIcon,10)
  if type(game.GameId)=="number" and game.GameId>0 then gameIcon.Image=("rbxthumb://type=GameIcon&id=%d&w=150&h=150"):format(game.GameId) end
+ gameIcon.Visible=type(game.GameId)=="number" and game.GameId>0
  local server=Ui.text(gameInfo,"",{order=1,textSize=Theme.size.small})
  local active=Ui.card(pages.dash.page,"Active now · click to disable",-6)
  local chipGrid=Ui.grid(active,135,28,1)
@@ -173,7 +170,7 @@ return function(ctx)
  ctx.onRefresh("dash","expanded dashboard",function()
   local metrics=ctx.metrics
   Ui.set(info,"Text",("%s · Ervi Hub %s · %.0fm in this hub session"):format(game.PlaceId==119338513416973 and "RNG RollAttacks" or tostring(game.PlaceId),ctx.build.version,(os.clock()-started)/60))
-  Ui.set(fps,"Text",metrics.fps.." FPS")
+  Ui.set(fps,"Text",metrics.fps.." FPS");Ui.set(latency,"Text",metrics.ping.." ms")
   for i,arc in ipairs(arcs) do Ui.set(arc,"BackgroundTransparency",i/32<=math.clamp(metrics.fps/240,0,1) and 0 or 0.85) end
   Ui.set(server,"Text",("Players %d/%s · %d ms · Job %s"):format(#game:GetService("Players"):GetPlayers(),tostring(game:GetService("Players").MaxPlayers or "?"),metrics.ping,tostring(game.JobId or "unavailable")))
   local any=false

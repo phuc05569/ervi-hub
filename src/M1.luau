@@ -97,6 +97,7 @@ return function(hub, parent, getPrefs, save)
 				Ui.set(title, "Text", (s.style or "No style") .. "  M1")
 				Ui.set(big, "Text", s.status == "COOLDOWN" and ("%.2fs"):format(s.remaining) or s.status)
 				Ui.set(note, "Text", s.evidence)
+                Ui.set(big,"TextColor3",s.status=="READY" and Theme.good or s.status=="COOLDOWN" and Theme.accent or Theme.muted)
 			end
 			render()
 			overlayScope:connect(RunService.Heartbeat, function(dt)
