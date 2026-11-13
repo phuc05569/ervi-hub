@@ -1,18 +1,21 @@
 # Changelog
 
 ## 3.1.0 development handoff (2026-11-13), NOT LIVE TESTED
-- Verified checkpoint build 3.1.0+fab970143613; bundle SHA-256 `b8b827cae9760798c935a6dec0884cdd943e9139cd9068cfc27ffc44dbc6bee4`.
+- Verified checkpoint build 3.1.0+5e9595329868; bundle SHA-256 `40b200576e75bb56f176c6df6fc25cecf611351bd9faabeff446f6cd209c1bc5`.
 - Added persisted Status Bar Opacity control with immediate updates to the minimized pill background.
 - ESP name/distance labels now share white text and visible black outlines through a reusable style helper.
 - Added Auto Roll Custom N integer slider (1–5000) and synchronized exact input; values clamp at bounds, reject decimal/text input, persist, and update the active rarity target.
 - Added dedicated regression tests for schema defaults/ranges, save/load and legacy compatibility, actual pill updates, rendered ESP styling, and Custom N synchronization/clamping/target application.
-- Verification: **140 unit tests, 0 failures; 467 smoke checks, 0 failures; both Luau artifacts compile; two consecutive bundles are byte-identical**. Roblox Studio and live-game behavior were not verified.
+- Verification: **144 unit tests, 0 failures; 476 smoke checks, 0 failures; both Luau artifacts compile; two consecutive bundles are byte-identical**. Roblox Studio and live-game behavior were not verified.
 - The original 3.1 features remain on the development branch. CFrame Speed/Fly and live Windows/Roblox verification remain unfinished.
+- Logo source audit found a clean 1024×1087 transparent PNG and matching SVG, but Roblox cannot consume these local files without an uploaded asset ID. Native geometry now uses 2× scanline sampling (276 rows for the 138-row viewbox) and exact 130:138 sizing at each logo location. Added geometry and multi-size aspect regression tests.
+- GUI visual source pass also made minimized status fill, border and feature-chip backgrounds respond together across 0–100% opacity, displayed opacity as a percent, and made notifications smaller and translucent.
+- Roblox Studio MCP was unavailable for screenshots: Studio opened and responded, but MCP listed zero connected places and the previous instance ID was disconnected. No actual Studio screenshots or live GUI verification were produced; remaining rendering quality is not marked visually verified.
 - Transparent owner-logo assets and native mark; independent draggable minimized status pill with real feature chips/FPS/ping/roll state and click-to-restore.
 - Auto Roll/Styles first, Settings last; removed Friends/Sounds/Triggerbot/Freecam. Multiply default preserves saved Set.
 - Safe Zone key controls in its own tab and Settings; typing/conflict guards; explicit OFF returns to per-activation origin before releasing hold. Corrections/death release without return.
 - Search reveals target ancestors and waits for layout before scrolling/highlighting. Removed optional Auto Roll safety UI/rare pause/default roll cap while retaining request protocol guarantees.
-- 131 unit tests and 441 smoke checks pass; both artifacts compile and rebuild deterministically. CFrame Speed/Fly and live Windows/Roblox verification remain unfinished.
+- Earlier baseline: 131 unit tests and 441 smoke checks passed; both artifacts compiled and rebuilt deterministically. CFrame Speed/Fly and live Windows/Roblox verification remain unfinished.
 
 
 ## 3.0.0 (2026-11-13), build 3.0.0+e31b35baa4a4, NOT LIVE TESTED

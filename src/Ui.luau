@@ -848,10 +848,10 @@ end
 -- Transient messages live inside the main window; bounded to three, all scoped.
 function Ui.notifications(scope,parent,getPrefs)
  local Scope=require("Scope")
- local stack=Ui.new("Frame",{Name="NotificationStack",BackgroundTransparency=1,AnchorPoint=Vector2.new(1,1),Position=UDim2.new(1,-20,1,-24),Size=UDim2.new(0.7,0,0,208),ZIndex=40,Parent=parent})
+ local stack=Ui.new("Frame",{Name="NotificationStack",BackgroundTransparency=1,AnchorPoint=Vector2.new(1,1),Position=UDim2.new(1,-20,1,-24),Size=UDim2.new(0.52,0,0,176),ZIndex=40,Parent=parent})
  local entries={}
  local function layout()
-  for i,entry in ipairs(entries) do Ui.animate(entry.frame,{Position=UDim2.new(0,0,1,-i*66),GroupTransparency=0},0.18) end
+  for i,entry in ipairs(entries) do Ui.animate(entry.frame,{Position=UDim2.new(0,0,1,-i*56),GroupTransparency=0},0.18) end
  end
  local function remove(entry)
   local index=table.find(entries,entry)
@@ -863,9 +863,9 @@ function Ui.notifications(scope,parent,getPrefs)
   if scope.closed or not getPrefs().notificationsEnabled then return end
   if #entries>=3 then remove(entries[1]) end
   local owner=Scope.new("notification")
-  local frame=owner:add(Ui.new("CanvasGroup",{Name="Notification",BackgroundColor3=Theme.raised,GroupTransparency=1,Size=UDim2.new(1,0,0,58),Position=UDim2.new(0,12,1,0),ZIndex=40,Parent=stack}))
-  Ui.corner(frame,8);Ui.stroke(frame,Theme.accent,0.6);Ui.pad(frame,10)
-  Ui.text(frame,message,{size=UDim2.fromScale(1,1),textSize=12}).ZIndex=41
+  local frame=owner:add(Ui.new("CanvasGroup",{Name="Notification",BackgroundColor3=Theme.raised,BackgroundTransparency=0.42,GroupTransparency=1,Size=UDim2.new(1,0,0,48),Position=UDim2.new(0,12,1,0),ZIndex=40,Parent=stack}))
+  Ui.corner(frame,8);Ui.stroke(frame,Theme.accent,0.55);Ui.pad(frame,8,10)
+  Ui.text(frame,message,{size=UDim2.fromScale(1,1),textSize=11}).ZIndex=41
   local entry={frame=frame,scope=owner};table.insert(entries,entry)
   owner:add(function() motion.cancel(frame) end)
   Ui.animate(frame,{GroupTransparency=0},0.2);layout()

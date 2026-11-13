@@ -9,7 +9,7 @@ return function(hub,parent,getPrefs,save,restore,navigate,getState)
  local gui=hub:add(Ui.new("ScreenGui",{Name="Ervi_MinimizedStatus",IgnoreGuiInset=true,ResetOnSpawn=false,DisplayOrder=401,Enabled=false,Parent=parent}))
  Ui.root(gui)
  local frame=Ui.new("TextButton",{Name="ErviStatusPill",Text="",BackgroundColor3=Theme.surface,BackgroundTransparency=1-getPrefs().statusOpacity,AutoButtonColor=false,ClipsDescendants=true,Parent=gui})
- Ui.corner(frame,20);Ui.stroke(frame,Theme.stroke,0.25)
+ Ui.corner(frame,20);local outline=Ui.stroke(frame,Theme.stroke,0.25)
  local mark=Logo.create(frame,UDim2.fromOffset(18,20));mark.Position=UDim2.fromOffset(8,9)
  local light=Ui.new("Frame",{Position=UDim2.fromOffset(32,16),Size=UDim2.fromOffset(6,6),BackgroundColor3=Theme.good,BorderSizePixel=0,Parent=frame});Ui.corner(light,3)
  local stats=Ui.text(frame,"",{size=UDim2.fromOffset(132,34),textSize=10,font=Theme.mono,align=Enum.TextXAlignment.Right})
@@ -32,10 +32,13 @@ return function(hub,parent,getPrefs,save,restore,navigate,getState)
  end
  local function update()
   layout()
-  frame.BackgroundTransparency=1-math.clamp(getPrefs().statusOpacity or 0.7,0,1)
+  local opacity=math.clamp(getPrefs().statusOpacity or 0.7,0,1)
+  frame.BackgroundTransparency=1-opacity
+  outline.Transparency=1-opacity*0.75
   local state=getState();local entries=state.features
   local capacity=math.clamp(math.floor((rect.w-206)/66),0,3)
   for i,button in ipairs(chipButtons) do
+   button.BackgroundTransparency=1-opacity*0.45
    button.Visible=i<=capacity and i<=#entries
    if button.Visible then
     local overflow=#entries>capacity and i==capacity

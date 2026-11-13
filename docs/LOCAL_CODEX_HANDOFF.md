@@ -7,7 +7,7 @@ Previous verified development base: `6efc419b3c2c2bb012f7c5acc7f54eb4de84ddf7`. 
 Stable main: `608dc220da4cd144d54c0415a31556264fd1ea0a` (3.0.0).
 Historical 3.1 source checkpoints are preserved in branch history. Fetch the branch and record its tip with `git rev-parse HEAD`; verify the development base above is an ancestor. Do not replace main or rewrite history. Repository visibility was not changed or independently verified.
 
-Target: RNG RollAttacks, PlaceId 119338513416973, universe 10768634654. Windows/Potassium client hub, Luau modules, Python deterministic bundler. Current verified build **3.1.0+fab970143613**; bundle SHA256 `b8b827cae9760798c935a6dec0884cdd943e9139cd9068cfc27ffc44dbc6bee4`.
+Target: RNG RollAttacks, PlaceId 119338513416973, universe 10768634654. Windows/Potassium client hub, Luau modules, Python deterministic bundler. Current verified build **3.1.0+5e9595329868**; bundle SHA256 `40b200576e75bb56f176c6df6fc25cecf611351bd9faabeff446f6cd209c1bc5`.
 Entry: `src/App.luau`; generated `build/Ervi_Hub.luau`, line map `build/Ervi_Hub.luau.map.json`. Never edit generated files. `build/loader.lua` is an intentionally unconfigured distribution template; `loader.json` has no distribution URL. Existing local execution: `loadstring(readfile("Ervi_Hub.luau"))()`.
 
 ## History and preserved work
@@ -39,6 +39,13 @@ Entry: `src/App.luau`; generated `build/Ervi_Hub.luau`, line map `build/Ervi_Hub
 
 Avoid duplicate character observers where shared state suffices, per-frame property fights, duplicate workers or orphaned GUIs. Do not overwrite subsequent game-owned property changes. Status updates run at4Hz only while visible; benchmark native logo/static geometry and overlays locally before optimizing.
 
+## GUI visual pass (2026-11-13)
+The official SVG/PNG assets are clean, high-resolution transparent source assets (the PNG is 1024×1087). Roblox runtime cannot load these repository-local image files in an ImageLabel without a Roblox-hosted asset ID. The current native implementation rasterizes the same three polygons into hard-edged horizontal strips; that scanline method is the likely source of stair-stepped edges. It now uses 276 scanlines for the 138-unit source height, derives height from width using the exact 130:138 viewbox ratio, and removes the sizing constraint that could introduce centering/proportion drift. Geometry tests cover polygon bounds, scan conversion and 18/24/48/96-unit sizing. This is source-level improvement, not a claim that the jagged edges were visually fixed.
+
+Status Bar Opacity now displays 0–100% and drives the pill surface, outline and feature-chip fill together: at 0% pill and chip backgrounds/border disappear while text/logo remain, and at 100% the pill is opaque with translucent chips. Notifications use a narrower stack and 48-pixel translucent cards with 11-pixel text. MockEngine assertions cover these values and the notification dimensions.
+
+Visual-control limitation: Roblox Studio launched and was responsive, but `list_roblox_studios` returned no connected Studio instances; the previously known Studio ID also returned “not connected.” No computer-use screenshot tool is available in this session. Therefore no Studio screenshot was captured and Roblox rendering, animations, dropdown clipping and scaled logo edge quality remain visually unverified. No real GUI visual defect beyond the source-level sizing/background issues was confirmed.
+
 ## Latest regression checkpoint (2026-11-13)
 Status Bar Opacity is a schema-backed number (default 0.70, range 0–1, 0.05 step). Changing it immediately refreshes the minimized pill's actual background transparency; it is saved with each configuration. Older configurations receive the default through schema migration.
 
@@ -46,7 +53,7 @@ ESP name/distance labels use the shared `VisualTextStyle` helper: white text, bl
 
 Auto Roll Custom N is an integer slider from 1 through 5000 plus exact numeric input. Both controls update the same rarity target and preference. Integer values outside the range clamp to the nearest bound; decimals and nonnumeric input are ignored. New and legacy config behavior is covered by settings round-trip tests.
 
-Latest headless verification on this checkpoint: **140 unit tests passed; 467 smoke checks passed; release and loader Luau compilation passed; two consecutive release builds were byte-identical**. Smoke coverage asserts the live minimized bar background changes immediately, a visible mock ESP name label has white text and visible black outline, and Custom N synchronizes, persists, clamps at both ends, rejects decimal/invalid text, and updates the Auto Roll target summary. These tests use MockEngine and do not constitute Roblox Studio or live-game verification. No Studio visual test, Potassium deployment, or live server test was performed for this checkpoint.
+Latest headless verification on this checkpoint: **144 unit tests passed; 476 smoke checks passed; release and loader Luau compilation passed; two consecutive release builds were byte-identical**. Smoke coverage asserts the live minimized bar background changes immediately, a visible mock ESP name label has white text and visible black outline, and Custom N synchronizes, persists, clamps at both ends, rejects decimal/invalid text, and updates the Auto Roll target summary. These tests use MockEngine and do not constitute Roblox Studio or live-game verification. No Studio visual test, Potassium deployment, or live server test was performed for this checkpoint.
 
 ## Verification evidence and commands
 Historical cloud Linux results on the earlier source checkpoint: **131 unit tests, 0 failures; 441 smoke checks, 0 failures**. Release and loader compile successfully with Luau0.746. Rebuilding bundle/map/loader produces identical bytes. `git diff --check` clean; baseline and pre-3.1 backup verified. These are headless mocks, not live Roblox/Studio/Potassium tests. Tests cover config round trips, key/search behavior, exact Safe Zone A→B→A rotation and anchor ordering, return failure/rapid toggles/unload/corrections, worker respawn/single-request/terminal-result behavior, speed restoration, budgets and cleanup.

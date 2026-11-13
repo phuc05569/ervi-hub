@@ -1,4 +1,4 @@
-> **Current 3.1 handoff:** See [LOCAL_CODEX_HANDOFF](../docs/LOCAL_CODEX_HANDOFF.md). Build **3.1.0+a7c09a9da20a**, 131 unit tests / 441 smoke checks passing. The material below records 3.0 and is historical: 3.1 removes Freecam/Friends/Sounds/Triggerbot, reorganizes navigation, defaults speed to Multiply, adds the logo/status pill, fixes search/key capture, and returns Safe Zone to its activation origin on explicit OFF.
+> **Current 3.1 handoff:** See [LOCAL_CODEX_HANDOFF](../docs/LOCAL_CODEX_HANDOFF.md). Build **3.1.0+5e9595329868**, 144 unit tests / 476 smoke checks passing. The material below records 3.0 and is historical: 3.1 removes Freecam/Friends/Sounds/Triggerbot, reorganizes navigation, defaults speed to Multiply, adds the logo/status pill, fixes search/key capture, and returns Safe Zone to its activation origin on explicit OFF.
 
 # Screenshot feature inventory — Ervi Hub 3.0.0
 
@@ -85,7 +85,7 @@ All rows below have a persisted setting, genuine shared control, registry/search
 
 | Reference | Control(s) | Module | Status / test evidence | Limitations |
 |---|---|---|---|---|
-| Window | Ervi branding, original logo and background, version | Theme, App | Implemented; native shapes/gradient; boot and theme smoke | No borrowed moon/cherry artwork |
+| Window | Ervi branding, original logo and background, version | Theme, App, LogoGeometry | Three polygons; exact aspect and scanline geometry headless-tested | Studio screenshot unavailable; native edge smoothing remains visually unverified |
 | Window | 12 sidebar tabs, icons, selected state, profile footer | App | Implemented; all 12 tab navigation smoke | Auto Roll, Styles, Diagnostics and Session remain additional tools |
 | Window | Tab header and description | App | Implemented; registry-search navigation smoke | Diagnostic prose remains English where untranslated |
 | Window | Drag, resize corner, min/max, screen fit, position/size persistence | App, Ui | Implemented; existing resize, viewport and normalized persistence checks | No live layout screenshot available |
@@ -122,4 +122,4 @@ All rows below have a persisted setting, genuine shared control, registry/search
 
 ## Completion boundaries
 
-All listed supported families have actual implementations and headless coverage. Unsupported operations above are not shipped as enabled fake controls. No claimed feature relies on inaccessible Windows files or unobserved live game behavior. Server acceptance, rendering quality on the owner's actual viewport, executable permissions and network access in Potassium remain **not live-tested**. No new Discord integration, third-party assets, public repository or visibility change is included.
+All listed supported families have actual implementations and headless coverage. Unsupported operations above are not shipped as enabled fake controls. Logo source geometry and requested size ratios are headless-tested; the Roblox screenshot pass is blocked because Studio MCP reports no connected instance. No actual visual-correction claim is made. No claimed feature relies on inaccessible Windows files or unobserved live game behavior. Server acceptance, rendering quality on the owner's actual viewport, executable permissions and network access in Potassium remain **not live-tested**. No new Discord integration, third-party assets, public repository or visibility change is included.

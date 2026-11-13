@@ -46,7 +46,7 @@ return function(ctx)
   if d.kind=="bool" then
    control=Ui.toggle(hub,card,d.title,d.description,ctx.prefs()[key],function(v) changed(key,v) end,1)
   elseif d.kind=="number" then
-   control=Ui.slider(hub,card,d.title,{min=d.min,max=d.max,step=d.step,value=ctx.prefs()[key],order=2,description=d.description,format=function(v) if key=="chamsFill" or key=="chamsOutline" then return ("%d%%"):format(math.floor(v*100+0.5)) end;return require("SliderValue").format(v,d.step) end},function(v) changed(key,v) end)
+   control=Ui.slider(hub,card,d.title,{min=d.min,max=d.max,step=d.step,value=ctx.prefs()[key],order=2,description=d.description,format=function(v) if key=="chamsFill" or key=="chamsOutline" or key=="statusOpacity" then return ("%d%%"):format(math.floor(v*100+0.5)) end;return require("SliderValue").format(v,d.step) end},function(v) changed(key,v) end)
   elseif d.kind=="choice" then
    local component=#d.options<=3 and Ui.segment or Ui.dropdown
    control=component(hub,card,d.title,d.options,ctx.prefs()[key],function(v) changed(key,v) end,2)

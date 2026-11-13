@@ -1078,6 +1078,12 @@ return function(API, makeEngine, hubFn, loaderFn, schema)
     check(ctl.teleports==beforeTeleport+1,"Utility: failed server listing never invents a teleport")
     check(find(hubGui(),"TextLabel","0 · unchanged; getfpscap + setfpscap unavailable")~=nil,"Utility: FPS cap compatibility is explicit")
     click(nav("World"));click(toggleRow("No Shadows"))
+    click(nav("World"));click(toggleRow("No Shadows"));ctl.run(0.25)
+    local notice=hubGui():FindFirstChild("Notification",true)
+    check(notice and near(notice.BackgroundTransparency,0.42),"Notifications: surface remains translucent")
+    local noticeText
+    if notice then for _,d in ipairs(notice:GetDescendants()) do if d.ClassName=="TextLabel" then noticeText=d;break end end end
+    check(notice and notice.Size.Y.Offset==48 and noticeText and noticeText.TextSize==11,"Notifications: compact dimensions and readable text")
     click(nav("Settings"))
     click(find(hubGui(),"TextButton","RU"));ctl.run(0.2)
     check(find(hubGui(),"TextLabel","Настройки")~=nil,"Language: Russian interface labels apply")
@@ -1224,6 +1230,10 @@ return function(API, makeEngine, hubFn, loaderFn, schema)
     check(ordered,"Navigation: primary game tools first, Settings last")
     check(nav("Friends")==nil and nav("Sounds")==nil and nav("Triggerbot")==nil,"Navigation: unwanted tabs removed")
     check(hubGui():FindFirstChild("ErviOfficialLogo",true)~=nil,"Official logo: native transparent geometry mounted")
+    local mainLogo=hubGui():FindFirstChild("ErviOfficialLogo",true)
+    local statusLogo=bar:FindFirstChild("ErviOfficialLogo",true)
+    check(mainLogo and math.abs(mainLogo.Size.X.Offset/mainLogo.Size.Y.Offset-130/138)<0.001,"Official logo: main mark keeps the exact aspect ratio")
+    check(statusLogo and math.abs(statusLogo.Size.X.Offset/statusLogo.Size.Y.Offset-130/138)<0.001,"Official logo: status mark keeps the exact aspect ratio")
     click(find(hubGui(),"TextButton","–"));ctl.run(0.3)
     check(not win().Visible and barGui.Enabled,"Status bar: minimize hides entire main window")
     check(bar:GetAttribute("AutoRollState")~=nil,"Status bar: reports Auto Roll state while hidden")
@@ -1239,6 +1249,27 @@ return function(API, makeEngine, hubFn, loaderFn, schema)
     click(sliderBtn("Status Bar Opacity","+"));ctl.run(0.2)
     check(near(bar.BackgroundTransparency,0.25),"Status bar opacity slider immediately changes visible pill",bar.BackgroundTransparency)
     check((ctl.files["RNG_Hub_settings.txt"] or ""):find("statusOpacity=0.75",1,true)~=nil,"Status bar opacity persists")
+    check(find(hubGui(),"TextLabel","75%")~=nil,"Status bar opacity is displayed as percent")
+    click(nav("Combat"));click(toggleRow("Show M1 cooldown HUD"));click(nav("Settings"))
+    local function stepStatusOpacity(plus)
+        local label=find(hubGui(),"TextLabel","Status Bar Opacity")
+        for _,child in ipairs(label.Parent:GetChildren()) do
+            if child.ClassName=="TextButton" and ((plus and child.Text=="+") or (not plus and child.Text~="+")) then click(child);return end
+        end
+    end
+    for _=1,15 do stepStatusOpacity(false) end
+    press("F4")
+    local chip=find(bar,"TextButton","M1")
+    local pillStroke=bar:FindFirstChildOfClass("UIStroke")
+    check(bar.BackgroundTransparency==1 and pillStroke and pillStroke.Transparency==1,"Status bar 0% removes pill fill and border")
+    check(chip and chip.BackgroundTransparency==1,"Status bar 0% removes chip fill while preserving its label",chip and tostring(chip.BackgroundTransparency) or "missing")
+    press("F4")
+    for _=1,20 do stepStatusOpacity(true) end
+    press("F4")
+    check(bar.BackgroundTransparency==0 and pillStroke and math.abs(pillStroke.Transparency-0.25)<0.001,"Status bar 100% shows pill surface and subtle border")
+    check(chip and math.abs(chip.BackgroundTransparency-0.55)<0.001,"Status bar 100% keeps chips translucent",chip and tostring(chip.BackgroundTransparency) or "missing")
+    press("F4")
+    click(nav("Combat"));click(toggleRow("Show M1 cooldown HUD"))
     click(nav("Auto Roll"))
     local nBox
     for _,d in ipairs(hubGui():GetDescendants()) do if d.ClassName=="TextBox" and d.Name=="Input_customN" then nBox=d end end
