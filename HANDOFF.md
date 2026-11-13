@@ -2,11 +2,11 @@
 
 Client-side GUI hub for the Roblox game **RNG RollAttacks** (place `119338513416973`, universe `10768634654`), run by the owner through the **Potassium** executor on Windows 11. The owner is a beginner at scripting. Keep the steps you ask them to do short and exact (for example "paste X, press Run, roll 3 times, press Copy report").
 
-Current cloud build: **2.5.0+c99431989fa5**, `build/Ervi_Hub.luau`, sha256 `5ea81fc74b0f68239596fdee60f8c21931239ce2c056cfaf05196379471eecdb`.
-Windows-installed build remains unverified (historical version 2.4.0).
+Current cloud build: **2.6.0+d4bd70143994**, `build/Ervi_Hub.luau`, sha256 `d30cc337d164f382504e4c50b6194792aabdd1ce626120e07f6cb0620cab22b5`.
 
-**2.5.0 continuation:** Read [reports/CONTINUATION_2_5_0.md](reports/CONTINUATION_2_5_0.md) and the new README section before continuing. New modules: `M1State` (pure candidate deadline interpretation), `M1` (event subscriptions and optional 10 Hz HUD), `Loader` (pure loader core). `loader.json` is the authoritative loader URL config; it is blank until publication is approved. The bundler emits `build/loader.lua`. New totals: 68 unit tests / 210 smoke checks. Cyborg V6 is unchanged. No live game test, Windows deployment or GitHub push occurred. The remaining older sections describe the historical 2.4.0 state unless superseded here.
-Private repo: `github.com/phuc05569/ervi-hub` (verified PRIVATE, so its raw link returns 404).
+**2.6.0 continuation:** Read [reports/CONTINUATION_2_6_0.md](reports/CONTINUATION_2_6_0.md), AGENTS.md and the current README section first. This supersedes historical descriptions below. Only one M1 HUD remains; the obsolete Cyborg module/UI was removed. New shared floating-window behavior saves screen-constrained position/size and has no standalone Close button. Safe Zone saves a CFrame reference with an F6 menu shortcut. Target selection is a manual-combat alternative; floating, return and Auto M1 are explicitly unavailable. Auto Roll can wait across death in its existing worker. Current totals: 99 unit / 245 smoke checks. No live validation or Windows deployment occurred.
+
+The owner authorized pushing updates to the existing GitHub repository. Version 2.5.0 was pushed in commit `1374017`; use the current remote/ref for newer commits. Visibility must remain unchanged. Windows-installed copies and current repository visibility are unverified. Earlier private-repository claims are historical. Raw branch URLs have served cached old builds; verify an immutable commit URL after pushing.
 
 ## 1. Where things are
 

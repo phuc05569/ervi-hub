@@ -516,6 +516,15 @@ return function(API)
 	function METHODS.GetNetworkPing()
 		return 0.042
 	end
+	function METHODS.GetPlayers(self)
+		local out={}
+		for _,child in ipairs(self:GetChildren()) do if child:IsA("Player") then table.insert(out,child) end end
+		return out
+	end
+	function ctl.cframe(...)
+		local values=table.pack(...)
+		return {GetComponents=function() return table.unpack(values,1,values.n) end}
+	end
 	function METHODS.GetServerTimeNow()
 		return 1000 + ctl.clock
 	end

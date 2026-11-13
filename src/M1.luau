@@ -4,9 +4,10 @@ local State = require("M1State")
 local Scope = require("Scope")
 local Theme = require("Theme")
 local Ui = require("Ui")
+local makeWindow = require("FloatingWindow")
 local RunService = game:GetService("RunService")
 
-return function(hub, parent)
+return function(hub, parent, getPrefs, save)
 	local player = Game.player
 	local state = State.new()
 	local feature = { enabled = false }
@@ -75,27 +76,21 @@ return function(hub, parent)
 		if hub.closed or on == feature.enabled then return end
 		feature.enabled = on
 		if overlayScope then overlayScope:close(); overlayScope = nil end
+		feature.refreshLayout = nil
 		if on then
 			overlayScope = Scope.new("m1-overlay")
-			local gui = overlayScope:add(Ui.new("ScreenGui", {
-				Name = "RNG_Hub_M1HUD", ResetOnSpawn = false,
-				ZIndexBehavior = Enum.ZIndexBehavior.Sibling, DisplayOrder = 301, Parent = parent,
-			}))
-			Ui.root(gui)
-			local frame = Ui.new("Frame", {
-				Size = UDim2.fromOffset(310, 0), AutomaticSize = Enum.AutomaticSize.Y,
-				Position = UDim2.new(0.5, -155, 0.55, 0), BackgroundColor3 = Theme.surface,
-				BackgroundTransparency = 0.06, Active = true, Parent = gui,
-			})
-			Ui.surface(frame)
-			Ui.corner(frame, Theme.radius)
-			Ui.pad(frame, 10, 12)
-			Ui.list(frame, 6)
-			local title = Ui.text(frame, "M1", { order = 1, font = Theme.fontBold })
-			Ui.drag(overlayScope, title, frame)
-			local big = Ui.text(frame, "UNKNOWN", { order = 2, textSize = Theme.size.big })
-			local note = Ui.text(frame, "", { order = 3, textSize = Theme.size.small, color = Theme.muted })
-			Ui.button(overlayScope, frame, "Close M1 HUD", { order = 4 }, function() feature.setEnabled(false) end)
+			local floating = makeWindow(overlayScope, parent, "RNG_Hub_M1HUD", function()
+				local p = getPrefs()
+				return {x=p.m1X,y=p.m1Y,w=p.m1W,h=p.m1H}
+			end, function(rect)
+				local p = getPrefs()
+				p.m1X,p.m1Y,p.m1W,p.m1H=rect.x,rect.y,rect.w,rect.h
+				save()
+			end)
+			feature.refreshLayout = floating.refresh
+			local title = floating.title
+			local big = Ui.text(floating.body, "UNKNOWN", { order = 1, textSize = Theme.size.big })
+			local note = Ui.text(floating.body, "", { order = 2, textSize = Theme.size.small, color = Theme.muted })
 			local elapsed = 0
 			local function render()
 				local s = feature.snapshot()

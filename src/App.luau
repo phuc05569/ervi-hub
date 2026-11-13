@@ -12,7 +12,9 @@ local Game = require("Game")
 local Rarity = require("Rarity")
 local AutoRoll = require("AutoRoll")
 local makeAdapter = require("RollAdapter")
-local makeCyborg = require("Cyborg")
+local makeSafeZone = require("SafeZone")
+local SafeZoneState = require("SafeZoneState")
+local makeTargets = require("Targets")
 local makeM1 = require("M1")
 local makeObserver = require("RollObserver")
 local Settings = require("Settings")
@@ -94,6 +96,8 @@ local function inList(list)
 end
 local validators = {
 	toggleKey = isKey,
+	safeKey = isKey,
+	safeZone = function(value) return value == "" or SafeZoneState.decode(value) ~= nil end,
 	theme = inList(Theme.PRESETS),
 	accent = function(name)
 		return name == "" or Theme.hex(name) ~= nil or Theme.find(Theme.ACCENTS, name) ~= nil
@@ -296,10 +300,12 @@ end)
 -- Toggle key. While `onKeyCaptured` is set, the next keyboard key is captured instead (Esc cancels).
 local toggleKey = Enum.KeyCode[prefs.toggleKey]
 local onKeyCaptured
+local onSafeKey
 hub:connect(UserInputService.InputBegan, function(input, processed)
 	if input.UserInputType ~= Enum.UserInputType.Keyboard then
 		return
 	end
+	if processed or UserInputService:GetFocusedTextBox() then return end
 	if onKeyCaptured then
 		local done = onKeyCaptured
 		onKeyCaptured = nil
@@ -309,7 +315,9 @@ hub:connect(UserInputService.InputBegan, function(input, processed)
 	if processed or UserInputService:GetFocusedTextBox() then
 		return -- typing in chat or a text box
 	end
-	if input.KeyCode == toggleKey then
+	if input.KeyCode.Name == prefs.safeKey and onSafeKey then
+		onSafeKey()
+	elseif input.KeyCode == toggleKey then
 		window.Visible = not window.Visible
 	end
 end)
@@ -365,10 +373,11 @@ local function badge(ok, okText, badText)
 end
 
 -- ===================================================================== features
-local cyborg = makeCyborg(hub, playerGui, metrics, log)
-local m1 = makeM1(hub, playerGui)
+local m1 = makeM1(hub, playerGui, function() return prefs end, savePrefs)
+local safeZone = makeSafeZone(function() return prefs end, savePrefs)
+local targets = makeTargets(hub, function() return prefs end, safeZone)
 local observer = makeObserver(hub, log)
-local autoRoll = AutoRoll.new(makeAdapter())
+local autoRoll = AutoRoll.new(makeAdapter(), { resumeAfterDeath = prefs.resumeAfterDeath })
 table.insert(onStop, function()
 	autoRoll:dispose()
 end)
@@ -398,7 +407,7 @@ do
 	local sNext, sLuck, sAuto = Ui.kv(c2, "Status", 2), Ui.kv(c2, "Luck attributes", 3), Ui.kv(c2, "Auto Roll", 4)
 
 	local c3 = Ui.card(dash, "Hub health", 3)
-	local hData, hRemote, hUi, hVer, hCyb = Ui.kv(c3, "Style data (AttackData)", 1), Ui.kv(c3, "Roll request (RollAttack)", 2), Ui.kv(c3, "Game roll UI (MainUI)", 3), Ui.kv(c3, "Place version", 4), Ui.kv(c3, "Cyborg tracker", 5)
+	local hData, hRemote, hUi, hVer, hCyb = Ui.kv(c3, "Style data (AttackData)", 1), Ui.kv(c3, "Roll request (RollAttack)", 2), Ui.kv(c3, "Game roll UI (MainUI)", 3), Ui.kv(c3, "Place version", 4), Ui.kv(c3, "M1 HUD", 5)
 
 	local c4 = Ui.card(dash, "Performance", 4)
 	local pFps, pPing = Ui.kv(c4, "FPS", 1), Ui.kv(c4, "Ping", 2)
@@ -426,7 +435,7 @@ do
 		hUi(badge(Game.mainUI() ~= nil, "found", "missing"))
 		local same = game.PlaceVersion == Game.KNOWN_PLACE_VERSION
 		hVer(("%d (data from %d)"):format(game.PlaceVersion, Game.KNOWN_PLACE_VERSION), same and Theme.good or Theme.warn)
-		hCyb(cyborg.enabled and "on" or "off", cyborg.enabled and Theme.good or Theme.muted)
+		hCyb(m1.enabled and "on" or "off", m1.enabled and Theme.good or Theme.muted)
 		pFps(tostring(metrics.fps), metrics.fps >= 50 and Theme.good or metrics.fps >= 30 and Theme.warn or Theme.bad)
 		pPing(("%d ms"):format(metrics.ping))
 		Ui.set(logText, "Text", #logs > 0 and table.concat(logs, "\n", 1, math.min(6, #logs)) or "No events yet.")
@@ -629,11 +638,28 @@ do
 end
 
 -- ===================================================================== Combat
+do
+    local card=Ui.card(pages.roll.page,"Respawn recovery",10,"Pauses while dead, then waits for normal arena and roll readiness. No automatic safe-zone movement is available.")
+    local toggle=Ui.toggle(hub,card,"Resume Auto Roll After Death",nil,prefs.resumeAfterDeath,function(on)
+        prefs.resumeAfterDeath=on; autoRoll.opts.resumeAfterDeath=on; savePrefs()
+    end,1)
+    table.insert(syncs,function() toggle.set(prefs.resumeAfterDeath,true); autoRoll.opts.resumeAfterDeath=prefs.resumeAfterDeath end)
+end
 local combat = addPage("combat", "Combat")
 do
-    local card = Ui.card(combat, "M1 cooldown evidence", 0, "Candidate AttackReadyAt timing for any style. Server-time semantics need a live capture; UNKNOWN means no usable evidence. Cyborg V6 remains a separate estimated fallback.")
-    local toggle = Ui.toggle(hub, card, "Show M1 cooldown HUD", "Read-only; updates at 10 Hz. Drag the title to move it.", false, m1.setEnabled, 1)
+    local card = Ui.card(combat, "M1 cooldown evidence", 0, "Candidate AttackReadyAt timing for any style. Server-time semantics need a live capture; UNKNOWN means no usable evidence. Missing or stale timing stays UNKNOWN.")
+    local toggle = Ui.toggle(hub, card, "Show M1 cooldown HUD", "Drag the title; resize from the corner. Layout is saved in the active config.", prefs.m1Enabled, function(on) prefs.m1Enabled=on; m1.setEnabled(on); savePrefs() end, 1)
     m1.onChanged = function(on) toggle.set(on, true) end
+    m1.setEnabled(prefs.m1Enabled)
+    table.insert(syncs, function()
+        toggle.set(prefs.m1Enabled, true); m1.setEnabled(prefs.m1Enabled)
+        if m1.refreshLayout then m1.refreshLayout() end
+    end)
+    Ui.button(hub, card, "Reset M1 HUD layout", {order=5,width=180}, function()
+        prefs.m1X,prefs.m1Y,prefs.m1W,prefs.m1H=0.5,0.55,330,180
+        if m1.refreshLayout then m1.refreshLayout() end
+        savePrefs()
+    end)
     local setState = Ui.kv(card, "Observed M1 state", 2)
     local setEvidence = Ui.kv(card, "Timing evidence", 3)
     local setHealth = Ui.kv(card, "Your current health", 4)
@@ -646,24 +672,11 @@ do
     end)
 end
 do
-	local c1 = Ui.card(combat, "Cyborg M1 tracker (V6)", 1, "Detects your own Beam effect under HumanoidRootPart.SmearFX and estimates a 6.07 s cooldown from it. Effect proxy - user-verified in baseline v1.")
-	local tg = Ui.toggle(hub, c1, "Show Cyborg M1 overlay", "Floating timer; drag it by its title. Also shows FPS and ping.", false, function(v)
-		cyborg.setEnabled(v)
-	end, 1)
-	cyborg.onChanged = function(on)
-		tg.set(on, true)
-	end
-	local kCount, kInt, kCfg = Ui.kv(c1, "Detected attacks", 2), Ui.kv(c1, "Last interval", 3), Ui.kv(c1, "Cooldown: game config vs observed", 4)
-
 	local c2 = Ui.card(combat, "Equipped style (game config)", 2, "CONFIGURED values from the game's AttackData. Real server timing may differ.")
 	local kKind, kDmg, kCd, kRange, kHp = Ui.kv(c2, "Kind", 1), Ui.kv(c2, "Damage", 2), Ui.kv(c2, "M1 cooldown", 3), Ui.kv(c2, "Range", 4), Ui.kv(c2, "Health / Speed", 5)
 	local desc = Ui.text(c2, "", { textSize = Theme.size.small, color = Theme.muted, order = 6 })
 
 	onRefresh("combat", "combat", function()
-		kCount(tostring(cyborg.count))
-		kInt(cyborg.lastInterval and ("%.3fs"):format(cyborg.lastInterval) or "-")
-		local cyb = Game.style("Cyborg")
-		kCfg(("%ss vs %.2fs"):format(tostring(cyb and cyb.Cooldown or "?"), cyborg.COOLDOWN))
 		local eq = Game.equipped()
 		local s = eq and Game.style(eq.name)
 		local function f(v, unit)
@@ -676,6 +689,54 @@ do
 		kHp(s and ("%s / %s"):format(f(s.Health), f(s.Speed)) or "-")
 		Ui.set(desc, "Text", s and s.Description or (eq and "No game data for this style." or "No style equipped."))
 	end)
+end
+
+-- ===================================================================== Safe Zone
+local safePage = addPage("safe", "Safe Zone")
+do
+    local card=Ui.card(safePage,"Saved safe-zone reference",1,"Saves your character's position and orientation in this place. This does not create a server safe zone.")
+    local coords=Ui.text(card,"",{order=1,textSize=Theme.size.small})
+    Ui.button(hub,card,"Set Current Position as Safe Zone",{order=2,width=300},function() safeZone.capture() end)
+    Ui.button(hub,card,"Clear Safe Zone",{order=3,width=150},safeZone.clear)
+    local status=Ui.text(card,"",{order=4,textSize=Theme.size.small,color=Theme.muted})
+    local bind=Ui.text(card,"",{order=5,textSize=Theme.size.small})
+    Ui.text(card,"Return / floating: unavailable. No supported movement mechanic is established; normal movement and physics remain under the game's control.",{order=6,textSize=Theme.size.small,color=Theme.warn})
+    onSafeKey=function() safeZone.keyAction(); window.Visible=true; selectPage("safe") end
+    onRefresh("safe","safe zone",function()
+        Ui.set(coords,"Text",safeZone.describe())
+        Ui.set(status,"Text",safeZone.status)
+        Ui.set(bind,"Text",prefs.safeKey .. " opens this reference and refreshes the distance; it does not move you. Rebind in Settings.")
+    end)
+end
+
+-- Manual-combat alternative while no authorized movement/attack API is known.
+do
+    local card=Ui.card(combat,"Auto Kill · manual combat",3,"Selects an eligible low-health player. Approach, attack and return manually. Movement, floating and automated M1 are unavailable.")
+    local enabled=Ui.toggle(hub,card,"Enable target selection",nil,prefs.targetEnabled,function(on)
+        prefs.targetEnabled=on; targets.refresh(); savePrefs()
+    end,1)
+    local threshold=Ui.slider(hub,card,"Target HP threshold",{min=1,max=100,step=1,value=prefs.targetHp,order=2,format=function(v) return ("< %d%%"):format(v) end},function(v)
+        prefs.targetHp=v; targets.refresh(); savePrefs()
+    end)
+    Ui.input(hub,card,"HP threshold: 1–100",{order=3},function(text)
+        local n=tonumber(text)
+        if n and n==n and math.abs(n)<math.huge then prefs.targetHp=math.clamp(math.floor(n),1,100); threshold.set(prefs.targetHp,true); targets.refresh(); savePrefs() end
+    end)
+    local auto=Ui.toggle(hub,card,"Auto M1 (request only)","ON records your preference; no automated attacks run without a supported game mechanic.",prefs.autoM1Requested,function(on)
+        prefs.autoM1Requested=on; savePrefs()
+    end,4)
+    local state=Ui.kv(card,"State",5)
+    local selected=Ui.kv(card,"Selected target",6)
+    local hp=Ui.kv(card,"Target HP",7)
+    local attacks=Ui.kv(card,"Auto M1 availability",8)
+    table.insert(syncs,function()
+        enabled.set(prefs.targetEnabled,true); threshold.set(prefs.targetHp,true); auto.set(prefs.autoM1Requested,true); targets.refresh()
+    end)
+    onRefresh("combat","target selection",function()
+        state(targets.state.state); selected(targets.state.name or "none")
+        hp(targets.state.hp and ("%.1f%%"):format(targets.state.hp) or "—")
+        attacks(prefs.autoM1Requested and "ON requested · unsupported · no attacks sent" or "OFF · manual M1 and skills")
+    end)
 end
 
 -- ===================================================================== Styles
@@ -912,7 +973,7 @@ do
 		keyBtn.Text = "Press a key… (Esc = cancel)"
 		onKeyCaptured = function(kc)
 			Ui.select(keyBtn, false)
-			if kc ~= Enum.KeyCode.Escape and isKey(kc.Name) then
+			if kc ~= Enum.KeyCode.Escape and isKey(kc.Name) and kc.Name ~= prefs.safeKey then
 				toggleKey = kc
 				prefs.toggleKey = kc.Name
 				savePrefs()
@@ -923,6 +984,18 @@ do
 	end)
 	Ui.text(c0, "Ignored while you type in chat or a text box. Minimize with – in the title bar.", { textSize = Theme.size.small, color = Theme.faint, order = 2 })
 
+    local safeRow=Ui.row(c0,7,32)
+    Ui.text(safeRow,"Safe Zone reference key",{size=UDim2.new(0,170,1,0),font=Theme.fontMedium})
+    local safeBtn
+    safeBtn=Ui.button(hub,safeRow,prefs.safeKey,{width=150,order=1},function()
+        if onKeyCaptured then return end
+        safeBtn.Text="Press a key… (Esc = cancel)"
+        onKeyCaptured=function(kc)
+            if kc~=Enum.KeyCode.Escape and isKey(kc.Name) and kc.Name~=prefs.toggleKey then prefs.safeKey=kc.Name; savePrefs() end
+            safeBtn.Text=prefs.safeKey
+        end
+    end)
+    table.insert(syncs,function() safeBtn.Text=prefs.safeKey end)
 	local opacity = Ui.slider(hub, c0, "Menu opacity", {
 		min = Settings.MIN_OPACITY,
 		max = 1,
@@ -1238,7 +1311,7 @@ do
 	rebuildList()
 	syncAll()
 
-	local c2 = Ui.card(settings, "Emergency off", 3, "Stops Auto Roll, the roll observer and the Cyborg overlay, and removes every hub GUI. Same as the × button. From the console: _G.RNG_HUB_STOP()")
+	local c2 = Ui.card(settings, "Emergency off", 3, "Stops Auto Roll, the roll observer and the M1 HUD, and removes every hub GUI. Same as the × button. From the console: _G.RNG_HUB_STOP()")
 	Ui.button(hub, c2, "Unload hub", { variant = "danger", width = 130, order = 1 }, function()
 		stopHub()
 	end)

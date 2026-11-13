@@ -1,5 +1,5 @@
 {
- "build": "2.5.0+c99431989fa5",
+ "build": "2.6.0+d4bd70143994",
  "modules": {
   "Build": {
    "file": "(generated)",
@@ -19,67 +19,92 @@
   "AutoRoll": {
    "file": "src/AutoRoll.luau",
    "bundleStart": 164,
-   "bundleEnd": 453
+   "bundleEnd": 471
   },
   "Settings": {
    "file": "src/Settings.luau",
-   "bundleStart": 456,
-   "bundleEnd": 633
+   "bundleStart": 474,
+   "bundleEnd": 659
+  },
+  "WindowGeometry": {
+   "file": "src/WindowGeometry.luau",
+   "bundleStart": 662,
+   "bundleEnd": 678
+  },
+  "FloatingWindow": {
+   "file": "src/FloatingWindow.luau",
+   "bundleStart": 681,
+   "bundleEnd": 748
+  },
+  "SafeZoneState": {
+   "file": "src/SafeZoneState.luau",
+   "bundleStart": 751,
+   "bundleEnd": 798
+  },
+  "SafeZone": {
+   "file": "src/SafeZone.luau",
+   "bundleStart": 801,
+   "bundleEnd": 826
+  },
+  "TargetState": {
+   "file": "src/TargetState.luau",
+   "bundleStart": 829,
+   "bundleEnd": 858
+  },
+  "Targets": {
+   "file": "src/Targets.luau",
+   "bundleStart": 861,
+   "bundleEnd": 888
   },
   "M1State": {
    "file": "src/M1State.luau",
-   "bundleStart": 636,
-   "bundleEnd": 680
+   "bundleStart": 891,
+   "bundleEnd": 935
   },
   "M1": {
    "file": "src/M1.luau",
-   "bundleStart": 683,
-   "bundleEnd": 797
+   "bundleStart": 938,
+   "bundleEnd": 1047
   },
   "Theme": {
    "file": "src/Theme.luau",
-   "bundleStart": 800,
-   "bundleEnd": 964
+   "bundleStart": 1050,
+   "bundleEnd": 1214
   },
   "Ui": {
    "file": "src/Ui.luau",
-   "bundleStart": 967,
-   "bundleEnd": 1653
+   "bundleStart": 1217,
+   "bundleEnd": 1903
   },
   "Game": {
    "file": "src/Game.luau",
-   "bundleStart": 1656,
-   "bundleEnd": 1831
+   "bundleStart": 1906,
+   "bundleEnd": 2081
   },
   "RollAdapter": {
    "file": "src/RollAdapter.luau",
-   "bundleStart": 1834,
-   "bundleEnd": 1877
-  },
-  "Cyborg": {
-   "file": "src/Cyborg.luau",
-   "bundleStart": 1880,
-   "bundleEnd": 2079
+   "bundleStart": 2084,
+   "bundleEnd": 2128
   },
   "RollObserver": {
    "file": "src/RollObserver.luau",
-   "bundleStart": 2082,
-   "bundleEnd": 2282
+   "bundleStart": 2131,
+   "bundleEnd": 2331
   },
   "Session": {
    "file": "src/Session.luau",
-   "bundleStart": 2285,
-   "bundleEnd": 2489
+   "bundleStart": 2334,
+   "bundleEnd": 2538
   },
   "Prompts": {
    "file": "src/Prompts.luau",
-   "bundleStart": 2492,
-   "bundleEnd": 2544
+   "bundleStart": 2541,
+   "bundleEnd": 2593
   },
   "App": {
    "file": "src/App.luau",
-   "bundleStart": 2547,
-   "bundleEnd": 3821
+   "bundleStart": 2596,
+   "bundleEnd": 3943
   }
  }
 }

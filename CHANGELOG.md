@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.6.0 (2026-11-13), build 2.6.0+d4bd70143994, NOT LIVE TESTED
+- Removed the standalone Cyborg module/HUD/menu controls. Only the M1 HUD remains; it has no Close button and is controlled from Combat.
+- Shared FloatingWindow + WindowGeometry provide themed title dragging, corner resizing, viewport bounds, scrolling content and persisted layout. Added the permanent floating-window contract to AGENTS.md.
+- Menu background opacity range expanded to 0–100%.
+- New Safe Zone section captures/replaces/clears position and orientation, scoped to PlaceId. F6 opens coordinates/distance; rebindable with conflict and typing guards. No movement or physics changes.
+- Auto Kill manual-combat alternative: stable selection below an adjustable HP percentage, lifecycle-safe read-only observation, explicit unsupported Auto M1 request setting. No movement, floating, return or automated attacks.
+- Persistent Resume Auto Roll After Death waits in the same worker, preserving readiness checks and target. Newly qualifying/rare styles are rechecked after waiting. Uncertain requests never retry.
+- Tests: 99 unit / 245 smoke, release and loader compilation, deterministic output, persistence, viewport resizing and integrated respawn/lifecycle checks.
+
 ## 2.5.0 (2026-11-13), build 2.5.0+c99431989fa5, NOT LIVE TESTED
 - New optional M1 HUD observes player AttackReadyAt for any equipped style, explicitly labels the server-clock assumption as unverified, and clears stale evidence on style changes, re-equips, death and respawn. Does not assume Tool.Activated proves an accepted attack.
 - Combat shows current health percentage. Existing Cyborg V6, keybinding, opacity, appearance, resize, Auto Roll and local teleport loader behavior are preserved.

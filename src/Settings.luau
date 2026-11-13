@@ -8,7 +8,7 @@
 local Settings = {}
 
 Settings.FILE = "RNG_Hub_settings.txt"
-Settings.MIN_OPACITY = 0.35
+Settings.MIN_OPACITY = 0
 Settings.DEFAULT_NAME = "Default"
 Settings.DEFAULTS = {
 	toggleKey = "RightShift",
@@ -28,10 +28,15 @@ Settings.DEFAULTS = {
 	instantPrompts = false,
 	winW = 660, -- window size, changed with the corner grip
 	winH = 450,
+	m1Enabled = false,
+	m1X = 0.5, m1Y = 0.55, m1W = 330, m1H = 180,
+	safeKey = "F6", safeZone = "",
+	targetEnabled = false, targetHp = 30,
+	resumeAfterDeath = false, autoM1Requested = false,
 }
-local KEYS = { "toggleKey", "opacity", "scale", "theme", "accent", "font", "textColor", "textScale", "outline", "textAlpha", "bgColor", "antiAfk", "reconnect", "autoExec", "instantPrompts", "winW", "winH" }
-local BOOLS = { antiAfk = true, reconnect = true, autoExec = true, instantPrompts = true }
-local NUMBERS = { opacity = { 0.35, 1 }, scale = { 0.5, 1.5 }, textScale = { 0.8, 1.4 }, textAlpha = { 0, 0.6 }, winW = { 520, 1100 }, winH = { 360, 820 } }
+local KEYS = { "toggleKey", "opacity", "scale", "theme", "accent", "font", "textColor", "textScale", "outline", "textAlpha", "bgColor", "antiAfk", "reconnect", "autoExec", "instantPrompts", "winW", "winH", "m1Enabled", "m1X", "m1Y", "m1W", "m1H", "safeKey", "safeZone", "targetEnabled", "targetHp", "resumeAfterDeath", "autoM1Requested" }
+local BOOLS = { antiAfk = true, reconnect = true, autoExec = true, instantPrompts = true, m1Enabled = true, targetEnabled = true, resumeAfterDeath = true, autoM1Requested = true }
+local NUMBERS = { opacity = { 0, 1 }, scale = { 0.5, 1.5 }, textScale = { 0.8, 1.4 }, textAlpha = { 0, 0.6 }, winW = { 520, 1100 }, winH = { 360, 820 }, m1X = {0,1}, m1Y = {0,1}, m1W = {260,800}, m1H = {160,600}, targetHp = {1,100} }
 local OUTLINE = { auto = true, on = true, off = true }
 
 function Settings.defaults()
@@ -58,7 +63,7 @@ local function setField(cfg, key, value, validate)
 	local range = NUMBERS[key]
 	if range then
 		local n = tonumber(value)
-		if n then
+		if n and n == n and math.abs(n) < math.huge then
 			cfg[key] = math.max(range[1], math.min(range[2], n))
 		end
 	elseif BOOLS[key] then
@@ -129,6 +134,9 @@ function Settings.parse(text, validate)
 			end
 		end
 	end
+	for _, cfg in pairs(store.configs) do
+		if cfg.safeKey == cfg.toggleKey then cfg.safeKey = cfg.toggleKey == "F6" and "F7" or "F6" end
+	end
 	if store.autoload and not store.configs[store.autoload] then
 		store.autoload = nil
 	end
@@ -145,7 +153,7 @@ function Settings.serialize(store)
 		table.insert(out, "[" .. name .. "]")
 		for _, key in ipairs(KEYS) do
 			local v = cfg[key]
-			table.insert(out, key .. "=" .. (type(v) == "number" and ("%.2f"):format(v) or tostring(v)))
+			table.insert(out, key .. "=" .. (type(v) == "number" and ((key == "m1X" or key == "m1Y") and ("%.6f"):format(v) or ("%.2f"):format(v)) or tostring(v)))
 		end
 	end
 	return table.concat(out, "\n") .. "\n"

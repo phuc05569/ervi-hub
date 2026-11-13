@@ -43,6 +43,13 @@ return function(API, makeEngine, hubFn, loaderFn)
 		end
 		return p
 	end
+	local function sliderBtn(name, sym)
+		for _, d in ipairs(find(hubGui(), "TextLabel", name).Parent:GetChildren()) do
+			if d.ClassName == "TextButton" and d.Text == sym then
+				return d
+			end
+		end
+	end
 	local function noErrors(name)
 		check(#ctl.errors == 0, name .. ": no script errors", table.concat(ctl.errors, "\n"))
 		ctl.errors = {}
@@ -115,41 +122,9 @@ return function(API, makeEngine, hubFn, loaderFn)
 	ctl.rollScript = {}
 	noErrors("dead gate")
 
-	-- 4. Cyborg tracker: equip, fire own Beam, check countdown; other player's beam ignored
-	click(find(hubGui(), "TextLabel", "Combat").Parent)
-	click(toggleRow("Show Cyborg M1 overlay"))
-	ctl.run(0.2)
-	local hud = ctl.pg:FindFirstChild("RNG_Hub_CombatHUD")
-	check(hud ~= nil, "Cyborg overlay created")
-	local tool = ctl.new("Tool", ctl.char)
-	tool.Name = "Cyborg"
-	local other = ctl.new("Model", env.workspace)
-	local otherRoot = ctl.new("Part", other)
-	otherRoot.Name = "HumanoidRootPart"
-	local otherSmear = ctl.new("Folder", otherRoot)
-	otherSmear.Name = "SmearFX"
-	ctl.new("Beam", otherSmear).Name = "Beam"
-	ctl.run(0.2)
-	check(find(hud, "TextLabel", "WAITING") ~= nil, "other player's beam ignored")
-	local smear = ctl.new("Folder")
-	smear.Name = "SmearFX"
-	ctl.new("Beam", smear).Name = "Beam"
-	smear.Parent = ctl.root -- subtree insert, like the game's effect
-	ctl.run(1)
-	local big
-	for _, d in ipairs(hud:GetDescendants()) do
-		if d.ClassName == "TextLabel" and tostring(d.Text):match("^%d+%.%d%ds$") then
-			big = d.Text
-		end
-	end
-	check(big ~= nil, "countdown shown after own Beam", big)
-	ctl.run(6)
-	check(find(hud, "TextLabel", "READY") ~= nil, "READY after ~6.07s")
-	click(find(hud, "TextButton", "×"))
-	ctl.run(0.2)
-	check(ctl.pg:FindFirstChild("RNG_Hub_CombatHUD") == nil, "overlay X closes overlay")
-	check(hubGui() ~= nil, "overlay X leaves hub open")
-	noErrors("cyborg")
+	-- The universal HUD replaces the standalone Cyborg UI.
+	check(find(hubGui(), "TextLabel", "Show Cyborg M1 overlay") == nil, "no obsolete Cyborg controls")
+	check(ctl.pg:FindFirstChild("RNG_Hub_CombatHUD") == nil, "no duplicate Cyborg HUD")
 
 	-- 5. Diagnostics: capture, copy, redaction
 	click(find(hubGui(), "TextLabel", "Diagnostics").Parent)
@@ -217,7 +192,7 @@ return function(API, makeEngine, hubFn, loaderFn)
 	end
 	check(near(win().BackgroundTransparency, 0.05), "default opacity 95%", win().BackgroundTransparency)
 	for _ = 1, 3 do
-		click(find(hubGui(), "TextButton", "−"))
+		click(sliderBtn("Menu opacity", "−"))
 	end
 	ctl.run(0.1)
 	check(near(win().BackgroundTransparency, 0.2), "3 steps down -> 80% opacity", win().BackgroundTransparency)
@@ -225,20 +200,20 @@ return function(API, makeEngine, hubFn, loaderFn)
 	local card = find(hubGui(), "TextLabel", "CONTROLS").Parent
 	check(near(card.BackgroundTransparency, 0.2), "cards follow opacity", card.BackgroundTransparency)
 	for _ = 1, 20 do
-		click(find(hubGui(), "TextButton", "−"))
+		click(sliderBtn("Menu opacity", "−"))
 	end
 	ctl.run(0.1)
-	check(near(win().BackgroundTransparency, 0.65), "opacity floor 35%", win().BackgroundTransparency)
+	check(near(win().BackgroundTransparency, 1), "opacity floor 0%", win().BackgroundTransparency)
 	check(find(hubGui(), "TextLabel", "Menu opacity").TextStrokeTransparency < 1, "text outlined at low opacity")
-	click(find(hubGui(), "TextButton", "+"))
+	click(sliderBtn("Menu opacity", "+"))
 	for _ = 1, 20 do
-		click(find(hubGui(), "TextButton", "+"))
+		click(sliderBtn("Menu opacity", "+"))
 	end
 	ctl.run(0.1)
 	check(near(win().BackgroundTransparency, 0), "opacity ceiling 100%")
 	check(find(hubGui(), "TextLabel", "Menu opacity").TextStrokeTransparency == 1, "outline removed at high opacity")
 	for _ = 1, 4 do
-		click(find(hubGui(), "TextButton", "−"))
+		click(sliderBtn("Menu opacity", "−"))
 	end
 	ctl.run(0.1)
 	check((ctl.files["RNG_Hub_settings.txt"] or ""):find("opacity=0.80", 1, true) ~= nil, "opacity saved", ctl.files["RNG_Hub_settings.txt"])
@@ -252,13 +227,7 @@ return function(API, makeEngine, hubFn, loaderFn)
 	local function label(text)
 		return find(hubGui(), "TextLabel", text)
 	end
-	local function sliderBtn(name, sym)
-		for _, d in ipairs(label(name).Parent:GetChildren()) do
-			if d.ClassName == "TextButton" and d.Text == sym then
-				return d
-			end
-		end
-	end
+
 	local probe = "Show / hide menu key" -- a fontMedium, body-size label
 	click(find(hubGui(), "TextButton", "Ocean"))
 	ctl.run(0.1)
@@ -302,11 +271,11 @@ return function(API, makeEngine, hubFn, loaderFn)
 	local styleName = find(hubGui(), "TextLabel", "Knockback Stick")
 	check(styleName and styleName.TextSize == 14, "text built later is scaled too (12 -> 14)", styleName and styleName.TextSize)
 	click(find(hubGui(), "TextLabel", "Combat").Parent)
-	click(toggleRow("Show Cyborg M1 overlay")) -- overlay is built now, after the size change
+	click(toggleRow("Show M1 cooldown HUD")) -- overlay is built now, after the size change
 	ctl.run(0.2)
-	local hudTitle = find(ctl.pg:FindFirstChild("RNG_Hub_CombatHUD"), "TextLabel", "CYBORG  M1")
-	check(hudTitle and hudTitle.TextSize == 14, "newly built overlay text is scaled (12 -> 14)", hudTitle and hudTitle.TextSize)
-	click(toggleRow("Show Cyborg M1 overlay"))
+	local hudTitle = find(ctl.pg:FindFirstChild("RNG_Hub_M1HUD"), "TextLabel", "Punch  M1")
+	check(hudTitle and hudTitle.TextSize == 16, "newly built HUD text is scaled (13 -> 16)", hudTitle and hudTitle.TextSize)
+	click(toggleRow("Show M1 cooldown HUD"))
 	click(find(hubGui(), "TextLabel", "Settings").Parent)
 	click(find(hubGui(), "TextButton", "On"))
 	ctl.run(0.1)
@@ -470,7 +439,7 @@ return function(API, makeEngine, hubFn, loaderFn)
 	check(label("PvP  (active)") ~= nil, "Save as creates and activates PvP")
 	check((ctl.files["RNG_Hub_settings.txt"] or ""):find("[PvP]", 1, true) ~= nil, "PvP written to file")
 	for _ = 1, 4 do
-		click(find(hubGui(), "TextButton", "−")) -- opacity 80% -> 60% in PvP only
+		click(sliderBtn("Menu opacity", "−")) -- opacity 80% -> 60% in PvP only
 	end
 	ctl.run(0.1)
 	check(near(win().BackgroundTransparency, 0.4), "PvP opacity 60%")
@@ -494,7 +463,7 @@ return function(API, makeEngine, hubFn, loaderFn)
 	ctl.run(0.1)
 	check(near(win().BackgroundTransparency, 0.2) and label("PvP  (active)") ~= nil, "overwrite saves current settings into PvP")
 	for _ = 1, 2 do
-		click(find(hubGui(), "TextButton", "−")) -- PvP now 70%
+		click(sliderBtn("Menu opacity", "−")) -- PvP now 70%
 	end
 	local _, pvpBtns = rowOf("PvP")
 	click(pvpBtns.Auto)
@@ -710,16 +679,150 @@ return function(API, makeEngine, hubFn, loaderFn)
     ctl.player:SetAttribute("AttackReadyAt", 99999999)
     ctl.run(0.2)
     check(find(m1hud, "TextLabel", "UNKNOWN") ~= nil, "M1: incompatible clock rejected")
-    click(find(m1hud, "TextButton", "Close M1 HUD"))
-    check(ctl.pg:FindFirstChild("RNG_Hub_M1HUD") == nil, "M1: close removes HUD only")
+    check(find(m1hud, "TextButton", "Close M1 HUD") == nil, "M1: no standalone Close button")
+    click(toggleRow("Show M1 cooldown HUD"))
+    check(ctl.pg:FindFirstChild("RNG_Hub_M1HUD") == nil, "M1: menu disables HUD")
     click(toggleRow("Show M1 cooldown HUD"))
     runHub(); ctl.run(0.3)
-    check(ctl.pg:FindFirstChild("RNG_Hub_M1HUD") == nil, "M1: rerun removes old overlay")
+    check(ctl.pg:FindFirstChild("RNG_Hub_M1HUD") ~= nil and ctl.pg:FindFirstChild("RNG_Hub_M1HUD") ~= m1hud, "M1: rerun restores one persisted overlay")
     env._G.RNG_HUB_STOP(); ctl.run(0.3)
     check(ctl.conns == baseConns, "M1: no leaked connections", ctl.conns - baseConns)
     check(ctl.pendingThreads() == 0, "M1: no leaked threads")
     noErrors("M1 lifecycle")
 
+
+    -- New persistent HUD geometry and integrated safe reference / manual targets.
+    runHub(); ctl.run(0.3)
+    click(find(hubGui(), "TextLabel", "Combat").Parent)
+    local layoutHud=ctl.pg:FindFirstChild("RNG_Hub_M1HUD")
+    if not layoutHud then click(toggleRow("Show M1 cooldown HUD")); layoutHud=ctl.pg:FindFirstChild("RNG_Hub_M1HUD") end
+    local hudFrame=layoutHud:FindFirstChildOfClass("Frame")
+    local hudGrip
+    for _,child in ipairs(hudFrame:GetChildren()) do if child:GetAttribute("ResizeGrip") then hudGrip=child end end
+    check(hudGrip~=nil,"M1 layout: corner resize handle")
+    local hudTitle=find(layoutHud,"TextLabel","Slap  M1")
+    local initialW=hudFrame.Size.X.Offset
+    local function gesture(handle,dx,dy)
+        handle.InputBegan:Fire({UserInputType=env.Enum.UserInputType.MouseButton1,Position=env.Vector2.new(0,0)})
+        ctl.UIS.InputChanged:Fire({UserInputType=env.Enum.UserInputType.MouseMovement,Position=env.Vector2.new(dx,dy)})
+        ctl.UIS.InputEnded:Fire({UserInputType=env.Enum.UserInputType.MouseButton1})
+    end
+    gesture(hudGrip,80,60)
+    check(hudFrame.Size.X.Offset==initialW+80,"M1 layout: corner gesture resizes")
+    gesture(hudTitle,-10000,-10000)
+    check(hudFrame.Position.X.Offset==0 and hudFrame.Position.Y.Offset==0,"M1 layout: drag clamped on screen")
+    local layoutSaved=ctl.files["RNG_Hub_settings.txt"] or ""
+    check(layoutSaved:find("m1X=0.000000",1,true) and layoutSaved:find("m1W=410.00",1,true),"M1 layout: dimensions and position saved")
+    local cam=env.workspace.CurrentCamera
+    ctl.set(cam,"ViewportSize",env.Vector2.new(320,240))
+    check(hudFrame.Size.X.Offset<=304 and hudFrame.Size.Y.Offset<=192,"M1 layout: viewport shrink keeps HUD visible")
+    ctl.set(cam,"ViewportSize",env.Vector2.new(1920,1080))
+    check(hudFrame.Size.X.Offset==410,"M1 layout: viewport enlargement restores preference")
+    local content=hudFrame:FindFirstChildOfClass("ScrollingFrame")
+    check(content and content.Size.Y.Offset==-62,"M1 layout: scrolling content reserves title and grip space")
+
+    -- Current character coordinates come from the game-side button, never PC location.
+    local activeChar=ctl.player.Character
+    local activeHum=activeChar:FindFirstChildOfClass("Humanoid")
+    local activeRoot=ctl.new("Part",activeChar); activeRoot.Name="HumanoidRootPart"
+    activeRoot.CFrame=ctl.cframe(10,20,30,0,0,1,0,1,0,-1,0,0)
+    local originalFrame=activeRoot.CFrame
+    click(find(hubGui(),"TextLabel","Safe Zone").Parent)
+    click(find(hubGui(),"TextButton","Set Current Position as Safe Zone"))
+    ctl.run(0.2)
+    check((ctl.files["RNG_Hub_settings.txt"] or ""):find("safeZone=119338513416973,10,20,30,0,0,1,0,1,0,-1,0,0",1,true),"Safe Zone: position orientation and PlaceId persisted")
+    check(activeRoot.CFrame==originalFrame,"Safe Zone: capture does not move character")
+    activeRoot.CFrame=ctl.cframe(40,50,60,1,0,0,0,1,0,0,0,1)
+    click(find(hubGui(),"TextButton","Set Current Position as Safe Zone"))
+    ctl.run(0.2)
+    check((ctl.files["RNG_Hub_settings.txt"] or ""):find(",40,50,60,1,0,0,0,1,0,0,0,1",1,true),"Safe Zone: replace saved reference")
+    click(find(hubGui(),"TextLabel","Settings").Parent)
+    click(find(hubGui(),"TextButton","F6")); press("F4")
+    check(find(hubGui(),"TextButton","F6")~=nil,"Safe Zone key: GUI key conflict rejected")
+    click(find(hubGui(),"TextButton","F4")); press("F6")
+    check(find(hubGui(),"TextButton","F4")~=nil,"GUI key: Safe Zone key conflict rejected")
+    click(find(hubGui(),"TextButton","F6")); press("F8")
+    check((ctl.files["RNG_Hub_settings.txt"] or ""):find("safeKey=F8",1,true),"Safe Zone key: rebinding persisted")
+    win().Visible=false; ctl.focusedTextBox={}; press("F8")
+    check(win().Visible==false,"Safe Zone key: ignored while typing")
+    ctl.focusedTextBox=nil; press("F8"); ctl.run(0.2)
+    check(win().Visible==true,"Safe Zone key: opens saved reference")
+    check(activeRoot.CFrame:GetComponents()==40,"Safe Zone key: no return movement")
+    click(find(hubGui(),"TextButton","Clear Safe Zone")); ctl.run(0.2)
+    check(find(hubGui(),"TextLabel","No safe zone saved for this place")~=nil,"Safe Zone: clear removes reference")
+
+    click(find(hubGui(),"TextLabel","Combat").Parent)
+    click(toggleRow("Enable target selection")); ctl.run(0.3)
+    check(find(hubGui(),"TextLabel","Set a safe-zone reference first")~=nil,"Targets: missing safe reference blocks selection")
+    click(find(hubGui(),"TextLabel","Safe Zone").Parent)
+    click(find(hubGui(),"TextButton","Set Current Position as Safe Zone"))
+    local enemy=ctl.new("Player",env.game:GetService("Players")); enemy.Name="ManualTarget"; ctl.set(enemy,"UserId",2)
+    local enemyChar=ctl.new("Model",env.workspace)
+    local enemyHum=ctl.new("Humanoid",enemyChar); ctl.set(enemyHum,"Health",25)
+    ctl.set(enemy,"Character",enemyChar)
+    click(find(hubGui(),"TextLabel","Combat").Parent); ctl.run(0.4)
+    check(find(hubGui(),"TextLabel","ManualTarget")~=nil,"Targets: health threshold selects eligible player")
+    check(find(hubGui(),"TextLabel","25.0%")~=nil,"Targets: correct HP percentage")
+    local hpInput
+    for _,d in ipairs(hubGui():GetDescendants()) do
+        if d.ClassName=="TextBox" and d.PlaceholderText=="HP threshold: 1–100" then hpInput=d end
+    end
+    hpInput.Text="20"; hpInput.FocusLost:Fire(true); ctl.run(0.4)
+    check(find(hubGui(),"TextLabel","Waiting for an eligible player")~=nil,"Targets: numeric threshold applies immediately")
+    hpInput.Text="30"; hpInput.FocusLost:Fire(true); ctl.run(0.4)
+    ctl.set(enemyHum,"MaxHealth",0); ctl.run(0.4)
+    check(find(hubGui(),"TextLabel","Waiting for an eligible player")~=nil,"Targets: invalid maximum health ignored")
+    ctl.set(enemyHum,"MaxHealth",100); ctl.run(0.4)
+    ctl.set(enemyHum,"Health",50); ctl.run(0.4)
+    check(find(hubGui(),"TextLabel","Waiting for an eligible player")~=nil,"Targets: health recovery invalidates target")
+    ctl.set(enemyHum,"Health",25); ctl.run(0.4)
+    ctl.set(enemyHum,"Health",0); ctl.run(0.4)
+    check(find(hubGui(),"TextLabel","Waiting for an eligible player")~=nil,"Targets: death clears target")
+    local respawnChar=ctl.new("Model",env.workspace)
+    local respawnHum=ctl.new("Humanoid",respawnChar)
+    ctl.set(enemy,"Character",respawnChar); ctl.run(0.4)
+    check(find(hubGui(),"TextLabel","Waiting for an eligible player")~=nil,"Targets: healthy respawn does not retain target")
+    ctl.set(respawnHum,"Health",20); ctl.run(0.4)
+    check(find(hubGui(),"TextLabel","ManualTarget")~=nil,"Targets: new eligible character can be selected")
+    enemy.Parent=nil; ctl.run(0.4)
+    check(find(hubGui(),"TextLabel","Waiting for an eligible player")~=nil,"Targets: leaving server clears target")
+    enemy.Parent=env.game:GetService("Players"); ctl.run(0.4)
+    ctl.set(activeHum,"Health",0); activeHum.Died:Fire(); ctl.run(0.4)
+    check(find(hubGui(),"TextLabel","Waiting for your character")~=nil,"Targets: local death suspends selection")
+    ctl.set(activeHum,"Health",100); ctl.run(0.4)
+    check(find(hubGui(),"TextLabel","ManualTarget")~=nil,"Targets: local recovery resumes observation")
+    click(toggleRow("Auto M1 (request only)")); ctl.run(0.2)
+    check(find(hubGui(),"TextLabel","ON requested · unsupported · no attacks sent")~=nil,"Auto M1: unsupported request is explicit")
+    click(toggleRow("Enable target selection")); ctl.run(0.3)
+    check(find(hubGui(),"TextLabel","Disabled")~=nil,"Targets: menu disable stops selection")
+
+    -- One Auto Roll worker survives death and resumes through ordinary readiness.
+    click(find(hubGui(),"TextLabel","Auto Roll").Parent)
+    click(toggleRow("Resume Auto Roll After Death"))
+    ctl.player:SetAttribute("EquippedAttack","Punch")
+    ctl.player:SetAttribute("RollReadyAt",0)
+    ctl.player:SetAttribute("InFFA",true)
+    ctl.set(activeHum,"Health",0); activeHum.Died:Fire()
+    local beforeRequests=ctl.invokes
+    ctl.rollScript={{"Knockback Stick",750}}
+    click(find(hubGui(),"TextButton","1/500"))
+    click(find(hubGui(),"TextButton","Start")); ctl.run(2)
+    check(ctl.invokes==beforeRequests,"Auto Roll recovery: no request while dead")
+    check(find(hubGui(),"TextLabel","WAITINGRESPAWN")~=nil,"Auto Roll recovery: waiting status")
+    local revived=ctl.new("Model",env.workspace)
+    ctl.new("Humanoid",revived)
+    ctl.player.CharacterRemoving:Fire(activeChar)
+    ctl.set(ctl.player,"Character",revived); ctl.player.CharacterAdded:Fire(revived)
+    ctl.run(2)
+    check(ctl.invokes==beforeRequests+1,"Auto Roll recovery: exactly one request after respawn")
+    check(find(hubGui(),"TextLabel","FOUND")~=nil,"Auto Roll recovery: selected rarity target retained")
+    ctl.run(12)
+    check(ctl.invokes==beforeRequests+1,"Auto Roll recovery: zero further requests after qualifying result")
+    local persisted=ctl.files["RNG_Hub_settings.txt"] or ""
+    check(persisted:find("resumeAfterDeath=true",1,true) and persisted:find("autoM1Requested=true",1,true),"Recovery and Auto M1 preference persist")
+    env._G.RNG_HUB_STOP(); ctl.run(0.3)
+    check(ctl.conns==baseConns and ctl.pendingThreads()==0,"Integrated features: unload leaves no listeners or workers",ctl.conns-baseConns)
+    noErrors("integrated features")
 
     -- Exercise the actual emitted loader wrapper with isolated globals, no network.
     local requests, messages = 0, {}

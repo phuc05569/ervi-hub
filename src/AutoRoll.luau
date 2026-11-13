@@ -17,7 +17,7 @@ local Rarity = require("Rarity")
 local AutoRoll = {}
 AutoRoll.__index = AutoRoll
 
-local RUNNING = { Checking = true, WaitingReady = true, Requesting = true, Confirming = true }
+local RUNNING = { Checking = true, WaitingReady = true, WaitingRespawn = true, Requesting = true, Confirming = true }
 
 AutoRoll.DEFAULTS = {
 	maxRolls = 250,
@@ -29,6 +29,7 @@ AutoRoll.DEFAULTS = {
 	rareAbove = Rarity.GAME_CONFIRM_ABOVE,
 	requireCooldownAdvance = true,
 	poll = 0.1,
+	resumeAfterDeath = false,
 }
 
 local function styleLabel(name, chance)
@@ -222,12 +223,29 @@ function AutoRoll:_run(gen, acceptRare)
 			if ok then
 				break
 			end
-			if a.now() - since >= o.readyTimeout then
+			local dead = a.alive and not a.alive()
+			if dead and not o.resumeAfterDeath then
+				return self:_end(gen, "Paused", "Character died; enable Resume Auto Roll After Death to wait for respawn")
+			end
+			if dead then
+				since = a.now() -- death does not consume the live-readiness timeout
+				self:_set("WaitingRespawn", "Waiting for respawn; selected target retained")
+			elseif a.now() - since >= o.readyTimeout then
 				return self:_end(gen, "Paused", ("Not ready for %ds: %s"):format(o.readyTimeout, tostring(why)))
 			end
-			self:_set("WaitingReady", why or "Waiting")
+			if not dead then self:_set("WaitingReady", why or "Waiting") end
 			a.wait(o.poll)
 		end
+
+		-- Recheck replicated equipment after a long readiness/respawn wait.
+		local current = a.currentStyle()
+		if current and Rarity.qualifies(self.target, current.name, current.chance) then
+			return self:_end(gen, "Found", "Current style meets the target after waiting; no roll sent")
+		end
+		if current and o.pauseOnRare and not acceptRare and type(current.chance) == "number" and current.chance > o.rareAbove then
+			return self:_end(gen, "Paused", "Current style changed to a rare style; Continue required")
+		end
+		acceptRare = false
 
 		-- 2. Exactly one request, awaited with a timeout and never retried.
 		local readyBefore = a.readyAt()

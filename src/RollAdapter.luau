@@ -10,6 +10,7 @@ return function()
 	adapter.wait = task.wait
 	adapter.spawn = task.spawn
 	adapter.canRoll = Game.rollStatus
+	adapter.alive = Game.alive
 	adapter.chanceOf = Game.chanceOf
 	adapter.tierOf = Game.tierOf
 

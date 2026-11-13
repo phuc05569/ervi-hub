@@ -86,7 +86,7 @@ local function eachText(fn)
 end
 
 function Ui.setOpacity(o, minimum)
-	o = math.clamp(o, minimum or 0.35, 1)
+	o = math.clamp(o, minimum or 0, 1)
 	local outlineBefore = outlineOn()
 	Ui.opacity = o
 	for inst in pairs(surfaces) do

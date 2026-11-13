@@ -26,6 +26,7 @@ local function fakeGame(script)
 		fn()
 	end
 	function adapter.canRoll()
+		if script.deadUntil and f.t<script.deadUntil then return false,"Dead" end
 		if script.canRoll then
 			return script.canRoll(f)
 		end
@@ -34,6 +35,7 @@ local function fakeGame(script)
 		end
 		return true
 	end
+	function adapter.alive() return not script.deadUntil or f.t>=script.deadUntil end
 	function adapter.readyAt()
 		return f.readyAtV
 	end
@@ -88,6 +90,57 @@ end
 local T500 = { mode = "chance", min = 500 }
 
 return {
+    { "death during a nonqualifying in-flight roll resumes only after normal cooldown", function(check,eq)
+        local script={current={name="Punch",chance=3},results={{name="Slap",delay=0.2},{name="Knockback Stick"}}}
+        script.onRequest=function(f,n) if n==1 then script.deadUntil=f.t+3 end end
+        local f,a=fakeGame(script); local m=AutoRoll.new(a,{resumeAfterDeath=true})
+        m:start(T500); eq(m.state,"Found"); eq(f.requests,2); check(f.requestTimes[2]>=8)
+    end },
+    { "qualifying in-flight result while dead stays terminal", function(_,eq)
+        local script={current={name="Punch",chance=3},results={{name="Knockback Stick",delay=1}}}
+        script.onRequest=function(f) script.deadUntil=f.t+20 end
+        local f,a=fakeGame(script); local m=AutoRoll.new(a,{resumeAfterDeath=true}); m:start(T500)
+        eq(m.state,"Found"); eq(f.requests,1)
+    end },
+    { "respawn preference cannot retry an uncertain in-flight request", function(_,eq)
+        local script={current={name="Punch",chance=3},results={{never=true}}}
+        script.onRequest=function(f) script.deadUntil=f.t+3 end
+        local f,a=fakeGame(script); local m=AutoRoll.new(a,{resumeAfterDeath=true,requestTimeout=1,lateWatch=2}); m:start(T500)
+        eq(m.state,"Paused"); eq(f.requests,1)
+    end },
+    { "resume preference waits through long death without a second worker", function(check,eq)
+        local f,a=fakeGame({deadUntil=10,current={name="Punch",chance=3},results=names({"Knockback Stick"})})
+        local m=AutoRoll.new(a,{resumeAfterDeath=true,readyTimeout=1})
+        local original=a.wait
+        local checked=false
+        a.wait=function(dt)
+            if not checked then checked=true; check(not m:start(T500),"duplicate start rejected during respawn") end
+            original(dt)
+        end
+        m:start(T500); eq(f.requests,1); check(f.requestTimes[1]>=10); eq(m.state,"Found")
+    end },
+    { "disabled recovery pauses before requesting while dead", function(_,eq)
+        local f,a=fakeGame({deadUntil=10,current={name="Punch",chance=3},results={}})
+        local m=AutoRoll.new(a); m:start(T500); eq(m.state,"Paused"); eq(f.requests,0)
+    end },
+    { "Stop during respawn wait never resumes", function(_,eq)
+        local f,a=fakeGame({deadUntil=10,current={name="Punch",chance=3},results={}})
+        local m=AutoRoll.new(a,{resumeAfterDeath=true}); local wait=a.wait
+        a.wait=function(dt) m:stop(); wait(dt) end
+        m:start(T500); eq(m.state,"Idle"); eq(f.requests,0)
+    end },
+    { "qualifying style acquired during respawn is never rolled away", function(_,eq)
+        local f,a=fakeGame({deadUntil=1,current={name="Punch",chance=3},results={}})
+        local wait=a.wait
+        a.wait=function(dt) wait(dt); if f.t>=1 then f.current={name="Knockback Stick",chance=750} end end
+        local m=AutoRoll.new(a,{resumeAfterDeath=true}); m:start(T500); eq(f.requests,0); eq(m.state,"Found")
+    end },
+    { "rare replacement after waiting requires Continue", function(_,eq)
+        local f,a=fakeGame({deadUntil=1,current={name="Punch",chance=3},results={}})
+        local wait=a.wait
+        a.wait=function(dt) wait(dt); if f.t>=1 then f.current={name="Cyborg",chance=195} end end
+        local m=AutoRoll.new(a,{resumeAfterDeath=true}); m:start(T500); eq(f.requests,0); eq(m.state,"Paused")
+    end },
 	{ "stops on first qualifying result with zero further requests", function(check, eq)
 		local f, a = fakeGame({ current = { name = "Punch", chance = 3 }, results = names({ "Punch", "Slap", "Knockback Stick" }) })
 		local m = AutoRoll.new(a)
