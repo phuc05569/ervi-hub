@@ -1,0 +1,26 @@
+coreGuiReadable=true
+core RobloxGui ScreenGui order=0 enabled=true
+core RobloxPromptGui ScreenGui order=9 enabled=true
+core ScreenshotsCarousel ScreenGui order=7 enabled=true
+core CaptureManager ScreenGui order=7 enabled=true
+core CaptureOverlay ScreenGui order=5 enabled=true
+core MomentsCreationFlow ScreenGui order=8 enabled=true
+core CursorContainer ScreenGui order=-2147483648 enabled=false
+core RobloxNetworkPauseNotification ScreenGui order=8 enabled=true
+core TeleportEffectGui ScreenGui order=7 enabled=false
+core ImmersiveBrandedAds ScreenGui order=0 enabled=true
+core RewardedVideoAdPlayer ScreenGui order=10 enabled=true
+core SystemScrim ScreenGui order=-2147483648 enabled=true
+core _FullscreenTestGui ScreenGui order=0 enabled=true
+core _DeviceTestGui ScreenGui order=0 enabled=true
+core PlayerList ScreenGui order=1 enabled=true
+core InExperienceInterventionApp ScreenGui order=6 enabled=true
+core PurchasePromptApp ScreenGui order=10 enabled=true
+core ExperienceChat ScreenGui order=-1 enabled=true
+core InGameFullscreenTitleBarScreen ScreenGui order=7 enabled=true
+core HeadsetDisconnectedDialog ScreenGui order=100 enabled=false
+core ShortcutBar ScreenGui order=100 enabled=true
+canParentToCoreGui=true
+gethui=true
+character platformStand=false anchored=false rootCollide=false movers=0 state=Enum.HumanoidStateType.Running
+pillChips=Click preview,M1,Anti AFK

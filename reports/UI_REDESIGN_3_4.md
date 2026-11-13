@@ -70,6 +70,52 @@ Studio probe (`evidence/ui-3.4/probe-fractional-widths-raw-frames.png`): GUI Fra
   - The skeleton preview at 0.3 px and 3 px is visibly different.
   - Studio has no `getcustomasset`; it was emulated with temporary `rbxasset` copies, which were removed afterwards.
 
+## Live acceptance in Potassium (14 Nov 2026)
+
+These results come from the real RNG RollAttacks client with a single Potassium attach, unless stated otherwise. Evidence is in `reports/evidence/live-3.4/`.
+
+**Deployment**
+- Both installs (`scripts/` and `workspace/Ervi_Hub.luau`) were hash-verified after every deployment.
+- Backups are in `Potassium/backups/ervi-34-test-20261114-031033`. The autoexec folder stayed empty.
+
+**Images**
+- The logo and all visible nav icons load from the bundle-written local assets (`isLoaded` true). The native fallback was not used.
+
+**Instances**
+- Potassium was first attached twice. One Run executed twice, in contexts with different `_G` (proven by a unique-file probe), which produced duplicate pills, M1 HUDs and autosave writers.
+- After the guard fix, a fresh launch and a relaunch over a running hub each leave exactly one hub, pill, M1 HUD and stop signal.
+- The cross-context case is covered by a smoke test. It could not be re-created live once Potassium was attached once.
+
+**Settings**
+- The pill-position drift (`statusX`/`statusY`) was observed twice and traced to a gesture left armed by a missed release. It is fixed and covered by a regression test that fails on the old code.
+- The owner's values were restored with no writer active.
+- Your file ended byte-identical to the pre-test backup.
+
+**Scripted UI-callback tests** (`firesignal` on the hub's own controls; these are not physical input):
+- Menu opacity 70/75 with live window transparency and autosave.
+- Skeleton thickness 0.1, 0.2 and 0.3: exact values, "x.x px" readouts, 0.30 saved.
+- Minimize and pill restore, with per-frame samples showing the fade plus 96%→100% scale.
+- Real unload removes every hub GUI and the stop signal.
+- A restart restores 0.3; the value was then reset to 1.00.
+
+**Centering**
+- Window centre equals the usable viewport centre at 1920×1129 (960, 535.5) and at 800×599 (400, 270.5).
+
+**Performance** (RenderStepped, 5 s each, same scene)
+
+| State | Mean | p95 |
+|---|---|---|
+| No hub | 4.83 ms | 6.95 ms |
+| One hub, menu open | 4.88 ms | 6.97 ms |
+| Minimized | 5.08 ms | 7.98 ms |
+
+The differences are within noise. Live frame times vary with the game scene.
+
+**Physical input**
+- Synthetic mouse and keyboard input was unreliable while the owner was also using the PC. Clicks landed only when Roblox truly had foreground focus, and search typing dropped characters.
+- After Enter, focus left the search box and stray keys reached the game. They opened the Roblox menu, and no hub feature was toggled (verified: no movers, normal humanoid state, no Fly/Noclip chips).
+- The owner chose to keep PlayerGui layering, so the Roblox Esc menu still covers the hub.
+
 ## Not verified / limitations
 
 - The image path has not run in Potassium itself; if it fails, the hub falls back to native automatically.
@@ -77,4 +123,5 @@ Studio probe (`evidence/ui-3.4/probe-fractional-widths-raw-frames.png`): GUI Fra
 - No 1920×1200 or 1280×720 capture, because the Studio window is 810×675.
 - The live ESP renderer was not re-profiled at 0.1–0.3 px; it uses the same unit-tested `SkeletonStroke` as the preview.
 - The window has no drop shadow, because the window CanvasGroup clips its children.
-- The minimized status pill keeps its 3.3 styling.
+- No live screenshot of the new glass pill (the owner was using the PC); it is verified structurally live and by smoke tests.
+- Physical-input acceptance (real mouse/keyboard) is incomplete; scripted callback tests stand in for it.

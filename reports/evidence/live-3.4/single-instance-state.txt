@@ -1,0 +1,6 @@
+ErviHubStopSignal:BindableFunction
+RNG_RollAttacks_Hub:ScreenGui:true
+RNG_Hub_M1HUD:ScreenGui:true
+Ervi_MinimizedStatus:ScreenGui:false
+stopGlobal=function
+clock=676.1984317000024

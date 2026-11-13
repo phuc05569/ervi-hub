@@ -5,7 +5,8 @@
 - Config page and slot manager removed. The previously effective profile (per-game autoload, global autoload, Default) auto-saves: writes are debounced (350 ms) and flushed on unload/teleport; other named profiles and autoload lines stay in the file; the original file is copied once to `RNG_Hub_settings.pre-autosave-backup.txt`. Sidebar shows save status.
 - Sliders accept typed values (percent sliders take the shown percent); values are rounded to remove float noise.
 - Skeleton thickness 0.1–3.0 px in 0.1 steps. Studio showed Frames under 1 px are not drawn (the old 0.5 px minimum was invisible) and fractional widths snap to pixels, so sub-pixel values use a 1 px line with matching opacity and 1 px+ rounds to whole pixels (stated in the readout).
-- Tests: 173 unit / 545 smoke. Details and evidence: reports/UI_REDESIGN_3_4.md, reports/evidence/ui-3.4/.
+- Live acceptance fixes (Potassium, RNG RollAttacks): a double-attached executor runs every script in two contexts with separate `_G`, which started two hubs (two status pills, M1 HUDs and autosave writers). Each hub now owns a shared `ErviHubStopSignal` BindableFunction in PlayerGui that a new run invokes synchronously, and startup removes every stale copy of hub GUIs. The status pill no longer keeps a drag armed after a missed release (Esc menu/focus loss/hidden pill), which had moved and saved the pill on unrelated clicks; the pill now uses the liquid-glass rim and sheen.
+- Tests: 173 unit / 554 smoke. Details and evidence: reports/UI_REDESIGN_3_4.md, reports/evidence/ui-3.4/, reports/evidence/live-3.4/.
 
 ## 3.3.0 development integration — 2026-11-14 (development branch, not a release)
 - Owner-requested Auto update rate is 60 Hz (manual 10/20/30/60 kept); `VisualPolicy.rate` centralizes it.
