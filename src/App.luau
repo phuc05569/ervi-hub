@@ -36,9 +36,19 @@ for _, key in ipairs({ "RNG_HUB_STOP", "RNG_CYBORG_V6_STOP", "RNG_DIAG_V5_STOP" 
 		pcall(stop)
 	end
 end
-for _, name in ipairs({ HUB_NAME, "RNG_Cyborg_M1_V6", "RNG_AttackDiagnostic_V5", "RNG_Hub_CombatHUD", "RNG_Hub_M1HUD", "Ervi_MinimizedStatus", "Ervi_MovementPanel", "Ervi_VisibleOverlays" }) do
-	local old = playerGui:FindFirstChild(name)
-	if old then
+-- _G is per executor context (an executor attached twice runs every script in two contexts), but
+-- Instances are shared: each running hub owns a BindableFunction here that stops it. Invoke is
+-- synchronous, so hubs from any context are fully stopped before this one builds its GUI.
+local STOP_SIGNAL = "ErviHubStopSignal"
+for _, old in ipairs(playerGui:GetChildren()) do
+	if old.Name == STOP_SIGNAL and old:IsA("BindableFunction") then
+		pcall(old.Invoke, old)
+		if old.Parent then old:Destroy() end
+	end
+end
+local OWNED_GUIS = { HUB_NAME, "RNG_Cyborg_M1_V6", "RNG_AttackDiagnostic_V5", "RNG_Hub_CombatHUD", "RNG_Hub_M1HUD", "Ervi_MinimizedStatus", "Ervi_MovementPanel", "Ervi_VisibleOverlays" }
+for _, old in ipairs(playerGui:GetChildren()) do -- every copy, not just the first match
+	if table.find(OWNED_GUIS, old.Name) then
 		old:Destroy()
 	end
 end
@@ -64,6 +74,10 @@ local function stopHub()
 	print("[Ervi Hub] Fully stopped and cleaned.")
 end
 _G.RNG_HUB_STOP = stopHub
+local stopSignal = hub:add(Instance.new("BindableFunction"))
+stopSignal.Name = STOP_SIGNAL
+stopSignal.OnInvoke = function() stopHub() return true end
+stopSignal.Parent = playerGui
 Ui.bindMotion(hub)
 
 local boot=BootLog.new(Build.id,os.clock,readfile,writefile)

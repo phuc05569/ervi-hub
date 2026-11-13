@@ -396,6 +396,10 @@ return function(API)
 			return setParent(self, value)
 		end
 		local ro = member(d.class, "props", key)
+		if ro == nil and type(value) == "function" and member(d.class, "methods", key) ~= nil then
+			d.props[key] = value -- callback member such as BindableFunction.OnInvoke
+			return
+		end
 		if ro == nil then
 			error(("%s is not a valid member of %s"):format(tostring(key), d.class), 2)
 		end
@@ -609,6 +613,13 @@ return function(API)
     end
     function METHODS.GetMouseLocation() return Vector2.new(400,300) end
     function METHODS.GetGuiInset() return Vector2.new(0,58),Vector2.new() end
+    -- Mouse button state for drag gestures; ctl.mouseDown=false simulates a release the game never saw.
+    function METHODS.IsMouseButtonPressed() return ctl.mouseDown ~= false end
+    function METHODS.Invoke(self, ...)
+        local callback = data[self].props.OnInvoke
+        if not callback then error("OnInvoke is not set", 2) end
+        return callback(...)
+    end
     -- Image preload result for UiImages: ctl.assetStatus "Success"/"Failure" (nil = Success).
     function METHODS.PreloadAsync(_, list, callback) for _,item in ipairs(list) do if callback then callback(item,{Name=ctl.assetStatus or "Success"}) end end end
     function METHODS.GetGuiObjectsAtPosition(self,x,y) ctl.lastGuiHitPoint={x,y};return ctl.guiHits or {} end

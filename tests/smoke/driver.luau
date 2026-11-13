@@ -453,6 +453,27 @@ return function(API, makeEngine, hubFn, loaderFn, schema)
 	check(ctl.pendingThreads() == 0, "double Run: no orphaned threads", ctl.pendingThreads())
 	noErrors("double run")
 
+	-- 9b. an executor attached twice runs the hub in two contexts: separate _G, shared Instances
+	-- (seen live 2026-11-14: two status pills, two M1 HUDs, two autosave writers).
+	runHub();ctl.run(0.5)
+	local contextB = setmetatable({ _G = {} }, { __index = env })
+	setfenv(hubFn, contextB)
+	ctl.task.spawn(function() hubFn() end)
+	setfenv(hubFn, env)
+	ctl.run(0.5)
+	local function countGui(name)
+		local n = 0
+		for _, c in ipairs(ctl.pg:GetChildren()) do if c.Name == name then n += 1 end end
+		return n
+	end
+	check(countGui("RNG_RollAttacks_Hub") == 1 and countGui("Ervi_MinimizedStatus") == 1 and countGui("ErviHubStopSignal") == 1, "second context: exactly one hub, status pill and stop signal",
+		("%d/%d/%d"):format(countGui("RNG_RollAttacks_Hub"), countGui("Ervi_MinimizedStatus"), countGui("ErviHubStopSignal")))
+	check(env._G.RNG_HUB_STOP == nil and type(contextB._G.RNG_HUB_STOP) == "function", "second context: first context's hub was stopped through the shared signal")
+	contextB._G.RNG_HUB_STOP();ctl.run(0.5)
+	check(countGui("ErviHubStopSignal") == 0 and countGui("Ervi_MinimizedStatus") == 0, "second context: unload removes the stop signal and GUIs")
+	check(ctl.conns == baseConns and ctl.pendingThreads() == 0, "second context: no orphaned connections or threads", ctl.conns - baseConns)
+	noErrors("second context")
+
 	-- 10. autosave: no Config page; the effective profile saves itself (debounced, flushed on
 	-- unload); other named profiles and autoload bindings are preserved; one-time backup.
 	ctl.requireDelay = nil
@@ -1350,6 +1371,22 @@ return function(API, makeEngine, hubFn, loaderFn, schema)
     check(not win().Visible,"Status bar: delayed drag-release activation stays suppressed")
     check(bar.Position.X.Offset==0 and bar.Position.Y.Offset==0,"Status bar: dragging remains on screen")
     check(savedSettings():find("statusX=0.000000",1,true),"Status bar: position persists")
+    -- Live 3.4 defect: a press whose release never reached the game left the gesture armed; later
+    -- mouse movement and the next click anywhere saved a new pill position.
+    local savedX=savedSettings():match("statusX=([%d%.]+)")
+    bar.InputBegan:Fire({UserInputType=E.UserInputType.MouseButton1,Position=env.Vector2.new(0,0)})
+    ctl.mouseDown=false
+    ctl.UIS.InputChanged:Fire({UserInputType=E.UserInputType.MouseMovement,Position=env.Vector2.new(400,300)})
+    ctl.mouseDown=nil
+    ctl.UIS.InputEnded:Fire({UserInputType=E.UserInputType.MouseButton1})
+    check(bar.Position.X.Offset==0 and savedSettings():match("statusX=([%d%.]+)")==savedX,"Status bar: missed release cancels the drag without moving or saving")
+    bar.InputBegan:Fire({UserInputType=E.UserInputType.MouseButton1,Position=env.Vector2.new(0,0)})
+    barGui.Enabled=false
+    ctl.UIS.InputChanged:Fire({UserInputType=E.UserInputType.MouseMovement,Position=env.Vector2.new(400,300)})
+    ctl.UIS.InputEnded:Fire({UserInputType=E.UserInputType.MouseButton1})
+    barGui.Enabled=true
+    check(bar.Position.X.Offset==0 and savedSettings():match("statusX=([%d%.]+)")==savedX,"Status bar: hidden pill ignores movement and never saves")
+    check(bar:FindFirstChildOfClass("UIStroke") and bar:FindFirstChildOfClass("UIStroke"):FindFirstChildOfClass("UIGradient"),"Status bar: liquid-glass rim")
     bar.InputBegan:Fire({UserInputType=E.UserInputType.MouseButton1,Position=env.Vector2.new(0,0)})
     ctl.UIS.InputEnded:Fire({UserInputType=E.UserInputType.MouseButton1})
     click(bar);ctl.run(0.1)
