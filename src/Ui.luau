@@ -145,6 +145,7 @@ end
 -- Applies a full look (design, accent, font, text color/size/transparency/outline) and repaints
 -- everything already built. FixedBackground / FixedTextColor elements (color previews) keep theirs.
 function Ui.applyLook(look)
+	motion.finish() -- settle old theme targets before remapping their colors
 	Ui.configureMotion(look)
 	local map = Theme.apply(look)
     Logo.refresh(Theme.bg)
@@ -312,6 +313,36 @@ function Ui.button(scope, parent, text, opts, onClick)
 	return btn, setEnabled
 end
 
+-- A menu-owned modal; no separate floating window or persistent geometry.
+function Ui.confirmButton(scope,parent,text,opts,message,onConfirm)
+ local Scope=require("Scope")
+ local dialog,button
+ local function dismiss()
+  if dialog then dialog:close();dialog=nil end
+  if button and button.Parent then Ui.set(button,"Text",text) end
+ end
+ local function confirm() dismiss();onConfirm() end
+ local enabled
+ button,enabled=Ui.button(scope,parent,text,opts,function()
+  if dialog then confirm();return end
+  local root=parent
+  while root.Parent and root.Name~="ErviWindow" do root=root.Parent end
+  dialog=Scope.new("confirmation")
+  local shade=dialog:add(Ui.new("TextButton",{Name="Confirmation",Text="",AutoButtonColor=false,BackgroundColor3=Color3.new(),BackgroundTransparency=0.3,Size=UDim2.fromScale(1,1),ZIndex=80,Parent=root}))
+  local card=Ui.card(shade,"Confirm action",0)
+  card.AnchorPoint=Vector2.new(0.5,0.5);card.Position=UDim2.fromScale(0.5,0.5);card.Size=UDim2.new(0.8,0,0,0);card.ZIndex=81
+  Ui.text(card,message,{order=1})
+  local actions=Ui.row(card,2)
+  Ui.button(dialog,actions,"Cancel",{size=UDim2.new(0.5,-3,1,0)},dismiss)
+  Ui.button(dialog,actions,"Confirm",{variant="primary",size=UDim2.new(0.5,-3,1,0),order=1},confirm)
+  for _,d in ipairs(card:GetDescendants()) do if d:IsA("GuiObject") then d.ZIndex=82 end end
+  dialog:connect(UserInputService.InputBegan,function(input) if input.KeyCode==Enum.KeyCode.Escape then dismiss() end end)
+  Ui.set(button,"Text","Sure?")
+ end)
+ scope:add(dismiss)
+ return button,enabled
+end
+
 -- Wrapping grid of equal cells (for option pickers).
 function Ui.grid(parent, cellW, cellH, order)
 	local f = Ui.new("Frame", {
@@ -339,6 +370,7 @@ end
 -- Card: titled surface whose height follows its content.
 function Ui.card(parent, title, order, subtitle)
 	local card = Ui.new("Frame", {
+        Name="Section_"..(title or "Section"):gsub("%W",""),
 		BackgroundColor3 = Theme.surface2,
 		Size = UDim2.new(1, 0, 0, 0),
 		AutomaticSize = Enum.AutomaticSize.Y,
@@ -766,6 +798,7 @@ end
 
 function Ui.segment(scope,parent,title,options,value,onChange,order)
  local card=Ui.new("Frame",{BackgroundTransparency=1,Size=UDim2.new(1,0,0,0),AutomaticSize=Enum.AutomaticSize.Y,LayoutOrder=order or 0,Parent=parent})
+ Ui.list(card,6)
  Ui.text(card,title,{order=0,font=Theme.fontMedium}); local row=Ui.grid(card,90,28,1)
  local buttons={}
  local function set(v,silent)
@@ -818,7 +851,7 @@ function Ui.notifications(scope,parent,getPrefs)
  local stack=Ui.new("Frame",{Name="NotificationStack",BackgroundTransparency=1,AnchorPoint=Vector2.new(1,1),Position=UDim2.new(1,-20,1,-24),Size=UDim2.new(0.7,0,0,208),ZIndex=40,Parent=parent})
  local entries={}
  local function layout()
-  for i,entry in ipairs(entries) do Ui.animate(entry.frame,{Position=UDim2.new(0,0,1,-i*66)},0.18) end
+  for i,entry in ipairs(entries) do Ui.animate(entry.frame,{Position=UDim2.new(0,0,1,-i*66),GroupTransparency=0},0.18) end
  end
  local function remove(entry)
   local index=table.find(entries,entry)
@@ -864,7 +897,8 @@ end
 function Ui.tooltip(scope,control,text)
  local tip=Ui.text(control,text,{size=UDim2.new(1,0,0,40),textSize=Theme.size.tiny})
  tip.BackgroundTransparency=0.05;tip.BackgroundColor3=Theme.raised; tip.Position=UDim2.new(0,0,1,2); tip.Visible=false; tip.ZIndex=20
- scope:connect(control.MouseEnter,function() tip.Visible=true end)
- scope:connect(control.MouseLeave,function() tip.Visible=false end)
+ ownAnimation(scope,tip)
+ scope:connect(control.MouseEnter,function() tip.Visible=true;tip.TextTransparency=1;Ui.animate(tip,{TextTransparency=Ui.textAlpha},0.12) end)
+ scope:connect(control.MouseLeave,function() Ui.animate(tip,{TextTransparency=1},0.1,function() tip.Visible=false end) end)
 end
 return Ui

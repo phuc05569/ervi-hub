@@ -260,6 +260,7 @@ local function fitPosition()
  window.Position=UDim2.fromOffset(availableX*prefs.winX,availableY*prefs.winY)
 end
 local function applyScale()
+	Ui.cancelAnimation(uiScale)
 	local cam = workspace.CurrentCamera
 	local vp = cam and cam.ViewportSize or Vector2.new(1280, 720)
 	local fit = math.min((vp.X - 24) / W, (vp.Y - 24) / H)
@@ -398,6 +399,24 @@ local pages, order, refreshers = {}, 0, {}
 local NAV={roll=10,styles=20,dash=30,combat=40,visuals=50,player=60,world=70,safe=80,teleports=90,utility=100,config=110,settings=1000,diag=900,session=910}
 local ICON={roll="↻",styles="✦",teleports="↗",dash="⌂",combat="◇",trigger="⊕",sounds="♪",friends="♧",visuals="◉",player="♙",world="☼",safe="↗",utility="ϟ",config="▣",settings="☷"}
 local activePage
+local navMarker=Ui.new("Frame",{Name="NavigationIndicator",BackgroundColor3=Theme.accent,Size=UDim2.fromOffset(3,18),ZIndex=4,Visible=false,Parent=body});Ui.corner(navMarker,2)
+local function moveMarker()
+ local selected=pages[activePage]
+ if not selected then return end
+ local button=selected.btn
+ local factor=math.max(uiScale.Scale,0.2)
+ local position=button.AbsolutePosition or Vector2.new()
+ local origin=body.AbsolutePosition or Vector2.new()
+ local scrollPosition=sidebar.AbsolutePosition or Vector2.new()
+ local scrollSize=sidebar.AbsoluteSize or Vector2.new()
+ local buttonSize=button.AbsoluteSize or Vector2.new()
+ local offset=Vector2.new((position.X-origin.X)/factor,(position.Y-origin.Y)/factor)
+ local within=button.Parent==settingsDock or (position.Y>=scrollPosition.Y and position.Y+buttonSize.Y<=scrollPosition.Y+scrollSize.Y)
+ navMarker.Visible=within
+ Ui.animate(navMarker,{Position=UDim2.fromOffset(offset.X,offset.Y+7)},0.18)
+end
+hub:connect(sidebar:GetPropertyChangedSignal("CanvasPosition"),moveMarker)
+hub:connect(body:GetPropertyChangedSignal("AbsoluteSize"),moveMarker)
 local function selectPage(id)
  local changed=activePage~=id
  activePage=id
@@ -406,7 +425,7 @@ local function selectPage(id)
 		p.page.Visible = on
         if p.preview then p.preview.Visible=on end
         if on then Ui.set(headerTitle,"Text",p.label);Ui.set(headerDesc,"Text",p.description) end
-		p.ind.Visible = on
+		p.ind.Visible = false
 		p.btn:SetAttribute("Selected",on)
         Ui.animate(p.btn,{BackgroundTransparency=on and 0 or 1},0.16)
         Ui.animate(p.lbl,{TextColor3=on and Theme.text or Theme.muted},0.16)
@@ -418,6 +437,7 @@ local function selectPage(id)
 			p.onShow()
 		end
 	end
+ moveMarker()
 end
 
 local function addPage(id, label, description)
@@ -1339,14 +1359,8 @@ do
 			end)
 			setLoad(not isActive)
 			-- Overwrite: replace this saved config with the current settings (asks once).
-			local owArmed = false
-			local ow, setOw
-			ow, setOw = Ui.button(listScope, row, "Overwrite", { width = 84, order = 2 }, function()
-				if not owArmed then
-					owArmed = true
-					ow.Text = "Sure?"
-					return
-				end
+            local ow, setOw
+            ow,setOw=Ui.confirmButton(listScope,row,"Overwrite",{width=84,order=2},"Replace '"..name.."' with the current settings?",function()
 				Settings.put(store, name, table.clone(prefs))
 				savePrefs()
 				status.Text = ("Overwrote '%s' with the current settings."):format(name)
@@ -1359,15 +1373,8 @@ do
 				rebuildList()
 			end)
 			Ui.select(auto, store.autoload == name)
-			local armed = false
-			local del
-			local setDel
-			del, setDel = Ui.button(listScope, row, "Delete", { variant = "danger", width = 64, order = 4 }, function()
-				if not armed then
-					armed = true
-					del.Text = "Sure?"
-					return
-				end
+            local del,setDel
+            del,setDel=Ui.confirmButton(listScope,row,"Delete",{variant="danger",width=64,order=4},"Delete saved configuration '"..name.."'?",function()
 				Settings.delete(store, name)
 				savePrefs()
 				status.Text = ("Deleted '%s'."):format(name)
@@ -1549,6 +1556,7 @@ local function searchResults()
  if #resultEntries==0 and searchInput.Text~="" then resultsScope:add(Ui.text(resultList,"No matching registered setting",{textSize=12})) end
 end
 searchInput=Ui.input(hub,titleBar,"Search settings · Ctrl+K",{width=190},function(_,enter) if enter then openResult(selectedResult) end end)
+searchInput.Name="SettingsSearch"
 searchInput.Position=UDim2.new(1,-284,0,11);searchInput.ZIndex=21;searchInput.ClearTextOnFocus=false
 hub:connect(searchInput:GetPropertyChangedSignal("Text"),searchResults)
 onSearchInput=function(input,processed)
@@ -1593,6 +1601,8 @@ end))
 if stopped then
 	return stopHub -- a newer run replaced this one while it was loading
 end
+window.GroupTransparency=1
+setMinimized(false)
 bootStep("Search initialized; Ready")
 selectPage("dash")
 log("Hub", ("loaded build %s (place version %d)"):format(Build.id, game.PlaceVersion))

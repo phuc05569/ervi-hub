@@ -16,6 +16,10 @@ function Motion.new(create)
   end
  end
  function api.cancel(node) release(node,false) end
+ function api.finish()
+  local nodes={};for node in pairs(active) do table.insert(nodes,node) end
+  for _,node in ipairs(nodes) do release(node,true) end
+ end
  function api.to(node,goal,duration,done)
   if api.closed then return end
   local previous=active[node]
@@ -44,10 +48,7 @@ function Motion.new(create)
  function api.configure(reduced,speed)
   api.speed=math.clamp(tonumber(speed) or 1,0.5,2)
   api.reduced=reduced==true
-  if api.reduced then
-   local nodes={};for node in pairs(active) do table.insert(nodes,node) end
-   for _,node in ipairs(nodes) do release(node,true) end
-  end
+  if api.reduced then api.finish() end
  end
  function api.close()
   api.closed=true

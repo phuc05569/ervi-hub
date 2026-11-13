@@ -1,5 +1,6 @@
 -- Interface labels only. Player names, API errors and diagnostic evidence stay verbatim.
 local RU={
+ ["Confirm action"]="Подтверждение",["Confirm"]="Подтвердить",["Cancel"]="Отмена",
  ["Notifications"]="Уведомления",["Notification Duration"]="Длительность уведомлений",
  ["Motion"]="Анимация",["Reduce Animations"]="Уменьшить анимацию",["Animation Speed"]="Скорость анимации",["UI Scale"]="Масштаб интерфейса",
  ["General"]="Основное",["Player Overlays"]="Метки игроков",["Appearance"]="Оформление",["Filters"]="Фильтры",
