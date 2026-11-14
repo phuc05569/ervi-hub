@@ -3,6 +3,7 @@ local Ui=require("Ui")
 local Theme=require("Theme")
 local TextStyle=require("VisualTextStyle")
 local Stroke=require("SkeletonStroke")
+local Policy=require("VisualPolicy")
 return function(parent)
  local frame=Ui.card(parent,"Visualization preview",0,"Native sample · Visibility Mode filters live targets")
  local canvas=Ui.new("Frame",{Size=UDim2.new(1,0,0,270),BackgroundColor3=Color3.fromRGB(21,25,35),LayoutOrder=1,Parent=frame})
@@ -38,10 +39,11 @@ return function(parent)
  local state=Ui.text(frame,"",{order=2,textSize=Theme.size.tiny,color=Theme.muted})
  return {frame=frame,render=function(p,status)
   local tint=Color3.fromHex(p.enemyColor:sub(2))
+  local espTint=Color3.fromHex(Policy.chamsColor(p,{friend=false}):sub(2))
   local visible=true
   box.Visible=visible and p.boxStyle=="Box";boxStroke.Color=tint
   for _,c in ipairs(corners) do c.Visible=visible and p.boxStyle=="Corners";c.BackgroundColor3=tint end
-  health.Visible=p.healthBar and visible;head.Visible=p.headDot and visible;head.BackgroundColor3=tint
+  health.Visible=p.healthBar and visible;head.Visible=p.headDot and visible;head.BackgroundColor3=espTint
   for i,b in ipairs(bones) do
    local coreW,coreT,outlineW,outlineT=Stroke.resolve(p.skeletonThickness)
    local rect=boneRects[i];local w=rect[3]<=2 and coreW or rect[3];local h=rect[4]<=2 and coreW or rect[4]
@@ -49,14 +51,14 @@ return function(parent)
    b.Size=UDim2.fromOffset(w,h);b.BackgroundTransparency=coreT;outlines[i].Size=UDim2.fromOffset(ow,oh);outlines[i].BackgroundTransparency=outlineT
    b.Position=UDim2.fromOffset(rect[1]+(rect[3]<=2 and (rect[3]-w)/2 or 0),rect[2]+(rect[4]<=2 and (rect[4]-h)/2 or 0))
    outlines[i].Position=UDim2.fromOffset(rect[1]+(rect[3]<=2 and (rect[3]-ow)/2 or -1),rect[2]+(rect[4]<=2 and (rect[4]-oh)/2 or -1))
-   b.Visible=p.skeleton and visible;b.BackgroundColor3=Color3.new(1,1,1);outlines[i].Visible=b.Visible
+   b.Visible=p.skeleton and visible;b.BackgroundColor3=espTint;outlines[i].Visible=b.Visible
   end
   TextStyle.apply(name,Color3.new(1,1,1),Color3.new(0,0,0));TextStyle.apply(distance,Color3.new(1,1,1),Color3.new(0,0,0))
   name.Visible=p.espNames;name.TextSize=p.espTextSize;name.Text="Sample player"
   distance.Visible=p.espDistance;distance.TextSize=p.espTextSize
   center.Position=UDim2.new(0.5,-75,0,26+p.verticalOffset)
-  fill.Visible=p.chams and visible;fill.BackgroundColor3=p.enemyColor=="#F0628E" and Color3.new(1,1,1) or tint;fill.BackgroundTransparency=p.chamsFill
-  boxStroke.Transparency=0;fillStroke.Color=tint;fillStroke.Transparency=p.chamsOutline
+  fill.Visible=p.chams and visible;fill.BackgroundColor3=espTint;fill.BackgroundTransparency=p.chamsFill
+  boxStroke.Transparency=0;fillStroke.Color=espTint;fillStroke.Transparency=p.chamsOutline
   tracer.Visible=p.tracers and visible;tracer.BackgroundColor3=Color3.fromHex(p.tracerColor:sub(2))
   tracer.Position=UDim2.new(0.5,0,p.tracerOrigin=="Top" and 0 or p.tracerOrigin=="Middle" and 0.5 or 1,p.tracerOrigin=="Bottom" and -40 or 0)
   arrow.Visible=p.offscreenArrows;arrow.TextColor3=tint

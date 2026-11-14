@@ -1,3 +1,22 @@
+## Latest functional contract — 3.5.0-dev+cf9fd777b960
+
+**IMPLEMENTED — OWNER TESTING PENDING.** Only normal build generation; owner tests everything. No tests, automated input, deployment, push or release. Preserve the current appearance.
+
+- Auto Roll → Run: new **Auto Roll Safe Zone** toggle directly below Start/Stop/Continue, followed by `rollStatus`. Separate from Auto Roll. API `SafeZone.setRollEnabled`, `rollEnabled`, `onRollChanged`; B keeps `setEnabled`, `enabled`, `onChanged`. Existing `safeZoneKey` controls B. No duplicate A controls on Safe Zone page, no coordinate editors or Saved Positions.
+- A captures one session return point; ON moves/hovers, OFF releases and attempts a valid original return. Logical ON and origin survive respawn; new ready roots re-enter. No automatic Auto Roll Start/Stop. A local correction suspends rather than loops. Full hub reload defaults A OFF.
+- B: first shared move, ~0.1s settle, one-second isolated unanchored hover, release, one final shared move after known result. `ZoneHover` owns its Attachment/AlignPosition; `Flight.suspend/resume` and native equivalents preserve desired Fly/Noclip settings/key state. No old two-second anchor or fling recapture loop.
+- Emergency B has priority. A toggle remains ON but suspended; resumes only after health recovery/disable and B completion. Manual B suspends A until B OFF. A OFF during low-health emergency suppresses origin return; explicit Click TP suspends A without return or loss of its original origin.
+- Notifications retain their existing viewport styling/placement/one-second default. Independent hard expiration closes each scope even if Motion transitions are cancelled or fail. Expiring entries are excluded from reflow; do not reintroduce tween-owned removal callbacks.
+- Skeleton cores/Head Dot/Chams share the existing relation-color resolver, preserving the white factory default/custom friend colors and black outlines. Preview follows the same path. Existing per-frame color properties update records directly, without recreation.
+- Transformed-avatar ESP caches body/root/head geometry under Player.Character. Missing/invisible standard Heads no longer remove the player; nested rigs/body bounds and actual motor links are used. Unknown health hides health bars. Limits: 96 cached body parts, 32 links; normal R6/R15 fast path/rates and LOS/target budgets remain. Detached external proxies and Bone-only mesh skeletons need actual owner structure feedback; never invent joints or associate NPCs by name.
+- **Auto Kill · UNSUPPORTED** and **Auto M1 (unsupported)** labels are explicit. No combat implementation/research. WalkSpeed remains 50 Set/NONE for new configs; Auto Roll waiting, key modes, avatar icons, M1/backgrounds/persistence are preserved.
+
+The old two-second B lock, one-shot A behavior and old label/color gates below are historical. New acceptance remains with the owner; do not relabel prior evidence as current verification. Artifact: `C:\Users\ASUS\ervi-hub\build\Ervi_Hub.luau`.
+
+### Earlier handoff follows
+
+---
+
 ## Current functional contract — 3.5.0-dev+6abfd1dd3905
 
 **IMPLEMENTED — OWNER TESTING PENDING.** Owner handles all testing; no automated validation, live input, Potassium deployment or publishing in this continuation. Preserve the visual design for Claude's later UI pass.

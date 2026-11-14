@@ -23,11 +23,10 @@ return function(ctx)
  local authority=makeAuthority(hub)
  local flight=makeFlight(hub,ctx.prefs,ctx.save,authority)
  ctx.safe.transport.setAuthority(authority)
- ctx.safe.beforeMove=function()
-  if flight.active or ctx.prefs().flyEnabled or ctx.prefs().noclipEnabled then flight.stop("Safe Zone selected") end
- end
- flight.beforeStart=function() if ctx.safe.enabled then ctx.safe.setEnabled(false,true) end end
- local clickTP=makeClickTP(hub,ctx.parent,ctx.prefs,authority,function() return flight.active end,ctx.safe.transport)
+ ctx.safe.setController(flight)
+ local clickTP=makeClickTP(hub,ctx.parent,ctx.prefs,authority,function()
+  return flight.active or ctx.prefs().flyEnabled or ctx.prefs().noclipEnabled
+ end,ctx.safe.transport)
  require("LocationControls")(ctx)
  local pages=ctx.pages
  local new={}
@@ -193,10 +192,10 @@ return function(ctx)
  local active=Ui.card(pages.dash.page,"Active now · click to disable",-6)
  local chipGrid=Ui.grid(active,135,28,1)
  local chips={}
- for i,entry in ipairs({{"M1 HUD","m1Enabled"},{"Anti AFK","antiAfk"},{"WalkSpeed","walkEnabled"},{"Visuals","espEnabled"},{"Movement Panel","movementPanel"},{"Auto Roll","roll"},{"Safe Zone","safe"},{"Fullbright","fullbright"},{"No Fog","noFog"},{"No Shadows","noShadows"},{"Custom Time","customTime"},{"Blur","backgroundBlur"},{"Reconnect","reconnect"},{"Auto-execute","autoExec"},{"Instant prompts","instantPrompts"},{"Target selection","targetEnabled"}}) do
+ for i,entry in ipairs({{"M1 HUD","m1Enabled"},{"Anti AFK","antiAfk"},{"WalkSpeed","walkEnabled"},{"Visuals","espEnabled"},{"Movement Panel","movementPanel"},{"Auto Roll","roll"},{"Auto Roll Safe Zone","rollSafe"},{"Zone B","safe"},{"Fullbright","fullbright"},{"No Fog","noFog"},{"No Shadows","noShadows"},{"Custom Time","customTime"},{"Blur","backgroundBlur"},{"Reconnect","reconnect"},{"Auto-execute","autoExec"},{"Instant prompts","instantPrompts"},{"Target selection","targetEnabled"}}) do
   local key=entry[2]
   chips[key]=Ui.button(hub,chipGrid,entry[1],{order=i},function()
-   if key=="roll" then ctx.roll:stop() elseif key=="safe" then ctx.safe.setEnabled(false) else changed(key,false);ctx.applyPrefs() end
+   if key=="roll" then ctx.roll:stop() elseif key=="safe" then ctx.safe.setEnabled(false) elseif key=="rollSafe" then ctx.safe.setRollEnabled(false) else changed(key,false);ctx.applyPrefs() end
   end)
  end
  local none=Ui.text(active,"No active optional features",{order=2,textSize=Theme.size.small,color=Theme.muted})
@@ -216,7 +215,7 @@ return function(ctx)
   Ui.set(server,"Text",("Players %d/%s · %d ms · Job %s"):format(#game:GetService("Players"):GetPlayers(),tostring(game:GetService("Players").MaxPlayers or "?"),metrics.ping,tostring(game.JobId or "unavailable")))
   local any=false
   for key,chip in pairs(chips) do
-   local on=key=="roll" and ctx.roll:isRunning() or key=="safe" and ctx.safe.enabled or key=="walkEnabled" and playerTools.walkActive or key=="espEnabled" and visuals.active or (key~="roll" and key~="safe" and key~="walkEnabled" and key~="espEnabled" and ctx.prefs()[key]==true)
+   local on=key=="roll" and ctx.roll:isRunning() or key=="safe" and ctx.safe.enabled or key=="rollSafe" and ctx.safe.rollEnabled or key=="walkEnabled" and playerTools.walkActive or key=="espEnabled" and visuals.active or (key~="roll" and key~="safe" and key~="rollSafe" and key~="walkEnabled" and key~="espEnabled" and ctx.prefs()[key]==true)
    chip.Visible=on==true;any=any or on==true
   end
   none.Visible=not any

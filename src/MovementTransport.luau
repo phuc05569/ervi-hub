@@ -10,6 +10,7 @@ return function(hub,authority)
   if done then done(api.status,api.outcome) end
  end
  function api.setAuthority(adapter) authority=adapter end
+ function api.ready() return not api.busy and not (authority and authority.busy) and not hub.closed end
  function api.cancel(reason,owner)
   if owner and api.owner~=owner then return end
   epoch+=1;state:cancel(reason);callback=nil;api.busy=false;api.status=state.status

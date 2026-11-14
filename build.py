@@ -15,6 +15,8 @@ APP_MODULES = ["ClickTarget", "ClickTP", "LogoGeometry", "VisualTextStyle", "Sli
 APP_MODULES[0:0] = ["TrackerState", "PlayerTracker", "MovementPolicy", "MovementAuthority", "Flight", "SkeletonGeometry", "RigSkeleton", "Diagnostics"]
 APP_MODULES.insert(0, "JsonText")
 APP_MODULES[0:0] = ["MovementAttempt", "MovementTransport", "PositionData", "EmergencyState", "LocationControls", "LocalFlight", "Keybinds", "ImageSource", "Background"]
+APP_MODULES.insert(0, "ZoneHover")
+APP_MODULES.insert(0, "AvatarGeometry")
 APP_MODULES[0:0] = ["UiAssets", "UiImages", "SkeletonStroke"]
 PURE_MODULES = ["ClickTarget", "LogoGeometry", "VisualTextStyle", "SliderValue", "Motion", "BootLog", "FeatureSchema", "Locale", "Registry", "PropertyOverrides", "VisualPolicy", "Scope", "Rarity", "AutoRoll", "Settings", "M1State", "Loader", "WindowGeometry", "SafeZoneState", "TargetState", "PositionHold"]
 PURE_MODULES[0:0] = ["JsonText", "SkeletonGeometry", "MovementPolicy", "TrackerState"]

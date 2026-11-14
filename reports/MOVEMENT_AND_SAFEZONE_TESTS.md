@@ -1,3 +1,21 @@
+## Current movement contract — 3.5.0-dev+cf9fd777b960
+
+**IMPLEMENTED — OWNER TESTING PENDING.** No tests or game automation run. Owner reported the previous B root anchor delayed server-observed position, so that controller is removed.
+
+B now runs one explicit transaction: move through shared transport; after local arrival and about 0.1s, create a separate AlignPosition hover for about one second; destroy it; after a known first-move result and an idle transport, make exactly one final B move. Failed/uncertain/displaced/anchored/changed characters stop the transaction. New B requests supersede old observers/resources; an already delivered owned-server command cannot be retracted, so the new transaction waits for readiness with a bounded deadline. No endless teleports or anchor writes. The owned Studio server/protocol is unchanged and was not run.
+
+[AlignPosition reference](https://create.roblox.com/docs/reference/engine/classes/AlignPosition): ZoneHover uses a non-rigid one-attachment position goal with bounded force/12-stud/s velocity and responsiveness 12. It never writes CFrame or network ownership. The user's actual Fly/Noclip controllers are suspended with settings/keys unchanged, then restored from current intent. The temporary controller does not simulate F or turn Fly preferences on/off. Native replication still requires owner confirmation.
+
+A is now Auto Roll Safe Zone, a logical toggle in Auto Roll directly below Start/Stop/Continue. ON captures the activation origin once and makes one A move, then continuous low-overhead hover. OFF releases hover and attempts one return to that origin (finite/place/death-height/character checks); no arbitrary fallback. The original origin survives death/respawn, and ready living new roots re-enter A once without re-toggling. It never starts or stops Auto Roll and never forces roll readiness. Runtime session state is not auto-enabled across a full hub reload.
+
+Emergency B cancels A physics while retaining its toggle/origin. A resumes only after health clears (or emergency is disabled) and the B sequence completes. Manual B suspends A until B OFF. A OFF during a continuing low-health emergency suppresses the dangerous return. Explicit Click TP suspends A while retaining its logical toggle/origin, without returning; correction releases hover and waits for OFF/ON or respawn rather than fighting the server. Death/root/Humanoid replacement/unload remove controllers and scoped listeners. Movement lifecycle checks and transaction sequencing share one cheap active-only Heartbeat callback; constraints handle hover without per-frame teleport writes.
+
+Coordinates are unchanged: A `(350.647675,-435.796021,26.535965)`, B `(296.613495,59.0999985,-100.878853)`, place `119338513416973`, stored overrides first. No coordinate editors/named positions restored. None of this proves rollability, immunity or server-observed arrival. All owner acceptance remains pending.
+
+### Historical movement evidence follows
+
+---
+
 ## Current movement implementation — 3.5.0-dev+6abfd1dd3905
 
 **IMPLEMENTED — OWNER TESTING PENDING.** Owner now handles all testing. No tests or live automation were run for these changes. Existing evidence below belongs to earlier builds.

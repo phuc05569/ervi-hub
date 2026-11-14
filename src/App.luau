@@ -757,9 +757,15 @@ do
 	local cR = Ui.card(rollPage, "Run", 2)
 	local runRow = Ui.row(cR, 1, 32)
 	local setStartEnabled, setStopEnabled, setContEnabled
-	local setState = Ui.pill(cR, 2)
-	local reason = Ui.text(cR, "", { textSize = Theme.size.small, order = 3 })
-	local kRun, kSent, kGot, kLast, kReady = Ui.kv(cR, "Running for", 4), Ui.kv(cR, "Rolls sent", 5), Ui.kv(cR, "Results received", 6), Ui.kv(cR, "Last result", 7), Ui.kv(cR, "Readiness", 8)
+	local rollZone=Ui.toggle(hub,cR,"Auto Roll Safe Zone","Hover at Zone A. OFF returns to your activation position. Independent of Auto Roll; emergency Zone B takes priority.",safeZone.rollEnabled,safeZone.setRollEnabled,2)
+	safeZone.onRollChanged=function(on) rollZone.set(on,true) end
+	local rollZoneStatus=Ui.text(cR,"",{textSize=Theme.size.small,order=3})
+	onRefresh("roll","auto roll safe zone",function()
+		rollZone.set(safeZone.rollEnabled,true);Ui.set(rollZoneStatus,"Text",safeZone.rollStatus)
+	end)
+	local setState = Ui.pill(cR, 4)
+	local reason = Ui.text(cR, "", { textSize = Theme.size.small, order = 5 })
+	local kRun, kSent, kGot, kLast, kReady = Ui.kv(cR, "Running for", 6), Ui.kv(cR, "Rolls sent", 7), Ui.kv(cR, "Results received", 8), Ui.kv(cR, "Last result", 9), Ui.kv(cR, "Readiness", 10)
 
 	local function currentTarget()
 		if target.mode == "style" then
@@ -918,18 +924,18 @@ local function addSafeKeyControl(parent,order)
   end
  end)
  button:SetAttribute("SettingKey","safeZoneKey");table.insert(safeKeyButtons,button)
- Ui.register(button,"Safe Zone toggle key","Bind, clear, or change Safe Zone key; works with main GUI hidden")
+ Ui.register(button,"Zone B toggle key","Bind, clear, or change Zone B key; works with main GUI hidden")
  Ui.text(row,"NONE = unbound. Backspace clears; Esc cancels. Ignored while typing.",{textSize=Theme.size.tiny,color=Theme.muted,order=2})
  return button
 end
  table.insert(syncs,syncSafeKeys)
 
 -- ===================================================================== Safe Zone
-local safePage = addPage("safe", "Safe Zone", "Destination, return origin and keybind")
+local safePage = addPage("safe", "Safe Zone", "Zone B, emergency movement and keybind")
 local teleportsPage=addPage("teleports","Teleports","Server travel")
 do
-    local card=Ui.card(safePage,"Safe Zone state",1,"Zone A moves without a hold. Zone B stabilizes for two seconds without an automatic return. Rolling and protection follow the game's own rules.")
-    local toggle=Ui.toggle(hub,card,"Enable Safe Zone", "Zone A OFF returns once to your activation origin. Zone B OFF releases stabilization and stays in place.",safeZone.enabled,safeZone.setEnabled,1)
+    local card=Ui.card(safePage,"Zone B state",1,"Move to B, settle briefly, hover for one second, release, then make one final B move. User Fly settings are preserved.")
+    local toggle=Ui.toggle(hub,card,"Enable Zone B", "OFF cancels the sequence and remains at the current position. Auto Roll Safe Zone is in Auto Roll.",safeZone.enabled,safeZone.setEnabled,1)
     safeZone.onChanged=function(on) toggle.set(on,true) end
     local coords=Ui.text(card,"",{order=2,textSize=Theme.size.small})
     local status=Ui.text(card,"",{order=3,textSize=Theme.size.small,color=Theme.muted})
@@ -938,15 +944,15 @@ do
     onSafeKey=safeZone.keyAction
     onRefresh("safe","safe zone",function()
         toggle.set(safeZone.enabled,true)
-        Ui.set(coords,"Text",safeZone.describe())
+        Ui.set(coords,"Text",safeZone.describe("B"))
         Ui.set(status,"Text",safeZone.status)
-        Ui.set(bind,"Text","Key: " .. prefs.safeZoneKey .. " · toggles Safe Zone ON/OFF. Assign a key in Settings; Backspace clears it.")
+        Ui.set(bind,"Text","Key: " .. prefs.safeZoneKey .. " · toggles Zone B ON/OFF. Assign a key in Settings; Backspace clears it.")
     end)
 end
 
 -- Manual-combat alternative while no authorized movement/attack API is known.
 do
-    local card=Ui.card(combat,"Auto Kill · manual combat",3,"Selects an eligible low-health player. Approach and attack manually. Safe Zone offers a local return and position hold; Auto M1 remains unavailable.")
+    local card=Ui.card(combat,"Auto Kill · UNSUPPORTED",3,"Auto Kill is unsupported and deferred. The controls below only select a target; attacks remain manual.")
     local enabled=Ui.toggle(hub,card,"Enable target selection",nil,prefs.targetEnabled,function(on)
         prefs.targetEnabled=on; targets.refresh(); savePrefs()
     end,1)
@@ -957,7 +963,7 @@ do
         local n=tonumber(text)
         if n and n==n and math.abs(n)<math.huge then prefs.targetHp=math.clamp(math.floor(n),1,100); threshold.set(prefs.targetHp,true); targets.refresh(); savePrefs() end
     end)
-    local auto=Ui.toggle(hub,card,"Auto M1 (request only)","ON records your preference; no automated attacks run without a supported game mechanic.",prefs.autoM1Requested,function(on)
+    local auto=Ui.toggle(hub,card,"Auto M1 (unsupported)","Unsupported and deferred. ON only records the existing preference; no attacks are sent.",prefs.autoM1Requested,function(on)
         prefs.autoM1Requested=on; savePrefs()
     end,4)
     local state=Ui.kv(card,"State",5)
@@ -970,7 +976,7 @@ do
     onRefresh("combat","target selection",function()
         state(targets.state.state); selected(targets.state.name or "none")
         hp(targets.state.hp and ("%.1f%%"):format(targets.state.hp) or "—")
-        attacks(prefs.autoM1Requested and "ON requested · unsupported · no attacks sent" or "OFF · manual M1 and skills")
+        attacks("UNSUPPORTED · no automated attacks"..(prefs.autoM1Requested and " · preference recorded" or ""))
     end)
 end
 
@@ -1457,7 +1463,7 @@ statusBar=makeStatusBar(hub,playerGui,function() return prefs end,savePrefs,func
  local features={}
  local function add(on,label,page) if on then table.insert(features,{label=label,page=page}) end end
  add(autoRoll:isRunning() or autoRoll.state=="Paused","Roll "..autoRoll.state,"roll")
- add(safeZone.enabled,"Safe Zone","safe");add(expansion.visuals.active,"Visuals","visuals")
+ add(safeZone.enabled,"Zone B","safe");add(safeZone.rollEnabled,"Auto Roll Safe Zone","roll");add(expansion.visuals.active,"Visuals","visuals")
  add(expansion.player.walkActive,"Speed","player");add(expansion.flight.flying,"Fly","player");add(expansion.flight.noclip,"Noclip","player");add(expansion.clickTP.active,"Click TP","teleports");add(m1.enabled,"M1","combat");add(session.antiAfk,"Anti AFK","utility")
  return {fps=metrics.fps,ping=metrics.ping,rollState=autoRoll.state,features=features}
 end)

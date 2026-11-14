@@ -951,9 +951,14 @@ function Ui.notifications(scope,parent,getPrefs)
  local stack=Ui.new("Frame",{Name="NotificationStack",BackgroundTransparency=1,AnchorPoint=Vector2.new(1,1),Position=UDim2.new(1,-20,1,-24),Size=UDim2.new(0.42,0,0,176),ZIndex=40,Active=false,Interactable=false,Parent=notificationGui})
  local entries={}
  local function layout()
-  for i,entry in ipairs(entries) do Ui.animate(entry.frame,{Position=UDim2.new(0,0,1,-i*56),GroupTransparency=0},0.24,nil,"soft") end
+  for i,entry in ipairs(entries) do
+   if not entry.expiring and not entry.scope.closed and entry.frame.Parent then
+    pcall(Ui.animate,entry.frame,{Position=UDim2.new(0,0,1,-i*56),GroupTransparency=0},0.24,nil,"soft")
+   end
+  end
  end
  local function remove(entry)
+  if entry.scope.closed then return end
   local index=table.find(entries,entry)
   if index then table.remove(entries,index) end
   entry.scope:close();layout()
@@ -964,7 +969,7 @@ function Ui.notifications(scope,parent,getPrefs)
   if not notificationGui.Enabled then while #entries>0 do remove(entries[#entries]) end end
  end
  local function notify(message)
-  if scope.closed or not getPrefs().notificationsEnabled then return end
+  if scope.closed or not getPrefs().notificationsEnabled or not notificationGui.Parent or not stack.Parent then return end
   if #entries>=3 then remove(entries[1]) end
   local owner=Scope.new("notification")
   local frame=owner:add(Ui.new("CanvasGroup",{Name="Notification",BackgroundColor3=Theme.raised,BackgroundTransparency=0.28,GroupTransparency=1,Size=UDim2.new(1,0,0,48),Position=UDim2.new(0,24,1,-(#entries+1)*56),ZIndex=40,Parent=stack}))
@@ -973,11 +978,19 @@ function Ui.notifications(scope,parent,getPrefs)
   Ui.text(frame,message,{size=UDim2.fromScale(1,1),textSize=11}).ZIndex=41
   local entry={frame=frame,scope=owner};table.insert(entries,entry)
   owner:add(function() motion.cancel(frame) end)
-  Ui.animate(frame,{GroupTransparency=0},0.2);layout()
-  owner:add(task.delay(getPrefs().notificationDuration,function()
+  local duration=tonumber(getPrefs().notificationDuration) or 1
+  if duration~=duration then duration=1 end
+  duration=math.clamp(duration,1,8)
+  -- Lifetime never depends on Motion's completion callback: another layout
+  -- animation can replace a tween and intentionally discard that callback.
+  owner:add(task.delay(duration,function() remove(entry) end))
+  owner:add(task.delay(math.max(0,duration-0.16),function()
+   if owner.closed or not frame.Parent then return end
+   entry.expiring=true
    local at=frame.Position
-   Ui.animate(frame,{GroupTransparency=1,Position=UDim2.new(at.X.Scale,at.X.Offset+16,at.Y.Scale,at.Y.Offset)},0.16,function() remove(entry) end,"accelerate")
+   pcall(Ui.animate,frame,{GroupTransparency=1,Position=UDim2.new(at.X.Scale,at.X.Offset+16,at.Y.Scale,at.Y.Offset)},0.16,nil,"accelerate")
   end))
+  pcall(Ui.animate,frame,{GroupTransparency=0},0.2);layout()
  end
  sync()
  return notify,sync

@@ -22,7 +22,19 @@ return function(hub,getPrefs,save,authority)
   if authority.release then authority.release() end
   reset(api.available and (reason or "Flight and Noclip off") or authority.status)
  end
+ function api.suspend(by)
+  if api.suspended and api.suspended~=by then return false end
+  api.suspended=by;epoch+=1;pending=false;lastRequest=nil
+  api.active=false;api.flying=false;api.noclip=false
+  authority.release();api.status="Movement suspended for zone stabilization";return true
+ end
+ function api.resume(by)
+  if api.suspended~=by then return end
+  api.suspended=nil;lastRequest=nil
+  if not hub.closed then api.apply() end
+ end
  function api.apply()
+  if api.suspended then return end
   local p=getPrefs()
   if not api.available then api.status=authority.status;return end
   if (p.flyEnabled or p.noclipEnabled) and api.beforeStart then api.beforeStart() end
@@ -48,6 +60,12 @@ return function(hub,getPrefs,save,authority)
  end
  if not api.available then return api end
  if authority.changed then hub:connect(authority.changed,function(state)
+  if type(state)=="table" and state.reason=="Client release" then
+   api.active=false;api.flying=false;api.noclip=false;lastRequest=nil
+   if not api.suspended then api.apply() end
+   return -- our transaction release must not erase the user's saved intent
+  end
+  if api.suspended then return end
   if type(state)=="table" and state.fly==false and state.noclip==false then reset("Studio server stopped: "..tostring(state.reason)) end
  end) end
  hub:connect(Run.Heartbeat,function(dt)

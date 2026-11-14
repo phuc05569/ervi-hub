@@ -1,3 +1,17 @@
+## Current manual-feedback continuation — 3.5.0-dev+cf9fd777b960
+
+- [x] Preserve checkpoint 0443e7b/history/source/build/evidence before edits.
+- [x] Replace B anchor with bounded two-move/temporary hover sequence and independent Fly ownership.
+- [x] Move A into Auto Roll Safe Zone toggle; implement origin return, respawn recovery and emergency priority.
+- [x] Independent notification cleanup deadline; shared Skeleton/Head Dot/Chams colors.
+- [x] Add transformed-avatar geometry/nested-rig fallback; explicitly label Auto Kill unsupported.
+- [x] Update handoff/reports and generate development build only.
+- [ ] All new changes: IMPLEMENTED — OWNER TESTING PENDING.
+
+No test suites/input automation/deployment/push/publication in this continuation. Historical checkboxes below apply only to their old checkpoints.
+
+---
+
 ## Current owner-only testing continuation — 3.5.0-dev+6abfd1dd3905
 
 - [x] Preserve clean local checkpoint/history/source/build/evidence and read-only current settings snapshot.

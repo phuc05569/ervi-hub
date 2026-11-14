@@ -1,3 +1,11 @@
+# Current development candidate — 3.5.0-dev+cf9fd777b960
+
+[Updated script](build/Ervi_Hub.luau) — **IMPLEMENTED — OWNER TESTING PENDING**. Auto Roll Safe Zone toggle now sits directly under Run, with hover/origin return/respawn recovery. B uses two bounded moves around a temporary unanchored hover and preserves user Fly settings. Notifications expire independently; Skeleton/Head Dot/Chams share configured colors; transformed-avatar ESP gains Character-owned geometry fallbacks. Auto Kill is explicitly unsupported.
+
+Owner handles all testing. Only `python build.py` was run to generate artifacts; no tests, live automation, installation, push or publication. Game rollability/server acceptance and specific transformed-avatar behavior remain pending. See the latest [functional audit](reports/FEATURE_FUNCTIONAL_AUDIT.md) and [Claude UI handoff](reports/CODEX_TO_CLAUDE_UI_HANDOFF.md). Prior notes below are historical.
+
+---
+
 # Owner-testing development candidate — 3.5.0-dev+6abfd1dd3905
 
 Updated script: `C:\Users\ASUS\ervi-hub\build\Ervi_Hub.luau`. **IMPLEMENTED — OWNER TESTING PENDING.** A movement/anchor repair, B two-second stabilization, recoverable Auto Roll waiting, removed location editors/Saved Positions, new WalkSpeed default 50, keybind notices and Fly focus persistence. See the latest [functional audit](reports/FEATURE_FUNCTIONAL_AUDIT.md) and [Claude handoff](reports/CODEX_TO_CLAUDE_UI_HANDOFF.md).

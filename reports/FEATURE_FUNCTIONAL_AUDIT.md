@@ -1,3 +1,30 @@
+## Current manual-feedback candidate — 3.5.0-dev+cf9fd777b960
+
+**IMPLEMENTED — OWNER TESTING PENDING.** Continues local checkpoint `0443e7b`; no unit/smoke/compile/Studio/Potassium/live testing, benchmark, deployment, push or publication. Normal `python build.py` generation only. Earlier evidence below is historical.
+
+Owner reports B's two-second anchor delayed server-observed movement until release. This report is not an independently reproduced server trace. The anchor implementation is removed, not extended.
+
+| Change | Implementation / remaining boundary |
+|---|---|
+| Zone B | Existing transport first move → ~0.1s settle after local arrival → separate bounded-force one-second physics hover → release → one final move, after the first result is known. No root anchoring, movement retry loop, network-ownership edits or server guarantee |
+| User Fly independence | LocalFlight/Flight suspend and resume physical controllers without changing desired settings/key modes; current user changes while suspended win. Death/unload keep existing cleanup policy |
+| Auto Roll Safe Zone | Toggle directly below Run buttons, separate from Auto Roll. Captures one original return point; enters A and hovers without anchoring. OFF cleans up then requests one finite/place/death-height-validated return; invalid/dead/emergency returns are suppressed |
+| A respawn/emergency | Logical toggle/original origin survive respawn. Ready living root re-enters A once; emergency B suspends A until health clears and B sequence finishes. Manual B holds A suspended until B OFF. External correction suspends without looping; explicit Click TP suspends A without returning or losing its origin |
+| Notifications | Independent per-entry hard deadline removes the frame/scope; optional fade no longer owns removal. Reflow skips expiring entries. Max three, bottom-right, minimized-menu independence and one-second default retained |
+| ESP colors | Shared existing Chams relation palette drives skeleton cores and Head Dot, including friend colors/factory-white behavior; preview matches. Black underlays, text defaults and separate tracers preserved |
+| Transformed avatar ESP | Cached nested Character geometry/root/body bounds replace mandatory visible Head gating. Missing health hides the bar. Real Motor6D links support nested/custom rigs; no invented skeleton for mesh-only bodies. Cached parts ≤96, links ≤32; existing target/rate/ray/visibility budgets remain |
+| Auto Kill | Explicitly UNSUPPORTED / deferred in UI; no attacks investigated, implemented or sent |
+
+Preserved working-owner reports for Click TP, emergency B and WalkSpeed; speed default remains 50 Set/NONE. Existing settings/destinations/backups/release stay untouched. Source files: SafeZone, new ZoneHover, Flight/LocalFlight, MovementTransport, App/Expansion/LocationControls, Ui, new AvatarGeometry, RigSkeleton, Visuals/VisualPreview, plus build.py. Existing reports/task ledger and generated bundle/map/loader updated; no test suites changed.
+
+Limitations: native hover/MoveTo do not establish target-game server acceptance, protection or A rollability. B's last move is withheld after uncertainty/correction. Physics correction >16 studs cancels stabilization. Original-return surface availability is still subject to normal transport/game behavior. Transformed models must be within the associated replicated Player.Character; detached proxies and Bone-only mesh skeletons are not guessed. The previous automated evidence/catalog does not validate this build.
+
+Pre-edit preservation: `C:\Users\ASUS\ervi-manual-feedback-20261114-075732` (all-ref checkpoint bundle and source/build/docs/evidence). Owner tests all new behavior.
+
+### Earlier checkpoint notes follow
+
+---
+
 ## Owner-testing continuation — 14 November 2026
 
 Current candidate: **3.5.0-dev+6abfd1dd3905**. All changes below are **IMPLEMENTED — OWNER TESTING PENDING**. This section supersedes the previous candidate's feature status. No tests, compile checks, benchmarks, Roblox/Studio/Potassium input, deployment, push or publication were performed in this continuation. Only the normal build command is authorized. Old automated results are historical and do not validate this build.

@@ -1,3 +1,13 @@
+## Manual feedback repair — 3.5.0-dev+cf9fd777b960
+
+**IMPLEMENTED — OWNER TESTING PENDING.** No tests, live automation or deployment. Replaced owner-reported B anchor/replication delay with a bounded two-move/physics-hover transaction, preserving user Fly intent. A now owns an independent hover/return/respawn session under Auto Roll, with emergency priority. Existing transport observation/uncertainty safeguards and Studio server validation stay intact.
+
+Source cause for stuck notifications: `Motion.to` deliberately discards replaced completion callbacks; notification removal previously depended on a fade callback that layout could replace. Independent per-notice deadline cleanup removes that dependency and survives animation errors. Skeleton was hardcoded white and Head Dot differed from Chams' factory/custom palette; all three now use the established resolver. ESP's mandatory visible direct Head/direct rig lookups excluded transformed avatars; cached Character-owned geometry/nested rigs/root bounds now provide fallbacks with existing eligibility budgets. Auto Kill is explicitly unsupported, with no attack changes.
+
+### Previous repair log follows
+
+---
+
 ## Owner manual-testing repair pass — 3.5.0-dev+6abfd1dd3905
 
 **IMPLEMENTED — OWNER TESTING PENDING.** Source review identified persistent A anchoring/PivotTo versus the working shared transport, and a terminal readiness timeout for known temporary roll gates. A now uses the transport without a hold; B alone owns bounded stabilization. Preserved recovered configured coordinates rather than guessing a rollable spot. Removed coordinate editors/named positions, set fresh WalkSpeed to 50, fixed keybind notifications and retained Toggle Fly across focus loss. Existing settings/data and evidence are preserved. Owner reports prior Click TP/emergency/B protection/speed success; this does not verify these new changes. Only the normal build is run; no tests, benchmarks, input automation, deployment or push.

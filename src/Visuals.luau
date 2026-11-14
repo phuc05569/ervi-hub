@@ -10,6 +10,7 @@ local Run=game:GetService("RunService")
 local Rig=require("RigSkeleton")
 local Geometry=require("SkeletonGeometry")
 local Stroke=require("SkeletonStroke")
+local Avatar=require("AvatarGeometry")
 local function color(hex) return Color3.fromHex(hex:sub(2)) end
 local function line(parent)
  return Ui.new("Frame",{Name="OverlayLine",BorderSizePixel=0,BackgroundColor3=Theme.accent,AnchorPoint=Vector2.new(0.5,0.5),Visible=false,Parent=parent})
@@ -82,12 +83,14 @@ return function(hub,parent,getPrefs,playerSource)
   records[player]=r;return r
  end
  local function draw(c,r,p,cam,bones,sample)
-  if sample then table.clear(r.visibleParts) end
-  if not c.char.Parent or not c.head.Parent or not c.root.Parent or c.hum.Health<=0 or c.head.Transparency>=1 or c.head.LocalTransparencyModifier>=1 then r.root.Visible=false;r.highlight.Enabled=false;return end
-  c.point,c.on,c.depth=project(cam,c.head.Position)
+  if sample then table.clear(r.visibleParts);Avatar.sample(c) end
+  if not c.char.Parent or not c.root or not c.root.Parent or (c.hum and c.hum.Health<=0) then r.root.Visible=false;r.highlight.Enabled=false;return end
+  local topWorld,bottomWorld,_,dotWorld=Avatar.points(c)
+  if not topWorld then r.root.Visible=false;r.highlight.Enabled=false;return end
+  c.point,c.on,c.depth=project(cam,topWorld)
   if not c.on and not p.offscreenArrows then r.root.Visible=false;r.highlight.Enabled=false;return end
      r.root.Visible=true
-     local tint=color(Policy.color(p,c));r.highlight.Enabled=false
+     local tint=color(Policy.color(p,c));local espTint=color(Policy.chamsColor(p,c));r.highlight.Enabled=false
      for _,l in ipairs(r.lines) do l.Visible=false end
      for _,l in ipairs(r.bones) do l.Visible=false end
      for _,l in ipairs(r.boneOutlines) do l.Visible=false end
@@ -101,12 +104,15 @@ return function(hub,parent,getPrefs,playerSource)
       r.arrow.Rotation=math.deg(math.atan2(dy,dx))+90;r.arrow.TextColor3=tint;r.arrow.Visible=true
      else
       local top=c.point
-      local bottom=project(cam,c.root.Position-Vector3.new(0,3,0))
+      local bottom=project(cam,bottomWorld)
       local left,right,yTop,yBottom
       if p.cheapBoxes then
        local height=math.max(8,math.abs(bottom.Y-top.Y));left=top.X-height*0.3;right=top.X+height*0.3;yTop=top.Y-4;yBottom=bottom.Y
       else
-       local cf,size=c.char:GetBoundingBox();left=math.huge;right=-math.huge;yTop=math.huge;yBottom=-math.huge
+       local cf,size
+       if c.fallback and c.bounds then cf=c.root.CFrame*CFrame.new(c.bounds.center);size=c.bounds.size
+       else cf,size=c.char:GetBoundingBox() end
+       left=math.huge;right=-math.huge;yTop=math.huge;yBottom=-math.huge
        for _,x in ipairs({-1,1}) do for _,y in ipairs({-1,1}) do for _,z in ipairs({-1,1}) do
         local v,_,depth=project(cam,cf:PointToWorldSpace(Vector3.new(x*size.X/2,y*size.Y/2,z*size.Z/2)))
         if depth>0.05 then
@@ -126,7 +132,7 @@ return function(hub,parent,getPrefs,playerSource)
        local points={{a,Vector2.new(left+w,yTop)},{a,Vector2.new(left,yTop+h)},{b,Vector2.new(right-w,yTop)},{b,Vector2.new(right,yTop+h)},{d,Vector2.new(right-w,yBottom)},{d,Vector2.new(right,yBottom-h)},{e,Vector2.new(left+w,yBottom)},{e,Vector2.new(left,yBottom-h)}}
        for i,pair in ipairs(points) do segment(r.lines[i],pair[1],pair[2],tint) end
       end
-      if p.healthBar then
+      if p.healthBar and c.hum and c.hum.MaxHealth>0 then
        local fraction=math.clamp(c.hum.Health/c.hum.MaxHealth,0,1)
        local high=fraction>.5
        segment(r.healthOutline,Vector2.new(left-4,yBottom+1),Vector2.new(left-4,yTop-1),color(high and p.healthHighOutline or p.healthLowOutline),5)
@@ -141,7 +147,9 @@ return function(hub,parent,getPrefs,playerSource)
       end
       label(r.name,c.player.DisplayName~="" and c.player.DisplayName or c.player.Name,top.X,top.Y-p.espTextSize-3,p.espNames)
       label(r.distance,("%.0f studs"):format(c.distance),(left+right)/2,yBottom+3,p.espDistance)
-      r.dot.Position=UDim2.fromOffset(top.X,top.Y+p.verticalOffset);r.dot.BackgroundColor3=tint;r.dot.Visible=p.headDot
+      local dot=top
+      if p.headDot and dotWorld~=topWorld then dot=project(cam,dotWorld) end
+      r.dot.Position=UDim2.fromOffset(dot.X,dot.Y+p.verticalOffset);r.dot.BackgroundColor3=espTint;r.dot.Visible=p.headDot
       if p.tracers then
        local vp=cam.ViewportSize;local origin=p.tracerOrigin=="Top" and 0 or p.tracerOrigin=="Middle" and vp.Y/2 or vp.Y
        segment(r.tracer,Vector2.new(vp.X/2,origin),Vector2.new(bottom.X,bottom.Y+p.verticalOffset),color(p.tracerColor))
@@ -167,7 +175,7 @@ return function(hub,parent,getPrefs,playerSource)
          local from,to=Vector2.new(clippedA[1],clippedA[2]),Vector2.new(clippedB[1],clippedB[2])
          local coreW,coreT,outlineW,outlineT=Stroke.resolve(p.skeletonThickness)
          segment(r.boneOutlines[index],from,to,Color3.new(0,0,0),outlineW,outlineT)
-         segment(r.bones[index],from,to,Color3.new(1,1,1),coreW,coreT)
+         segment(r.bones[index],from,to,espTint,coreW,coreT)
         end
        end
        for i,link in ipairs(links) do
@@ -184,7 +192,7 @@ return function(hub,parent,getPrefs,playerSource)
       end
       if p.chams then
        r.highlight.DepthMode=not p.visibilityMode and Enum.HighlightDepthMode.AlwaysOnTop or Enum.HighlightDepthMode.Occluded
-       r.highlight.Adornee=c.char;local chamsTint=Policy.chamsColor(p,c)=="#FFFFFF" and Color3.new(1,1,1) or tint;r.highlight.FillColor=chamsTint;r.highlight.OutlineColor=chamsTint
+       r.highlight.Adornee=c.char;r.highlight.FillColor=espTint;r.highlight.OutlineColor=espTint
        r.highlight.FillTransparency=p.chamsFill;r.highlight.OutlineTransparency=p.chamsOutline;r.highlight.Enabled=true
       end
      end
@@ -209,15 +217,15 @@ return function(hub,parent,getPrefs,playerSource)
    if player~=Game.player then
     local char=candidate.char
     if char and candidate.dirty then
-     candidate.hum=char:FindFirstChildOfClass("Humanoid");candidate.root=char:FindFirstChild("HumanoidRootPart");candidate.head=char:FindFirstChild("Head")
-     candidate.links=Rig.build(char);candidate.dirty=false
+     Avatar.inspect(candidate);candidate.links=Rig.build(char,candidate.parts);candidate.dirty=false
     end
-    local h,root,head=candidate.hum,candidate.root,candidate.head
-    if h and h.Health>0 and h.MaxHealth>0 and root and head and head.Transparency<1 and head.LocalTransparencyModifier<1 then
+    local h,root=candidate.hum,candidate.root
+    if char and char.Parent and (not h or h.Health>0) and root and root.Parent then
      local distance=(root.Position-cam.CFrame.Position).Magnitude
      if distance<=p.maxDistance then
-      local point,on,depth=project(cam,head.Position)
-      candidate.player,candidate.char,candidate.hum,candidate.root,candidate.head=player,char,h,root,head
+      local anchor,_,aim=Avatar.points(candidate)
+      local point,on,depth=project(cam,anchor);candidate.aim=aim
+      candidate.player=player
       candidate.distance,candidate.friend=distance,friends[player]==true
       candidate.point,candidate.on,candidate.depth,candidate.alive=point,on,depth,true
       table.insert(candidates,candidate)
@@ -229,7 +237,7 @@ return function(hub,parent,getPrefs,playerSource)
   table.clear(kept);local drawn=0
   for rank,c in ipairs(candidates) do
    if drawn>=p.maxTargets then break end
-   c.clearLine=not p.visibilityMode or clearLine(cam,c.head.Position,c.char,params)
+   c.clearLine=not p.visibilityMode or clearLine(cam,c.aim,c.char,params)
    if Policy.eligible(p,c) and (c.on or p.offscreenArrows) then
     local r=record(c.player);kept[c.player]=true;drawn+=1
     local redraw,bones=Policy.budget(p,drawn,tick)

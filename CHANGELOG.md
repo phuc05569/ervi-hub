@@ -1,3 +1,16 @@
+## Unreleased — manual feedback continuation (3.5.0-dev+cf9fd777b960)
+
+**IMPLEMENTED — OWNER TESTING PENDING.**
+
+- Replace B's anchor lock with ~0.1s settle, one-second isolated hover and one explicit final move; preserve Fly state.
+- Add Auto Roll Safe Zone toggle with origin return, continuous hover, respawn recovery and emergency priority.
+- Give notifications independent cleanup deadlines; use shared ESP colors for Skeleton/Head Dot/Chams.
+- Support missing/invisible heads and nested/custom Character rigs in ESP with bounded geometry caches.
+- Mark Auto Kill unsupported; retain existing settings/defaults and removed-feature decisions.
+- Build only: no automated testing, installation, push or publication.
+
+---
+
 ## Unreleased — owner-testing functional continuation
 
 **IMPLEMENTED — OWNER TESTING PENDING** (`3.5.0-dev+6abfd1dd3905`).

@@ -21,12 +21,22 @@ return function(hub,getPrefs,save)
   cleanup();local p=getPrefs();p.flyEnabled=false;p.noclipEnabled=false;save()
   api.status=reason or "Off · restored owned properties"
  end
+ function api.suspend(by)
+  if api.suspended and api.suspended~=by then return false end
+  api.suspended=by;cleanup();api.status="Movement suspended for zone stabilization";return true
+ end
+ function api.resume(by)
+  if api.suspended~=by then return end
+  api.suspended=nil
+  if not hub.closed then api.apply() end
+ end
  local function part(node)
   if not api.noclip or not node:IsA("BasePart") or parts[node] then return end
   parts[node]=true;owned:set(node,node,"CanCollide",false)
 
  end
  function api.apply()
+  if api.suspended then return end -- desired settings and held keys remain untouched
   local p=getPrefs()
   if not p.flyEnabled and not p.noclipEnabled then cleanup();return end
   if api.beforeStart then api.beforeStart() end

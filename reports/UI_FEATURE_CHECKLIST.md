@@ -1,3 +1,9 @@
+## Current functional UI — 3.5.0-dev+cf9fd777b960
+
+**IMPLEMENTED — OWNER TESTING PENDING.** Auto Roll Safe Zone toggle directly below Run buttons, own status and active chip; old A menu controls removed. B controls remain with new bounded hover sequence and preserved Fly intent. Notifications expire via independent deadlines with existing appearance. Skeleton/Head Dot/Chams share colors and preview; transformed avatars use Character-owned fallback geometry. Auto Kill visibly UNSUPPORTED; Auto M1 unsupported preference only. No redesign, tests, deployment or publication. Older tables below are historical.
+
+---
+
 ## Current functional changes — 3.5.0-dev+6abfd1dd3905
 
 **IMPLEMENTED — OWNER TESTING PENDING.** A no longer holds/anchors; B alone stabilizes for two seconds. Auto Roll retains a waiting session for known temporary game gates. Safe Zone coordinate editors and all Saved Positions controls are removed from the runtime UI/search. Legacy position data remains archival. Fresh WalkSpeed=50, Set, NONE; explicit saves are retained. Keybind ON/OFF transitions notify; unfocused Toggle Fly remains enabled with neutral input (Hold still releases). Existing ESP/colors/backgrounds/UI design remain; Auto Kill is deferred. No automated testing, deployment or publishing in this continuation. Earlier tables/defaults/evidence below are historical.

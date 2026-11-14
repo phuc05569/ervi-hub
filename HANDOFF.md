@@ -1,3 +1,11 @@
+# Current manual-feedback continuation — 3.5.0-dev+cf9fd777b960
+
+Owner-only testing remains in force: normal build only, no tests/input/deployment/push/release. **IMPLEMENTED — OWNER TESTING PENDING.** Latest contracts are at the top of FEATURE_FUNCTIONAL_AUDIT, MOVEMENT_AND_SAFEZONE_TESTS and CODEX_TO_CLAUDE_UI_HANDOFF.
+
+B now uses two explicit shared moves around ~0.1s settle + one-second separate unanchored hover, preserving Fly intent. A becomes Auto Roll Safe Zone toggle under Run with immutable origin, hover, respawn recovery and emergency suspension/resumption. Notifications use independent hard expiration. Skeleton/Head Dot/Chams share configured colors. Transformed Character rigs no longer require visible standard Heads. Auto Kill explicitly unsupported; no combat work. Main/v3.4.0/installed files/settings/backups remain unchanged. Older notes describe historical implementations.
+
+---
+
 # Current owner-testing continuation — 3.5.0-dev+6abfd1dd3905
 
 Continue on `dev/functional-audit-3.4`. Read the newest sections of FEATURE_FUNCTIONAL_AUDIT, MOVEMENT_AND_SAFEZONE_TESTS and CODEX_TO_CLAUDE_UI_HANDOFF. Owner now performs all testing: no unit/smoke/Studio/Potassium/live tests, benchmarks, input automation, deployment or push. Only normal build generation is authorized. New code is IMPLEMENTED — OWNER TESTING PENDING.
