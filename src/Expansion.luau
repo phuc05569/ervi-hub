@@ -23,7 +23,10 @@ return function(ctx)
  local authority=makeAuthority(hub)
  local flight=makeFlight(hub,ctx.prefs,ctx.save,authority)
  ctx.safe.transport.setAuthority(authority)
- ctx.safe.beforeMove=function() if flight.active then flight.stop("Safe Zone selected") end end
+ ctx.safe.beforeMove=function()
+  if flight.active or ctx.prefs().flyEnabled or ctx.prefs().noclipEnabled then flight.stop("Safe Zone selected") end
+ end
+ flight.beforeStart=function() if ctx.safe.enabled then ctx.safe.setEnabled(false,true) end end
  local clickTP=makeClickTP(hub,ctx.parent,ctx.prefs,authority,function() return flight.active end,ctx.safe.transport)
  require("LocationControls")(ctx)
  local pages=ctx.pages
@@ -230,11 +233,22 @@ return function(ctx)
  Ui.button(hub,liveDiagnostic,"Measure render cadence (5s)",{order=2,width=240},diagnostics.measure).Name="MeasureRenderCadence"
  local diagnosticStatus=Ui.text(liveDiagnostic,"Diagnostics ready",{order=2,textSize=Theme.size.small})
  ctx.onRefresh("utility","live diagnostic status",function() Ui.set(diagnosticStatus,"Text",diagnostics.status) end)
+ local function keyNotice(title,before,after)
+  if before~=after and ctx.notify then ctx.notify(Ui.localeText(title).." · "..(after and "ON" or "OFF")) end
+ end
+ local function keyedSetting(key,title,controller)
+  return function(on)
+   local before=ctx.prefs()[key];ctx.prefs()[key]=on;ctx.save();controller.apply()
+   keyNotice(title,before,ctx.prefs()[key])
+  end
+ end
  keys=require("Keybinds")(hub,game:GetService("UserInputService"),ctx.prefs,{
-  {key="walkKey",mode="walkKeyMode",get=function() return ctx.prefs().walkEnabled end,set=function(on) ctx.prefs().walkEnabled=on;ctx.save();playerTools.apply() end},
-  {key="flyKey",mode="flyKeyMode",get=function() return ctx.prefs().flyEnabled end,set=function(on) ctx.prefs().flyEnabled=on;ctx.save();flight.apply() end},
-  {key="noclipKey",mode="noclipKeyMode",get=function() return ctx.prefs().noclipEnabled end,set=function(on) ctx.prefs().noclipEnabled=on;ctx.save();flight.apply() end},
-  {key="safeZoneKey",mode="safeZoneKeyMode",get=function() return ctx.safe.enabled end,set=function(on) ctx.safe.setEnabled(on) end},
+  {key="walkKey",mode="walkKeyMode",get=function() return ctx.prefs().walkEnabled end,set=keyedSetting("walkEnabled","WalkSpeed",playerTools)},
+  {key="flyKey",mode="flyKeyMode",get=function() return ctx.prefs().flyEnabled end,set=keyedSetting("flyEnabled","Smooth Fly",flight)},
+  {key="noclipKey",mode="noclipKeyMode",get=function() return ctx.prefs().noclipEnabled end,set=keyedSetting("noclipEnabled","Noclip",flight)},
+  {key="safeZoneKey",mode="safeZoneKeyMode",get=function() return ctx.safe.enabled end,set=function(on)
+   local before=ctx.safe.enabled;ctx.safe.setEnabled(on);keyNotice("Safe Zone",before,ctx.safe.enabled)
+  end},
  })
  local function keyHandler(input,processed)
   local p=ctx.prefs();local name=input.KeyCode.Name

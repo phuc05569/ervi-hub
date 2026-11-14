@@ -1,3 +1,17 @@
+## Current owner-only testing continuation — 3.5.0-dev+6abfd1dd3905
+
+- [x] Preserve clean local checkpoint/history/source/build/evidence and read-only current settings snapshot.
+- [x] Implement A transport/no anchor, B bounded two-second stabilization and movement cleanup.
+- [x] Implement Auto Roll temporary waiting/resumption, preserving uncertain-result safeguards.
+- [x] Remove location editors/named Saved Positions; preserve data/codecs/established coordinates.
+- [x] Set fresh WalkSpeed 50 Set/NONE; add keybind notices and preserve unfocused Toggle Fly.
+- [x] Update functional/movement/Claude reports; generate normal development build only.
+- [ ] Owner manually accepts all new behavior — IMPLEMENTED — OWNER TESTING PENDING.
+
+Tests, benchmarks, live automation, deployment/push/publication are explicitly outside this continuation. Earlier completed checkboxes below describe their historical checkpoints.
+
+---
+
 # Ervi Hub 3.3 task checklist
 
 ## Functional continuation — 14 November 2026

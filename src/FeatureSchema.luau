@@ -23,7 +23,7 @@ add("clickTPSize","teleports","Click TP","Target Circle Size","number",4,{1,20,0
 add("clickTPOpacity","teleports","Click TP","Target Circle Opacity","number",0.65,{0,1,0.05})
 add("clickTPColor","teleports","Click TP","Target Circle Color","color","#F0628E")
 add("movementSize","player","Movement","Panel Size","number",1,{0.8,1.5,0.05},"Scales the saved panel dimensions; the corner grip still resizes it.")
-for _,d in ipairs({{"walkEnabled","WalkSpeed","bool",false},{"walkKey","WalkSpeed key","key","NONE"},{"speedMode","Speed Mode","choice","Set",{"Set","Multiply"}},{"walkSpeed","Walk Speed","number",16,{0,100,1}},{"speedMultiplier","Speed Multiplier","number",1.5,{0.25,4,0.05}}}) do add(d[1],"player","Speed",d[2],d[3],d[4],d[5],"Local Humanoid speed; no CFrame fallback or correction-fighting loop.") end
+for _,d in ipairs({{"walkEnabled","WalkSpeed","bool",false},{"walkKey","WalkSpeed key","key","NONE"},{"speedMode","Speed Mode","choice","Set",{"Set","Multiply"}},{"walkSpeed","Walk Speed","number",50,{0,100,1}},{"speedMultiplier","Speed Multiplier","number",1.5,{0.25,4,0.05}}}) do add(d[1],"player","Speed",d[2],d[3],d[4],d[5],"Local Humanoid speed; no CFrame fallback or correction-fighting loop.") end
 for _,d in ipairs({{"fullbright","Fullbright"},{"noFog","No Fog"},{"noShadows","No Shadows"},{"customTime","Custom Time"}}) do add(d[1],"world","Lighting",d[2],"bool",false) end
 add("timeOfDay","world","Lighting","Time of Day","number",12,{0,24,0.25})
 add("notificationsEnabled","settings","Notifications","Notifications","bool",true)

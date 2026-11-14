@@ -1,3 +1,17 @@
+## Unreleased — owner-testing functional continuation
+
+**IMPLEMENTED — OWNER TESTING PENDING** (`3.5.0-dev+6abfd1dd3905`).
+
+- Replace Zone A persistent anchored movement with the shared movement transport; leave normal roll gates intact.
+- Add bounded two-second Zone B stabilization with scoped fling-edge/lifecycle cleanup.
+- Retain Auto Roll session while known game readiness gates temporarily block rolling.
+- Remove coordinate editors and Saved Positions UI; preserve configured destinations and legacy saved data.
+- Default new WalkSpeed settings to 50 Set/NONE; preserve explicit settings.
+- Notify keybind feature transitions and keep Toggle Fly enabled with neutral input while unfocused.
+- No tests, live automation, deployment, release or push in this continuation.
+
+---
+
 # Local unreleased functional candidate — 3.5.0-dev
 
 - Native one-shot Click TP with position observation, GUI/sky suppression and no correction retries.

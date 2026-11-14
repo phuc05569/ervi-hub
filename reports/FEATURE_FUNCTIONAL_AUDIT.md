@@ -1,3 +1,28 @@
+## Owner-testing continuation — 14 November 2026
+
+Current candidate: **3.5.0-dev+6abfd1dd3905**. All changes below are **IMPLEMENTED — OWNER TESTING PENDING**. This section supersedes the previous candidate's feature status. No tests, compile checks, benchmarks, Roblox/Studio/Potassium input, deployment, push or publication were performed in this continuation. Only the normal build command is authorized. Old automated results are historical and do not validate this build.
+
+Owner-reported results before these changes: Click TP works; emergency teleport works very well; B is protected/unrollable; WalkSpeed works; A teleports but remains unrollable. These are owner reports, not new agent observations.
+
+- A: replaced persistent anchored PivotTo path with the shared one-attempt movement transport used by Click TP/B. No A stabilization. Explicit OFF retains one observed origin-return attempt; unload/death/correction do not move back. Game readiness is never forced.
+- B: two-second arrival hold clears residual linear/angular velocity, restores its owned anchor state, and releases automatically. One lock at a time; calm rearm permits a new fling-edge hold near B. Leaving B, external correction/unanchoring, other movement, death, character replacement and unload cancel it. No return/correction-fighting loop. A fling already carrying the character beyond 12 studs is released rather than teleported back.
+- Auto Roll: known arena/cooldown/reveal/confirm gates wait without the old 180-second terminal timeout, retaining target/session. Missing arena metadata remains an error gate. Preflight refusal sends no roll and is distinct from an uncertain server reply; Stop/Found, one request in flight, timeout/uncertain pause and death preference remain.
+- Removed XYZ/capture/save/reset controls and the entire Saved Positions interface/worker code. Codec and legacy savedPositions persistence remain to avoid deleting existing data. Both established destinations are available internally with stored overrides and PlaceId validation.
+- Fresh WalkSpeed default: 50, Set, NONE. Explicit saved values/modes/keys are retained.
+- Added feature keybind notifications for WalkSpeed/Fly/Noclip/Safe Zone, including Hold release; ESP retains its existing toggle notice path. Notification settings/duration/minimized-menu independence remain.
+- Fly/Noclip Toggle state survives focus loss; Fly sends neutral input while unfocused and resumes input on return. Hold bindings still release on focus loss. Safe Zone stabilization and flight/noclip release each other before activation; Click TP releases an active zone before a valid move.
+- ESP avatar/visibility/update budgets, colors/backgrounds/shared keys, M1 and the UI design are preserved. Auto Kill remains deferred.
+
+Zone coordinates recovered read-only from the current active DEFAULT profile: A `(350.647675, -435.796021, 26.535965)`; B `(296.613495, 59.0999985, -100.878853)`; place `119338513416973`. These replace the old fallback only; stored overrides still win. No settings file or backup was edited. A's negative-Y destination is preserved as requested; removing its hold does not prove the game will set InFFA there. Rollability requires owner confirmation; no guessed coordinate fallback or attribute spoofing was added.
+
+Preservation before edits: `C:\Users\ASUS\ervi-owner-continuation-20261114-071700` (all-ref bundle, source/build/reports/tasks/docs and read-only current-settings snapshot). Existing local commits and evidence remain.
+
+Owner acceptance still needed for all new behavior: A rolling/readiness, A/B transitions, the two-second hold/fling edges and cleanup, indefinite unavailable-roll waiting/resumption, GUI removals, new-config defaults, keybind ON/OFF notices and unfocused Fly. No agent-run testing is scheduled.
+
+### Historical prior checkpoint follows
+
+---
+
 # Complete functional audit — 14 November 2026
 
 ## Outcome and development identification

@@ -25,6 +25,7 @@ return function(hub,getPrefs,save,authority)
  function api.apply()
   local p=getPrefs()
   if not api.available then api.status=authority.status;return end
+  if (p.flyEnabled or p.noclipEnabled) and api.beforeStart then api.beforeStart() end
   desired={fly=p.flyEnabled,noclip=p.noclipEnabled,speed=p.flySpeed}
   if not desired.fly and not desired.noclip and (api.active or pending) then api.stop("Flight and Noclip off");return end
   local signature=tostring(desired.fly).."/"..tostring(desired.noclip).."/"..desired.speed
@@ -66,7 +67,10 @@ return function(hub,getPrefs,save,authority)
   if look.Magnitude<0.01 then look=Vector3.new(0,0,-1) else look=look.Unit end
   authority.control({direction.X,direction.Y,direction.Z},{look.X,0,look.Z})
  end)
- hub:connect(Input.WindowFocusReleased,function() focused=false;if api.active or pending then api.stop("Window focus lost") end end)
+ hub:connect(Input.WindowFocusReleased,function()
+  focused=false
+  if api.active and authority.control then authority.control({0,0,0},{0,0,-1}) end
+ end)
  hub:connect(Input.WindowFocused,function() focused=true end)
  hub:connect(Game.player.CharacterRemoving,function() api.stop("Character removed") end)
  hub:add(function() if authority.release then authority.release() end end)

@@ -1,3 +1,9 @@
+## Current functional changes — 3.5.0-dev+6abfd1dd3905
+
+**IMPLEMENTED — OWNER TESTING PENDING.** A no longer holds/anchors; B alone stabilizes for two seconds. Auto Roll retains a waiting session for known temporary game gates. Safe Zone coordinate editors and all Saved Positions controls are removed from the runtime UI/search. Legacy position data remains archival. Fresh WalkSpeed=50, Set, NONE; explicit saves are retained. Keybind ON/OFF transitions notify; unfocused Toggle Fly remains enabled with neutral input (Hold still releases). Existing ESP/colors/backgrounds/UI design remain; Auto Kill is deferred. No automated testing, deployment or publishing in this continuation. Earlier tables/defaults/evidence below are historical.
+
+---
+
 # Functional continuation status — 14 November 2026
 
 The current inventory and evidence classification are in [FEATURE_FUNCTIONAL_AUDIT](FEATURE_FUNCTIONAL_AUDIT.md). New controls and callback/settings contracts are in [CODEX_TO_CLAUDE_UI_HANDOFF](CODEX_TO_CLAUDE_UI_HANDOFF.md). Visibility Mode replaces/inverts Through Walls; team and hidden-target preview controls are removed. Native Click TP/Fly/Noclip and A/B/emergency controls are implemented, but target-game support is not established by Studio success. Existing 3.4 design remains; visual redesign is a later stage. Tables below record historical versions and must not override this current classification.

@@ -1,3 +1,11 @@
+## Owner manual-testing repair pass — 3.5.0-dev+6abfd1dd3905
+
+**IMPLEMENTED — OWNER TESTING PENDING.** Source review identified persistent A anchoring/PivotTo versus the working shared transport, and a terminal readiness timeout for known temporary roll gates. A now uses the transport without a hold; B alone owns bounded stabilization. Preserved recovered configured coordinates rather than guessing a rollable spot. Removed coordinate editors/named positions, set fresh WalkSpeed to 50, fixed keybind notifications and retained Toggle Fly across focus loss. Existing settings/data and evidence are preserved. Owner reports prior Click TP/emergency/B protection/speed success; this does not verify these new changes. Only the normal build is run; no tests, benchmarks, input automation, deployment or push.
+
+### Earlier repairs and evidence follow
+
+---
+
 # Functional repair log — 14 November 2026
 
 Development baseline: v3.4.0, commit 2b93389, clean `dev/functional-audit-3.4`.

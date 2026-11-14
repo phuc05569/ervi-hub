@@ -23,6 +23,10 @@ return function()
 	end
 
 	function adapter.requestRoll()
+		-- Readiness can change between the worker's poll and this call. A refusal
+		-- here is known not to have reached the server, unlike a missing reply.
+		local ready, why, recoverable = Game.rollStatus()
+		if not ready then return {done=true,notSent=true,reason=why,recoverable=recoverable} end
 		local handle = { done = false }
 		local remote = Game.rollRemote()
 		if not remote then

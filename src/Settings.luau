@@ -13,7 +13,7 @@ Settings.FILE = "RNG_Hub_settings.txt"
 Settings.MIN_OPACITY = 0
 Settings.DEFAULT_NAME = "Default"
 Settings.DEFAULTS = {
- safeZoneLocations="", savedPositions="",
+ safeZoneLocations="", savedPositions="", -- legacy position data is retained on save, without a feature/UI
 	toggleKey = "RightShift",
 	opacity = 0.75, -- on the slider's 5% grid
 	scale = 0.85,

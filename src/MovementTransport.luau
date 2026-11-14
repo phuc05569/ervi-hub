@@ -20,6 +20,8 @@ return function(hub,authority)
   if not root or not Game.alive() then return false,"Wait for a living character" end
   if typeof(position)~="Vector3" or position.X~=position.X or position.Y~=position.Y or position.Z~=position.Z or math.max(math.abs(position.X),math.abs(position.Y),math.abs(position.Z))>1e7 then return false,"Invalid destination" end
   if range and (position-root.Position).Magnitude>range then return false,"Destination outside range" end
+  if api.beforeMove then api.beforeMove(owner) end
+  if Game.player.Character~=char or not root.Parent or not Game.alive() then return false,"Character changed before movement" end
   if root.Anchored then return false,"Release position hold before moving" end
   callback=done;api.busy=true;api.owner=owner
   local token=epoch

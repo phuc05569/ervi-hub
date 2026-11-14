@@ -1,3 +1,19 @@
+## Current movement implementation — 3.5.0-dev+6abfd1dd3905
+
+**IMPLEMENTED — OWNER TESTING PENDING.** Owner now handles all testing. No tests or live automation were run for these changes. Existing evidence below belongs to earlier builds.
+
+A now shares Click TP/B's native MoveTo or existing owned-server adapter instead of persistent anchored PivotTo. Only explicit A OFF attempts a one-shot return to its activation origin; unload/death/correction have no return. A is never stabilized. No InFFA/roll/protection attributes or target-game remotes are modified. Roll status is displayed read-only. Owner's recovered A position is `(350.647675,-435.796021,26.535965)` and remains unchanged even though rollability is unresolved.
+
+B `(296.613495,59.0999985,-100.878853)` has one two-second hold after local arrival, with velocity clearing and owned anchor restoration. It never counter-teleports. A calm observation below 20 studs/s rearms a fresh fling edge above 60 studs/s while within 12 studs of B. Moving beyond that distance releases the zone. External unanchoring/position correction also releases without retry. No permanent anchor or overlapping timer tasks. The feature scopes/lifecycle close all hold watchers. Manual B while already within six studs does not issue another move. Emergency retains its low-health recovery latch and gains the same stabilization.
+
+The established defaults are place-scoped to 119338513416973; saved overrides have precedence. Coordinate-editing/capture/save/reset and named Saved Positions controls are gone. Legacy data stays in persistence; no settings/backups were overwritten. Flight/Noclip and a successful Click TP release zone ownership before taking over. Toggle Fly remains on when unfocused with neutral input; Hold release behavior is retained. The authorized Studio server fixture was not modified or run.
+
+Owner reports Click TP/emergency working and B protected/unrollable on the previous dev script. This is not fresh verification of the new stabilization or A rollability. Original acceptance instructions below about approval/configuring B are historical and superseded by manual owner testing.
+
+### Historical evidence follows
+
+---
+
 # Movement and Safe Zone verification — 14 November 2026
 
 Development candidate: **3.5.0-dev+b391196c1bb3**. Published v3.4.0 is unchanged. No new build was deployed to Potassium or pushed.

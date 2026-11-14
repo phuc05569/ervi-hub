@@ -3,8 +3,13 @@ local SafeZone = {}
 SafeZone.PLACE_ID = 119338513416973
 function SafeZone.preset(place)
  if place ~= SafeZone.PLACE_ID then return nil end
- -- Screenshot supplies XYZ only; live movement preserves the character's orientation.
- return {place=place,components={278.78,-16.30,7.82}}
+ -- Established owner destinations, recovered from the active settings profile.
+ -- Explicit place-scoped settings still take precedence; no runtime editor.
+ return {place=place,components={350.647675,-435.796021,26.535965}}
+end
+function SafeZone.protectedPreset(place)
+ if place~=SafeZone.PLACE_ID then return nil end
+ return {place=place,components={296.613495,59.0999985,-100.878853}}
 end
 local function finite(n) return type(n)=="number" and n==n and math.abs(n)<math.huge end
 function SafeZone.encode(place, components)

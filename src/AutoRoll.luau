@@ -2,7 +2,7 @@
 --
 -- Adapter contract (see RollAdapter.luau for the live game implementation):
 --   now() -> seconds            wait(dt)                spawn(fn)
---   canRoll() -> ok, reason      (mirrors the game's own client gate: alive, InFFA, cooldown, no game roll/confirm open)
+--   canRoll() -> ok, reason, recoverable (known temporary game gates may wait indefinitely)
 --   readyAt() -> any             (RollReadyAt attribute; used to confirm the server started a new cooldown)
 --   currentStyle() -> {name, chance} | nil
 --   requestRoll() -> handle       handle.done / handle.name / handle.chance / handle.err filled asynchronously
@@ -219,7 +219,7 @@ function AutoRoll:_run(gen, acceptRare)
 			if not self:_live(gen) then
 				return
 			end
-			local ok, why = a.canRoll()
+			local ok, why, recoverable = a.canRoll()
 			if ok then
 				break
 			end
@@ -230,10 +230,12 @@ function AutoRoll:_run(gen, acceptRare)
 			if dead then
 				since = a.now() -- death does not consume the live-readiness timeout
 				self:_set("WaitingRespawn", "Waiting for respawn; selected target retained")
+			elseif recoverable then
+				since = a.now() -- known temporary gates retain this run, without sending requests
 			elseif a.now() - since >= o.readyTimeout then
 				return self:_end(gen, "Paused", ("Not ready for %ds: %s"):format(o.readyTimeout, tostring(why)))
 			end
-			if not dead then self:_set("WaitingReady", why or "Waiting") end
+			if not dead then self:_set("WaitingReady", "Waiting — rolling unavailable · " .. tostring(why or "Waiting")) end
 			a.wait(o.poll)
 		end
 
@@ -249,10 +251,19 @@ function AutoRoll:_run(gen, acceptRare)
 
 		-- 2. Exactly one request, awaited with a timeout and never retried.
 		local readyBefore = a.readyAt()
-		self.stats.attempted += 1
-		self:_set("Requesting", ("Roll #%d sent - waiting for the server result"):format(self.stats.attempted))
+		self:_set("Requesting", ("Preparing roll #%d"):format(self.stats.attempted + 1))
+		if not self:_live(gen) then return end -- a listener may have requested Stop
 		local handle = a.requestRoll()
+		if handle.notSent then
+			if not self:_live(gen) then return end
+			if not handle.recoverable then return self:_end(gen, "Paused", handle.reason or "Roll unavailable") end
+			self:_set("WaitingReady", "Waiting — rolling unavailable · " .. tostring(handle.reason))
+			a.wait(o.poll)
+			continue -- preflight refused locally; no request exists to retry
+		end
+		self.stats.attempted += 1
 		self.pending = handle
+		if self:_live(gen) then self:_set("Requesting", ("Roll #%d sent - waiting for the server result"):format(self.stats.attempted)) end
 		local t0 = a.now()
 		while not handle.done and a.now() - t0 < o.requestTimeout do
 			a.wait(o.poll)

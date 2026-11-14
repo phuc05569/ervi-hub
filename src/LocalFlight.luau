@@ -29,6 +29,7 @@ return function(hub,getPrefs,save)
  function api.apply()
   local p=getPrefs()
   if not p.flyEnabled and not p.noclipEnabled then cleanup();return end
+  if api.beforeStart then api.beforeStart() end
   local character=Game.player.Character;local h=Game.humanoid();local r=character and character:FindFirstChild("HumanoidRootPart")
   if not h or h.Health<=0 or not r or r.Anchored then api.stop("Character unavailable or position held");return end
   if not owner or char~=character then
@@ -88,7 +89,10 @@ return function(hub,getPrefs,save)
   local look=Vector3.new(camera.CFrame.LookVector.X,0,camera.CFrame.LookVector.Z)
   if look.Magnitude>.01 then orientation.CFrame=CFrame.lookAt(root.Position,root.Position+look) end
  end)
- hub:connect(Input.WindowFocusReleased,function() focused=false;if api.active then api.stop("Window focus lost") end end)
+ hub:connect(Input.WindowFocusReleased,function()
+  focused=false
+  if velocity then velocity.VectorVelocity=Vector3.zero end
+ end)
  hub:connect(Input.WindowFocused,function() focused=true end)
  hub:connect(Game.player.CharacterRemoving,function() api.stop("Waiting for respawn") end)
  hub:add(cleanup)

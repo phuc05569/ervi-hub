@@ -1,3 +1,23 @@
+## Current functional contract — 3.5.0-dev+6abfd1dd3905
+
+**IMPLEMENTED — OWNER TESTING PENDING.** Owner handles all testing; no automated validation, live input, Potassium deployment or publishing in this continuation. Preserve the visual design for Claude's later UI pass.
+
+- Safe Zone A uses shared movement, no persistent anchor. Explicit OFF returns once; no unload/death/correction return. A rolling repair addresses the movement/anchor mismatch only: actual rollability is pending the owner, and readiness gates remain authoritative.
+- B uses one two-second scoped arrival lock, then normal movement. A calm rearm can stabilize a fresh fling near B. Superseding movement, leaving/correction/death/unload cancels; no automatic return or repeated teleport. Emergency uses the same path and recovery latch.
+- A/B are established, internal and place-scoped; read-only stored overrides still take precedence. `SafeZone.saved/select/setEnabled/describe/checkEmergency` remain; `saveLocation` was removed. `stabilizing` exposes the bounded hold state. `LocationControls` now contains only manual teleport/deactivation buttons and status, without XYZ/capture/save/reset editors.
+- Saved Positions UI and its handlers are removed. `savedPositions` is compatibility-only archival data; keep it during serialization, with no registry/search entry or public feature. `PositionData` still backs internal zone validation/storage.
+- Auto Roll WaitingReady retains the session across known temporary gates. `canRoll` adds third boolean recoverable; local `notSent` refusal differs from uncertain results. Stop/Found and one-in-flight safeguards remain; do not represent waiting as stopped. No blindly retried server calls.
+- New configurations: walkSpeed=50, speedMode=Set, walkKey=NONE; explicit saved values/modes preserved. Fly F, Noclip NONE remain.
+- Central keyboard bindings now notify on actual WalkSpeed/Fly/Noclip/Safe Zone ON/OFF transitions, including Hold release. ESP uses its existing notice path. GUI-toggle changes retain their existing notifications; no duplicate notice should be added in the visual pass. Bottom-right viewport root and one-second default remain.
+- Toggle/Always Fly survives focus loss with neutral movement input, resuming input when focused. Hold keys still release normally. `Flight.beforeStart`/native equivalent releases zone ownership; zone movement stops pending/enabled flight and noclip.
+- Existing avatar ESP association/cache/circular support, Visibility Mode semantics, Auto=60 and explicit rates, health outlines/colors, key modes, backgrounds/color picker, M1 and notifications are preserved. Auto Kill remains deferred; no combat changes.
+
+Settings/new code have not been tested this continuation. Earlier catalog JSON/screenshots/tests below are historical (including old walkSpeed=16, location editors, legacy A hold and missing-B statements). Owner feedback is required before any new working/verified classification. Installed stable release, current settings and backups are preserved. Build artifact: `C:\Users\ASUS\ervi-hub\build\Ervi_Hub.luau`.
+
+### Historical previous handoff follows
+
+---
+
 # Functional handoff to Claude Code — 14 November 2026
 
 Preserve the current 3.4 visual system. This continuation adds functional controls; it does not redesign the window, sidebar, logo, typography, palette, glass, or animations. Published v3.4.0 remains available. Work is local on `dev/functional-audit-3.4`; no push, deployment, or release is approved.

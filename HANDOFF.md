@@ -1,3 +1,11 @@
+# Current owner-testing continuation — 3.5.0-dev+6abfd1dd3905
+
+Continue on `dev/functional-audit-3.4`. Read the newest sections of FEATURE_FUNCTIONAL_AUDIT, MOVEMENT_AND_SAFEZONE_TESTS and CODEX_TO_CLAUDE_UI_HANDOFF. Owner now performs all testing: no unit/smoke/Studio/Potassium/live tests, benchmarks, input automation, deployment or push. Only normal build generation is authorized. New code is IMPLEMENTED — OWNER TESTING PENDING.
+
+A shared transport/no hold; B bounded two-second stabilization; recoverable Auto Roll waiting; location editors/named positions removed; fresh WalkSpeed 50 Set/NONE; keybind notifications; Fly neutral-input focus persistence. Existing ESP/UI/M1 preserved, Auto Kill deferred. Owner reports prior Click TP/emergency/B/speed success; A rolling remains unresolved until manually confirmed. Current settings recovered both destinations; do not ask for missing B coordinates or restore old geometry. Main/v3.4.0/installed files/backups remain unchanged. Older handoff sections below are historical.
+
+---
+
 # Current functional continuation — 14 November 2026
 
 Local source is now a 3.5.0-dev functional candidate on `dev/functional-audit-3.4`. Read `reports/FEATURE_FUNCTIONAL_AUDIT.md`, `FEATURE_REPAIR_LOG.md`, `MOVEMENT_AND_SAFEZONE_TESTS.md`, `COMBAT_FEASIBILITY.md` and `CODEX_TO_CLAUDE_UI_HANDOFF.md` first. They supersede older feature-state instructions below. Published v3.4.0/main/history/installed Potassium scripts remain unchanged; no push/deployment/release is approved. New B protection and target-game movement remain unverified. Do not revert newer user settings geometry to the starting backup.

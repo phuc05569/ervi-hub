@@ -128,17 +128,21 @@ end
 -- Plus: never overlap with the game's own roll animation or "You will lose X" confirm.
 function Game.rollStatus()
 	if not Game.alive() then
-		return false, "Dead - no rolling (waiting for respawn)"
+		return false, "Dead - no rolling (waiting for respawn)", true
 	end
-	if not Game.attr("InFFA") then
-		return false, "Not in the arena - jump down to roll"
+	local inArena=Game.attr("InFFA")
+	if type(inArena)~="boolean" then
+		return false, "Arena readiness attribute unavailable (InFFA)", false
+	end
+	if not inArena then
+		return false, "Not in the arena - jump down to roll", true
 	end
 	local left = Game.rollReadyIn()
 	if left > 0.05 then
-		return false, ("Next roll in %.1fs"):format(left)
+		return false, ("Next roll in %.1fs"):format(left), true
 	end
 	if Game.gameRollBusy() then
-		return false, "Game roll animation or confirm dialog is open"
+		return false, "Game roll animation or confirm dialog is open", true
 	end
 	return true, "Ready"
 end

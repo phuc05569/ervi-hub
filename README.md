@@ -1,3 +1,11 @@
+# Owner-testing development candidate — 3.5.0-dev+6abfd1dd3905
+
+Updated script: `C:\Users\ASUS\ervi-hub\build\Ervi_Hub.luau`. **IMPLEMENTED — OWNER TESTING PENDING.** A movement/anchor repair, B two-second stabilization, recoverable Auto Roll waiting, removed location editors/Saved Positions, new WalkSpeed default 50, keybind notices and Fly focus persistence. See the latest [functional audit](reports/FEATURE_FUNCTIONAL_AUDIT.md) and [Claude handoff](reports/CODEX_TO_CLAUDE_UI_HANDOFF.md).
+
+No tests, live automation, Potassium deployment, push or publication this continuation; owner loads the build manually. A rolling is not claimed fixed in-game. Explicit settings and established destinations remain. Previous candidate evidence and instructions below are historical; new normal build command is `python build.py` only.
+
+---
+
 # Local functional development candidate
 
 Current local candidate: **3.5.0-dev+b391196c1bb3**, on `dev/functional-audit-3.4`. Published **v3.4.0 remains unchanged**. No development push, Potassium deployment or new release is authorized yet.

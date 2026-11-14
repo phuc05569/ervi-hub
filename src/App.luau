@@ -928,8 +928,8 @@ end
 local safePage = addPage("safe", "Safe Zone", "Destination, return origin and keybind")
 local teleportsPage=addPage("teleports","Teleports","Server travel")
 do
-    local card=Ui.card(safePage,"Safe Zone state",1,"Zone A retains its scoped hold and origin return. Zone B uses a configured destination without an automatic return. Position and game protection are reported separately.")
-    local toggle=Ui.toggle(hub,card,"Enable Safe Zone", "OFF returns once to your activation origin. Death and server corrections release without a return or retry.",safeZone.enabled,safeZone.setEnabled,1)
+    local card=Ui.card(safePage,"Safe Zone state",1,"Zone A moves without a hold. Zone B stabilizes for two seconds without an automatic return. Rolling and protection follow the game's own rules.")
+    local toggle=Ui.toggle(hub,card,"Enable Safe Zone", "Zone A OFF returns once to your activation origin. Zone B OFF releases stabilization and stays in place.",safeZone.enabled,safeZone.setEnabled,1)
     safeZone.onChanged=function(on) toggle.set(on,true) end
     local coords=Ui.text(card,"",{order=2,textSize=Theme.size.small})
     local status=Ui.text(card,"",{order=3,textSize=Theme.size.small,color=Theme.muted})
